@@ -1,0 +1,1633 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>注册流程测量平台</title>
+<link href="/static/bootstrap.min.css" rel="stylesheet">
+<style>
+  body { background: #f5f6fa; }
+  .flow-badge { font-size: 0.75rem; padding: 0.25em 0.6em; border-radius: 10px; white-space: nowrap; }
+  .b-direct_password { background: #d1e7dd; color: #0f5132; }
+  .b-verification_then_password { background: #cff4fc; color: #055160; }
+  .b-otp_only { background: #fff3cd; color: #664d03; }
+  .b-email_only { background: #e2d9f3; color: #4a2a8a; }
+  .b-sso_only { background: #f8d7da; color: #842029; }
+  .b-multiple_methods { background: #d1d5f9; color: #3b2f8a; }
+  .b-human_blocked { background: #fde2e2; color: #842029; }
+  .b-unknown, .b-error { background: #e9ecef; color: #495057; }
+  .b-no_web_signup { background: #e2e3e5; color: #383d41; }
+  .match-badge { font-size: 0.7rem; }
+  .verified { background: #d1e7dd; color: #0f5132; }
+  .pending { background: #fff3cd; color: #664d03; }
+  .card { border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  .step-row { border-left: 3px solid #dee2e6; padding-left: 10px; margin-bottom: 8px; font-size: 0.9rem; }
+  .step-tab-btn {
+    padding: 6px 16px; margin-right: 6px; border: 1px solid #dee2e6;
+    border-radius: 6px; background: #fff; color: #495057; cursor: pointer; font-size: 0.9rem;
+  }
+  .step-tab-btn.active { background: #0d6efd; color: #fff; border-color: #0d6efd; }
+  .step-tab-btn:not(.active):hover { background: #e9ecef; }
+  .my-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center; z-index: 1050;
+  }
+  .my-modal-box {
+    background: #fff; border-radius: 12px; width: 90%; max-width: 720px;
+    max-height: 85vh; display: flex; flex-direction: column;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+  }
+  .my-modal-lg { max-width: 900px; }
+  .my-modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px; border-bottom: 1px solid #dee2e6;
+  }
+  .my-modal-body { padding: 16px 18px; overflow-y: auto; }
+  .my-modal-foot {
+    padding: 12px 18px; border-top: 1px solid #dee2e6; text-align: right;
+  }
+  .my-modal-close {
+    border: none; background: none; font-size: 22px; line-height: 1;
+    cursor: pointer; color: #6c757d;
+  }
+  .search-bar { max-width: 720px; }
+  .site-title { font-size: 0.95rem; }
+  .route-text { font-size: 0.8rem; color: #6c757d; }
+  .side-badge { font-size: 0.72rem; padding: 1px 6px; border-radius: 8px; margin-left: 4px; white-space: nowrap; }
+  .badge-ok { background: #e6f4ea; color: #1e7e34; }
+  .badge-bad { background: #fde8e8; color: #c62828; }
+  .badge-warn { background: #fff3cd; color: #b26a00; }
+  .badge-wait { background: #f5f5f5; color: #8a8a8a; }
+  .trait-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)); gap: 5px 10px; }
+</style>
+</head>
+<body>
+<div class="container py-4">
+  <h3 class="mb-1">注册流程测量平台
+    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="showAdminModal()" id="admin-btn">待审核管理</button>
+  </h3>
+  <p class="text-muted small mb-3">
+    共 <span id="stat-total">-</span> 站，人工已核验 <span id="stat-verified">-</span> 站；
+    注册正确率 <span id="stat-accuracy">-</span>，覆盖率 <span id="stat-coverage">-</span>；
+    登录正确率 <span id="stat-login-accuracy">-</span>，覆盖率 <span id="stat-login-coverage">-</span>
+    <span class="ms-2">登录方法覆盖度 <span id="stat-login-mc">-</span> / 注册方法覆盖度 <span id="stat-signup-mc">-</span></span>
+    <span id="stat-pending" class="ms-2"></span>
+  </p>
+
+  <div class="search-bar mb-4">
+    <div class="input-group">
+      <input id="search-input" class="form-control" placeholder="搜索站点域名或中文名（如 zhihu.com、慕课）">
+      <button id="search-btn" class="btn btn-primary">搜索</button>
+    </div>
+  </div>
+
+  <div class="card p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>输入网站主页，现场分类</strong>
+    </div>
+    <div class="input-group">
+      <input id="classify-url" class="form-control" placeholder="https://example.com">
+      <select id="classify-kind" class="form-select" style="max-width:170px">
+        <option value="both">注册+登录</option>
+        <option value="signup">注册</option>
+        <option value="login">登录</option>
+        <option value="policy">测试密码政策</option>
+      </select>
+      <button id="classify-btn" class="btn btn-success">开始分类</button>
+    </div>
+    <div class="d-flex align-items-center gap-2 mt-2">
+      <label for="measure-token" class="form-label small text-muted mb-0">测量口令</label>
+      <input id="measure-token" class="form-control form-control-sm" type="password"
+             autocomplete="current-password" placeholder="SITES_MEASURE_TOKEN"
+             style="max-width:260px">
+      <span class="form-text mt-0">仅保存在当前浏览器标签页中</span>
+    </div>
+    <div class="form-check mt-2">
+      <input id="force-retest" class="form-check-input" type="checkbox">
+      <label class="form-check-label" for="force-retest">重复测试（忽略数据库，重新打开网站测量）</label>
+      <div class="form-text">适合演示已收录的网站；新结果只保存在任务中，点击“加入数据库”后才会覆盖正式数据。</div>
+    </div>
+    <div id="classify-result" class="mt-3"></div>
+  </div>
+
+  <div class="card p-3 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <strong>我的测量任务</strong>
+      <button class="btn btn-sm btn-outline-secondary" onclick="loadTasks()">刷新</button>
+    </div>
+    <div id="task-list" class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0">
+        <thead><tr>
+          <th style="width:120px">任务 ID</th>
+          <th>网站</th>
+          <th style="width:90px">类型</th>
+          <th style="width:100px">状态</th>
+          <th style="width:130px">提交时间</th>
+          <th style="width:230px"></th>
+        </tr></thead>
+        <tbody id="task-tbody">
+          <tr><td colspan="6" class="text-muted text-center">加载中…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <strong>站点列表（<span id="list-count">-</span>）</strong>
+    <div class="btn-group btn-group-sm" role="group">
+      <button class="btn btn-outline-secondary filter-btn active" data-f="all">全部</button>
+      <button class="btn btn-outline-secondary filter-btn" data-f="verified">已核验</button>
+      <button class="btn btn-outline-secondary filter-btn" data-f="pending">待核验</button>
+      <button class="btn btn-outline-secondary filter-btn" data-f="match">识别基本正确</button>
+      <button class="btn btn-outline-secondary filter-btn" data-f="mismatch">识别不一致</button>
+      <button class="btn btn-outline-secondary filter-btn" data-f="incprog">程序证据不足</button>
+      <button class="btn btn-outline-secondary filter-btn" data-f="incmanual">人工证据不足</button>
+    </div>
+  </div>
+  <div id="site-list" class="row g-3"></div>
+</div>
+
+<div id="detailModal" class="my-modal" style="display:none">
+  <div class="my-modal-box my-modal-lg">
+    <div class="my-modal-head">
+      <b id="modal-title"></b>
+      <button type="button" class="my-modal-close" onclick="hideDetail()">×</button>
+    </div>
+    <div class="my-modal-body" id="modal-body"></div>
+    <div class="my-modal-foot">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="hideDetail()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div id="reviewModal" class="my-modal" style="display:none">
+  <div class="my-modal-box">
+    <div class="my-modal-head">
+      <b>提交人工观察</b>
+      <button type="button" class="my-modal-close" onclick="hideReview()">×</button>
+    </div>
+    <div class="my-modal-body">
+      <div class="mb-2"><b id="review-host"></b></div>
+      <div id="review-pending-tip" class="mb-2"></div>
+      <div class="mb-2">
+        <label class="form-label">登录方式（勾选每种方法的要素，自动用 + 连接）</label>
+        <div id="review-login-methods"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="addMethodRow('review-login')">+ 添加一种方法</button>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">注册方式（勾选每种方法的要素，自动用 + 连接）</label>
+        <div id="review-signup-methods"></div>
+        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="addMethodRow('review-signup')">+ 添加一种方法</button>
+      </div>
+      <div class="mb-2 small">
+        <b>总口令框判定（整站）：</b>
+        <label class="me-2"><input type="radio" name="overall-pwd" value="inline" class="form-check-input me-1">inline（不提交就能判断口令对不对）</label>
+        <label class="me-2"><input type="radio" name="overall-pwd" value="full" class="form-check-input me-1">full（提交后才能判断）</label>
+        <label><input type="radio" name="overall-pwd" value="none" class="form-check-input me-1">none（无口令框）</label>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">备注（可选）</label>
+        <input id="review-note" class="form-control" placeholder="如：注册按钮藏在登录弹窗里">
+      </div>
+      <div class="mb-2">
+        <label class="form-label">你的名字</label>
+        <input id="review-submitter" class="form-control" placeholder="姓名或昵称">
+      </div>
+      <div class="text-muted small">提交后进入待审核列表，管理员核验后合并进正式数据。</div>
+    </div>
+    <div class="my-modal-foot">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="hideReview()">取消</button>
+      <button type="button" class="btn btn-primary btn-sm" id="review-submit-btn">提交</button>
+    </div>
+  </div>
+</div>
+
+<div id="feedbackModal" class="my-modal" style="display:none">
+  <div class="my-modal-box">
+    <div class="my-modal-head">
+      <b>反馈识别结果</b>
+      <button type="button" class="my-modal-close" onclick="hideFeedback()">×</button>
+    </div>
+    <div class="my-modal-body">
+      <div class="mb-2"><b id="feedback-host"></b></div>
+      <div class="mb-2">
+        <label class="form-label">反馈类型</label>
+        <select id="feedback-type" class="form-select">
+          <option value="wrong">程序识别有误（和人工/实际不符）</option>
+          <option value="correct_but_marked_wrong">程序其实是对的，但被标了不一致</option>
+          <option value="other">其他问题</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">说明（必填）</label>
+        <textarea id="feedback-note" class="form-control" rows="3" placeholder="如：程序说注册是直接口令，实际注册只有手机号+验证码"></textarea>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">你的名字</label>
+        <input id="feedback-submitter" class="form-control" placeholder="姓名或昵称">
+      </div>
+      <div class="text-muted small">反馈进入待审核列表，管理员确认后处理。</div>
+    </div>
+    <div class="my-modal-foot">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="hideFeedback()">取消</button>
+      <button type="button" class="btn btn-primary btn-sm" id="feedback-submit-btn">提交反馈</button>
+    </div>
+  </div>
+</div>
+
+<div id="adminModal" class="my-modal" style="display:none">
+  <div class="my-modal-box my-modal-lg">
+    <div class="my-modal-head">
+      <b>待审核管理（管理员）</b>
+      <button type="button" class="my-modal-close" onclick="hideAdmin()">×</button>
+    </div>
+    <div class="my-modal-body">
+      <div class="mb-2 d-flex gap-2">
+        <input id="admin-token" class="form-control" type="password" placeholder="管理员口令" style="max-width:220px">
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadPending()">刷新列表</button>
+      </div>
+      <div id="admin-list" class="small"></div>
+    </div>
+    <div class="my-modal-foot">
+      <button type="button" class="btn btn-secondary btn-sm" onclick="hideAdmin()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FLOW_ZH = {
+  direct_password: "有口令框", identifier_then_password: "先账号后口令框",
+  verification_then_password: "先验证后口令框", otp_only: "仅验证码",
+  email_only: "仅邮箱", multiple_methods: "多方式并存",
+  sso_only: "仅第三方", human_blocked: "需人工验证",
+  no_web_signup: "无注册界面", unknown: "未确认", error: "异常"
+};
+let allSites = [];
+let currentFilter = 'all';
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[ch]);
+}
+
+function fmtTime(t) {
+  if (!t) return '—';
+  return String(t).slice(0, 10);
+}
+const CN_NUM = ['一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+function methodsHtml(list) {
+  if (!list || !list.length) return '<span class="text-muted">—</span>';
+  return list.map((m, i) => {
+    const num = CN_NUM[i] || (i + 1);
+    return `<div class="small mb-1"><b>方法${num}：</b>${esc(m.name_zh || m.method)}</div>`;
+  }).join('');
+}
+function reportTableHtml(login, signup, version) {
+  const l = login || {};
+  const s = signup || {};
+  const only = !login && signup ? 'signup' : login && !signup ? 'login' : 'both';
+  const tds = (fn) => only === 'login'
+    ? `<td>${fn(l)}</td>`
+    : only === 'signup'
+      ? `<td>${fn(s)}</td>`
+      : `<td>${fn(l)}</td><td>${fn(s)}</td>`;
+  const badgeOf = (e) => badge((e && e.flow_type) || 'unknown');
+  return `<table class="table table-sm table-bordered align-middle">
+    <thead><tr><th style="width:80px">维度</th>${only === 'signup' ? '<th>注册（程序）</th>' : '<th>登录（程序）</th>'}${only === 'both' ? '<th>注册（程序）</th>' : ''}</tr></thead>
+    <tbody>
+      <tr><td>类型</td>${tds(badgeOf)}</tr>
+      <tr><td>方法清单</td>${tds((e) => methodsHtml((e || {}).methods))}</tr>
+      <tr><td>口令政策</td>${tds((e) => policyText((e || {}).policy))}</tr>
+      <tr><td>测量时间</td>${tds((e) => fmtTime((e || {}).measured_at))}</tr>
+      <tr><td>程序版本</td><td colspan="${only === 'both' ? 2 : 1}">${version || '?'}</td></tr>
+    </tbody>
+  </table>`;
+}
+function policyTestTableHtml(login, signup, version) {
+  const l = login || {};
+  const s = signup || {};
+  // 是否实测到口令政策：入库时 pwd_policy 只在 inline/full 下非空
+  const hasPwd = (e) => e && e.pwd_policy && typeof e.pwd_policy === 'object'
+    && Object.keys(e.pwd_policy).length;
+  const measuredLogin = hasPwd(l);
+  const measuredSignup = hasPwd(s);
+  const measured = measuredLogin || measuredSignup;
+  const versionText = version || '?';
+  if (measured) {
+    // 实测到口令政策：只展示真实测得的数据，不加登录/注册分类
+    const e = measuredSignup ? s : l;
+    const method = (e && e.pwd_method) || '';
+    const typeCell = method === 'inline' ? 'inline'
+      : method === 'full' ? 'full' : '—';
+    return `<table class="table table-sm table-bordered align-middle">
+      <thead><tr><th colspan="2" class="text-center">密码政策测试</th></tr></thead>
+      <tbody>
+        <tr><td style="width:90px">类型</td><td>${typeCell}</td></tr>
+        <tr><td>方法清单</td><td>进行密码政策测试</td></tr>
+        <tr><td>口令政策</td><td>${measuredPolicyHtml(e.pwd_policy, method)}</td></tr>
+        <tr><td>测量时间</td><td>${fmtTime(e.measured_at)}</td></tr>
+        <tr><td>程序版本</td><td>${versionText}</td></tr>
+      </tbody>
+    </table>`;
+  }
+  // 未实测（无口令框/测试失败）→ 注册+分类，三列：条目 + 登录 + 注册
+  const tds = (fn) => `<td>${fn(l)}</td><td>${fn(s)}</td>`;
+  const badgeOf = (e) => badge((e && e.flow_type) || 'unknown');
+  return `<table class="table table-sm table-bordered align-middle">
+    <thead><tr><th colspan="3" class="text-center">注册与分类</th></tr></thead>
+    <thead><tr><th style="width:90px">条目</th><th>登录（程序）</th><th>注册（程序）</th></tr></thead>
+    <tbody>
+      <tr><td>类型</td>${tds(badgeOf)}</tr>
+      <tr><td>方法清单</td>${tds((e) => methodsHtml((e || {}).methods))}</tr>
+      <tr><td>口令政策</td>${tds(() => '<span class="text-muted">—</span>')}</tr>
+      <tr><td>测量时间</td>${tds((e) => fmtTime((e || {}).measured_at))}</tr>
+      <tr><td>程序版本</td><td colspan="2">${versionText}</td></tr>
+    </tbody>
+  </table>`;
+}
+function badge(flow) {
+  return `<span class="flow-badge b-${flow || 'unknown'}">${FLOW_ZH[flow] || '未确认'}</span>`;
+}
+function matchBadge(status) {
+  return status === "manual_verified"
+    ? '<span class="match-badge badge verified">已人工核验</span>'
+    : '<span class="match-badge badge pending">待人工复核</span>';
+}
+const PWD_TEST_ZH = { inline: 'inline', full: 'full', none: 'none' };
+function pwdBadge(value) {
+  if (!value) return '';
+  const cls = value === 'inline' ? 'badge-ok'
+    : value === 'full' ? 'badge-warn' : 'badge-wait';
+  return `<span class="side-badge ${cls}">口令${PWD_TEST_ZH[value] || value}</span>`;
+}
+function siteCard(s) {
+  const kw = (s.keywords || []).filter(k => k !== s.hostname).slice(0, 2).join(' / ');
+  const sideBadge = (label, status) => {
+    const config = status === 'match' ? ['识别正确', 'badge-ok']
+      : status === 'mismatch' ? ['识别错误', 'badge-bad']
+      : status === 'pending' ? ['待核验', 'badge-wait']
+      : ['证据不足', 'badge-wait'];
+    return `<span class="side-badge ${config[1]}">${label}${config[0]}</span>`;
+  };
+  const pwd = (s.manual && s.manual.pwd_testability) || {};
+  return `
+  <div class="col-md-6 col-lg-4">
+    <div class="card h-100 p-3">
+      <div class="d-flex justify-content-between align-items-start">
+        <a href="#" class="text-decoration-none fw-bold site-link site-title" data-host="${esc(s.hostname)}">${esc(s.hostname)}</a>
+        ${matchBadge(s.match_status)}
+      </div>
+      <div class="small text-muted">${esc(kw)}</div>
+      <div class="mt-2 small">
+        <div>登录 ${badge(s.login.flow_type)} ${sideBadge('登录', s.login_match)}</div>
+        <div class="mt-1">注册 ${badge(s.signup.flow_type)} ${sideBadge('注册', s.signup_match)}</div>
+      </div>
+      <div class="mt-2">
+        <button class="btn btn-sm btn-outline-secondary detail-btn" data-host="${esc(s.hostname)}">详情</button>
+        <button class="btn btn-sm btn-outline-primary review-btn" data-host="${esc(s.hostname)}">提交人工观察</button>
+      </div>
+    </div>
+  </div>`;
+}
+function renderSites() {
+  let list = allSites;
+  if (currentFilter === 'verified') list = allSites.filter(s => s.match_status === 'manual_verified');
+  if (currentFilter === 'pending') list = allSites.filter(s => s.match_status !== 'manual_verified');
+  // 登录/注册两侧合并判定：任一侧错误即不一致；有正确侧且无错误侧即基本正确。
+  if (currentFilter === 'match') list = allSites.filter(s =>
+    (s.login_match === 'match' || s.signup_match === 'match') &&
+    s.login_match !== 'mismatch' && s.signup_match !== 'mismatch');
+  if (currentFilter === 'mismatch') list = allSites.filter(s =>
+    s.login_match === 'mismatch' || s.signup_match === 'mismatch');
+  if (currentFilter === 'incprog') list = allSites.filter(s =>
+    s.login_match === 'inconclusive_program' || s.signup_match === 'inconclusive_program');
+  if (currentFilter === 'incmanual') list = allSites.filter(s =>
+    s.login_match === 'inconclusive_manual' || s.signup_match === 'inconclusive_manual');
+  document.getElementById('list-count').textContent = list.length;
+  const el = document.getElementById('site-list');
+  el.innerHTML = list.length
+    ? list.map(siteCard).join('')
+    : '<div class="text-muted">无匹配站点</div>';
+}
+async function loadStats() {
+  const r = await fetch('/api/stats');
+  const d = await r.json();
+  document.getElementById('stat-total').textContent = d.total_sites;
+  document.getElementById('stat-verified').textContent = d.manual_verified;
+  if (d.program_accuracy) {
+    document.getElementById('stat-accuracy').textContent =
+      d.program_accuracy.rate + '%（' + d.program_accuracy.match + '/' + d.program_accuracy.total + '）';
+    document.getElementById('stat-coverage').textContent =
+      d.program_accuracy.coverage_rate + '%（可判定 ' + d.program_accuracy.evaluated + '/' + d.program_accuracy.verified + '）';
+  }
+  if (d.accuracy && d.accuracy.login) {
+    const login = d.accuracy.login;
+    document.getElementById('stat-login-accuracy').textContent =
+      login.rate + '%（' + login.match + '/' + login.evaluated + '）';
+    document.getElementById('stat-login-coverage').textContent =
+      login.coverage_rate + '%（可判定 ' + login.evaluated + '/' + login.verified + '）';
+  }
+  if (d.method_coverage) {
+    const mc = d.method_coverage;
+    const fmt = (x) => x.rate == null ? '—' : x.rate + '%（' + x.found + '/' + x.total + '）';
+    document.getElementById('stat-login-mc').textContent = fmt(mc.login);
+    document.getElementById('stat-signup-mc').textContent = fmt(mc.signup);
+  }
+  const pend = document.getElementById('stat-pending');
+  const adminBtn = document.getElementById('admin-btn');
+  if (d.pending_reviews > 0) {
+    adminBtn.className = 'btn btn-sm btn-danger ms-2';
+    adminBtn.textContent = '待审核管理（' + d.pending_reviews + '）';
+    pend.innerHTML = '<span class="text-danger small">有 ' + d.pending_reviews + ' 份人工提交待审核</span>';
+  } else {
+    adminBtn.className = 'btn btn-sm btn-outline-secondary ms-2';
+    adminBtn.textContent = '待审核管理';
+    pend.innerHTML = '';
+  }
+}
+async function search(q) {
+  const r = await fetch('/api/sites?q=' + encodeURIComponent(q) + '&limit=1000');
+  const d = await r.json();
+  allSites = d.sites;
+  renderSites();
+}
+document.getElementById('search-btn').addEventListener('click', () =>
+  search(document.getElementById('search-input').value.trim()));
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') search(e.target.value.trim());
+});
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.f;
+    renderSites();
+  });
+});
+
+function showDetailModal() { document.getElementById('detailModal').style.display = 'flex'; }
+function hideDetail() { document.getElementById('detailModal').style.display = 'none'; }
+
+// 待审核管理（管理员）
+function showAdminModal() {
+  document.getElementById('adminModal').style.display = 'flex';
+  loadPending();
+}
+function hideAdmin() { document.getElementById('adminModal').style.display = 'none'; }
+async function loadPending() {
+  // 2026-08-16：待审核列表所有人可见（通过/删除仍需管理员口令）
+  const box = document.getElementById('admin-list');
+  box.innerHTML = '<div class="text-muted">加载中…</div>';
+  const r = await fetch('/api/reviews/pending');
+  const d = await r.json();
+  if (!r.ok) { box.innerHTML = `<div class="alert alert-warning py-2">${esc(d.detail || '加载失败')}</div>`; return; }
+  if (!d.total) { box.innerHTML = '<div class="text-muted">暂无待审核提交</div>'; return; }
+  box.innerHTML = `
+    <div class="mb-2">
+      <button class="btn btn-sm btn-primary" onclick="batchApprove()">批量通过选中</button>
+      <span class="text-muted small">勾选后点击；通过需在下方输入管理员口令</span>
+    </div>
+    ${d.reviews.map(rev => `
+    <div class="border rounded p-2 mb-2">
+      <div class="d-flex align-items-start">
+        <input type="checkbox" class="form-check-input me-2 mt-1 batch-check" value="${rev.id}">
+        <div>
+          <b>${esc(rev.hostname)}</b>
+          ${rev.review_type === 'feedback'
+            ? '<span class="badge text-bg-warning">识别反馈</span>'
+            : '<span class="badge text-bg-info">人工观察</span>'}
+          <span class="text-muted small">提交人：${esc(rev.submitter || '匿名')} ${esc((rev.submitted_at || '').slice(0, 16).replace('T', ' '))}</span>
+        </div>
+      </div>
+      ${rev.login ? `<div class="small mt-1">登录：${esc(rev.login)}</div>` : ''}
+      ${rev.signup ? `<div class="small">注册：${esc(rev.signup)}</div>` : ''}
+      ${rev.note ? `<div class="small text-muted">${esc(rev.note)}</div>` : ''}
+      <div class="mt-1 ms-4">
+        <button class="btn btn-sm btn-success" onclick="approveReview(${rev.id})">${rev.review_type === 'feedback' ? '已处理' : '通过'}</button>
+        <button class="btn btn-sm btn-outline-danger" onclick="denyReview(${rev.id})">删除</button>
+      </div>
+    </div>`).join('')}`;
+}
+function batchApprove() {
+  const token = document.getElementById('admin-token').value;
+  if (!token) { alert('请先输入管理员口令'); return; }
+  const ids = [...document.querySelectorAll('.batch-check:checked')].map(el => parseInt(el.value));
+  if (!ids.length) { alert('请先勾选要通过的记录'); return; }
+  fetch('/api/reviews/batch-approve', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Admin-Token': token },
+    body: JSON.stringify({ ids })
+  }).then(r => r.json()).then(d => {
+    if (!d.ok) { alert(d.detail || '批量通过失败'); return; }
+    alert(`已通过 ${d.approved} 条，失败 ${d.failed} 条`);
+    loadPending(); loadStats();
+    search(document.getElementById('search-input').value);
+  });
+}
+async function approveReview(id) {
+  const token = document.getElementById('admin-token').value;
+  const r = await fetch('/api/reviews/' + id + '/approve', {
+    method: 'POST', headers: { 'X-Admin-Token': token }
+  });
+  const d = await r.json();
+  if (!r.ok) { alert(d.detail || '审核失败'); return; }
+  alert(d.message || '已通过');
+  await Promise.all([loadPending(), loadStats(),
+    search(document.getElementById('search-input').value)]);
+}
+async function denyReview(id) {
+  const token = document.getElementById('admin-token').value;
+  const r = await fetch('/api/reviews/' + id, {
+    method: 'DELETE', headers: { 'X-Admin-Token': token }
+  });
+  if (!r.ok) { const d = await r.json(); alert(d.detail || '删除失败'); return; }
+  loadPending();
+  loadStats();
+}
+function showReviewModal() { document.getElementById('reviewModal').style.display = 'flex'; }
+function hideReview() { document.getElementById('reviewModal').style.display = 'none'; }
+// ---- 结构化方法填词（v4.2：代替自由文本，勾选要素自动 + 连接） ----
+function methodElements(prefix) {
+  // 登录侧勾"无登录界面"，注册侧勾"无注册界面"（同一 no_web 语义）
+  const noUiLabel = prefix.indexOf('login') >= 0 ? '无登录界面' : '无注册界面';
+  return [
+    ['phone', '手机号'], ['email', '邮箱'], ['account', '账号'],
+    ['password', '口令'], ['code', '验证码'], ['captcha', '人机验证'],
+    ['scan', '扫码'], ['sso', '第三方'], ['tos', '协议'], ['no_web', noUiLabel]
+  ];
+}
+function methodRowHtml(prefix, index) {
+  const boxes = methodElements(prefix).map(([val, label]) =>
+    `<label class="me-2"><input type="checkbox" class="form-check-input me-1 method-el" data-el="${val}" onchange="updateMethodPreview('${prefix}')">${label}</label>`).join('');
+  return `<div class="border rounded p-2 mb-1 method-row" data-prefix="${prefix}">
+    <b>方法${['一','二','三','四','五','六','七','八','九','十'][index] || (index + 1)}：</b>${boxes}
+    <span class="method-preview text-success"></span>
+  </div>`;
+}
+function addMethodRow(prefix) {
+  const box = document.getElementById(prefix + '-methods');
+  const rows = box.querySelectorAll('.method-row');
+  box.insertAdjacentHTML('beforeend', methodRowHtml(prefix, rows.length));
+}
+function updateMethodPreview(prefix) {
+  const box = document.getElementById(prefix + '-methods');
+  const elements = methodElements(prefix);
+  box.querySelectorAll('.method-row').forEach(row => {
+    const labels = [...row.querySelectorAll('.method-el:checked')]
+      .map(el => elements.find(([v]) => v === el.dataset.el)[1]);
+    row.querySelector('.method-preview').textContent =
+      labels.length ? '＝ ' + labels.join('+') : '';
+  });
+}
+function initMethodRows(prefix) {
+  const box = document.getElementById(prefix + '-methods');
+  box.innerHTML = methodRowHtml(prefix, 0);
+}
+function readMethodRows(prefix) {
+  const box = document.getElementById(prefix + '-methods');
+  const lines = [];
+  const traits = {};
+  box.querySelectorAll('.method-row').forEach(row => {
+    const labels = [...row.querySelectorAll('.method-el:checked')]
+      .map(el => methodElements(prefix).find(([v]) => v === el.dataset.el)[1]);
+    if (labels.length) lines.push(labels.join('+'));
+    [...row.querySelectorAll('.method-el:checked')].forEach(el => {
+      const v = el.dataset.el;
+      if (v === 'password') traits.password = true;
+      if (v === 'code') traits.otp = true;
+      if (v === 'captcha') traits.captcha = true;
+      if (v === 'scan') traits.scan = true;
+      if (v === 'sso') traits.sso = true;
+      if (v === 'tos') traits.tos = true;
+      if (v === 'no_web') traits.no_web = true;
+    });
+  });
+  return { text: lines.join('\n'), traits: traits };
+}
+const BLOCKER_ZH = {
+  sms_code: "短信验证码", email_code: "邮箱验证码",
+  verification_code: "一次性验证码", scan: "扫码",
+  captcha: "图片/人机验证", slide: "滑块验证",
+  app_confirm: "App 确认", tos: "用户协议确认"
+};
+const STATUS_ZH = {
+  measured: "测量完成", blocked_or_partial: "测量被验证码/扫码中断",
+  unknown: "未测出结果", not_reachable: "无法到达",
+  classified: "仅完成分类", no_admissible: "无可接受口令"
+};
+const PWD_STATUS_ZH = {
+  not_determined: "密码框情况未确认",
+  password_observed: "有密码框",
+  no_password_in_safely_reachable_flow: "没看到密码框（验证码之后可能有，未越过验证）"
+};
+function policyText(policy) {
+  if (!policy || !Object.keys(policy).length) return '未测量';
+  const auth = policy.authentication || {};
+  const parts = [];
+  if (auth.password_observed) parts.push('有密码框');
+  else if (auth.password_status && PWD_STATUS_ZH[auth.password_status])
+    parts.push('密码框：' + PWD_STATUS_ZH[auth.password_status]);
+  if (auth.verification_observed) parts.push('存在验证环节');
+  if (auth.blocking_factors && auth.blocking_factors.length)
+    parts.push('被' + auth.blocking_factors.map(b => BLOCKER_ZH[b] || b).join('、') + '拦住');
+  const meas = policy.measurement || {};
+  if (meas.status) parts.push('测量情况：' + (STATUS_ZH[meas.status] || meas.status));
+  return parts.join('；') || '未测量';
+}
+const ACTION_ZH = {
+  entry_click: "点击了登录/注册入口", tab_click: "切换了页签", next: "点击了下一步",
+  none: "", auth_mode_click: "切换了登录方式", hover_click: "展开了菜单",
+  signup_mode_reveal: "展开了其他方式", agree_click: "点击同意协议", send_code: "出现发送验证码",
+  entry_retry: "重试点击入口", entry_href_nav: "跳转到入口链接", hover_clicked_and_changed: "悬停展开菜单"
+};
+const NOTE_ZH = {
+  no_sms_tab: "页面没有找到短信登录入口，程序在此停止",
+  no_password_tab: "页面没有找到密码登录入口，程序在此停止",
+  no_register_tab: "页面没有找到注册入口，程序在此停止",
+  no_entry_button: "页面没有找到登录/注册按钮，程序在此停止",
+  entry_clicked_no_change: "点击入口后页面没有变化",
+   no_signup_entry: "没有发现注册入口",
+   human_blocked: "遇到人工验证，程序在此停止",
+   verification_required: "需要验证码才能继续，程序在此停止",
+   no_safe_action: "没有可安全执行的操作",
+   unrecognized_page: "页面无法识别，程序在此停止",
+   no_safe_button: "没有可安全点击的按钮"
+};
+async function showHistory(host) {
+  const box = document.getElementById('history-box');
+  box.innerHTML = '<div class="text-muted small">加载中…</div>';
+  const r = await fetch('/api/sites/' + encodeURIComponent(host) + '/history');
+  const d = await r.json();
+  if (!d.total) { box.innerHTML = '<div class="text-muted small">暂无历史版本（当前是最新测量）</div>'; return; }
+  const rows = d.history.map(h => `
+    <div class="step-row">
+      <b>${h.version}</b>（${h.entry_kind === 'signup' ? '注册' : '登录'}）
+      ${badge(h.flow_type)} <span class="text-muted">${h.route || ''}</span>
+      <div class="text-muted small">测量于 ${fmtTime(h.measured_at)}</div>
+    </div>`).join('');
+  box.innerHTML = `<b>历史程序结果：</b><div class="mt-1">${rows}</div>`;
+}
+async function showDetail(host) {
+  const r = await fetch('/api/sites/' + encodeURIComponent(host));
+  if (!r.ok) { alert('未找到站点'); return; }
+  const s = await r.json();
+  document.getElementById('modal-title').innerHTML =
+    `${esc(s.hostname)} ${matchBadge(s.match_status)}`;
+  const compRow = (label, status, comparison, flowZh, methods, manualText, manualStructured, pwdTest) => {
+    if (!comparison || status === 'pending') return '';
+    const statusZh = status === 'match' ? '识别正确'
+      : status === 'mismatch' ? '识别错误'
+      : status === 'inconclusive_program' ? '程序证据不足'
+      : '人工证据不足';
+    const cls = status === 'match' ? 'text-success'
+      : status === 'mismatch' ? 'text-danger' : 'text-secondary';
+    const progMethods = (methods || []).map(m => m.name_zh || m.method).join('、') || '—';
+    const MANUAL_TRAIT_ZH = { password: '口令', otp: '验证码', scan: '扫码',
+      captcha: '人机验证', tos: '协议', sso: '第三方', no_web: '无网页入口' };
+    const manualTraits = Object.keys(manualStructured || {})
+      .filter(k => manualStructured[k] === true && MANUAL_TRAIT_ZH[k])
+      .map(k => MANUAL_TRAIT_ZH[k]).join('、');
+    const conclusion = status === 'match' ? '程序与人工结论一致'
+      : status === 'mismatch' ? '程序与人工结论不一致'
+      : '证据不足，暂不判定';
+    return `<div class="mt-3">
+      <b>${label} · <span class="${cls}">${statusZh}</span></b>
+      <table class="table table-sm table-bordered align-middle mt-1 mb-0">
+        <thead><tr><th style="width:70px"></th><th>程序</th><th>人工</th></tr></thead>
+        <tbody>
+          <tr><td>方法</td><td>${esc(progMethods)}</td><td>${esc((manualText || '').replace(/\n/g, '；') || manualTraits || '—')}</td></tr>
+          <tr><td>口令政策</td><td>未测试</td><td>${pwdTest ? pwdBadge(pwdTest) : '<span class="text-muted">—</span>'}</td></tr>
+          <tr><td>结论</td><td colspan="2" class="${cls}">${conclusion}</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  };
+  const pwd = (s.manual && s.manual.pwd_testability) || {};
+  const loginWithPwd = Object.assign({}, s.login, { manual_pwd: pwd.login });
+  const signupWithPwd = Object.assign({}, s.signup, { manual_pwd: pwd.signup });
+  // 口令政策人工列：优先侧判定（旧数据），否则用整站总判定
+  const pwdSide = (side) => pwd[side] || pwd.overall || '';
+  document.getElementById('modal-body').innerHTML = `
+    ${policyTestTableHtml(loginWithPwd, signupWithPwd, s.version)}
+    ${measuredPwdHtml(s.login.pwd_policy, s.signup.pwd_policy)}
+    ${securityObservationsHtml(s.login.security_observations, '登录')}
+    ${securityObservationsHtml(s.signup.security_observations, '注册')}
+    <div class="alert ${s.manual.verified ? 'alert-success' : 'alert-warning'} py-2">
+      <b>人工复核：</b>${s.manual.verified ? '' : '（待人工）'}
+      <span id="review-count-badge" class="small"></span>
+      ${compRow('登录', s.login_match, s.login_comparison, s.login.flow_zh,
+        s.login.methods, s.manual.login,
+        (s.manual.structured || {}).login, pwdSide('login'))}
+      ${compRow('注册', s.signup_match, s.signup_comparison || s.comparison, s.signup.flow_zh,
+        s.signup.methods, s.manual.signup,
+        (s.manual.structured || {}).signup, pwdSide('signup'))}
+      ${s.manual.note ? `<div class="text-muted small mt-1">备注：${esc(s.manual.note)}</div>` : ''}
+    </div>
+    <button class="btn btn-sm btn-outline-secondary" id="detail-history-btn">查看历史程序结果</button>
+    <button class="btn btn-sm btn-outline-warning" id="detail-feedback-btn">反馈识别结果</button>
+    <div id="history-box" class="mt-2"></div>`;
+  showDetailModal();
+  document.getElementById('detail-history-btn').onclick = () => showHistory(s.hostname);
+  document.getElementById('detail-feedback-btn').onclick = () => showFeedback(s.hostname);
+  // 查询该站待审核提交数，显示在人工复核区
+  fetch('/api/reviews/pending?hostname=' + encodeURIComponent(host))
+    .then(r => r.json())
+    .then(d => {
+      const badge = document.getElementById('review-count-badge');
+      if (badge && d.total > 0)
+        badge.innerHTML = `（<b>${d.total}</b> 份待审核）`;
+    })
+    .catch(() => {});
+}
+document.addEventListener('click', e => {
+  const link = e.target.closest('.site-link, .detail-btn');
+  if (link) { e.preventDefault(); showDetail(link.dataset.host); }
+});
+
+// 提交人工观察
+let reviewHost = '';
+let feedbackHost = '';
+function showFeedback(host) {
+  feedbackHost = host;
+  document.getElementById('feedback-host').textContent = host;
+  document.getElementById('feedback-type').value = 'wrong';
+  document.getElementById('feedback-note').value = '';
+  document.getElementById('feedback-submitter').value = '';
+  document.getElementById('feedbackModal').style.display = 'flex';
+}
+function hideFeedback() { document.getElementById('feedbackModal').style.display = 'none'; }
+document.getElementById('feedback-submit-btn').addEventListener('click', async () => {
+  const note = document.getElementById('feedback-note').value.trim();
+  const type = document.getElementById('feedback-type').value;
+  if (!note) { alert('请填写说明'); return; }
+  const typeMap = { wrong: '程序识别有误', correct_but_marked_wrong: '实际一致但被标不一致', other: '其他' };
+  const payload = {
+    hostname: feedbackHost,
+    login: '', signup: '',
+    note: '[' + typeMap[type] + '] ' + note,
+    submitter: document.getElementById('feedback-submitter').value,
+    review_type: 'feedback'
+  };
+  const r = await fetch('/api/reviews', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const d = await r.json();
+  alert(d.message || '已提交');
+  hideFeedback();
+  loadStats();
+});
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.review-btn');
+  if (btn) {
+    reviewHost = btn.dataset.host;
+    document.getElementById('review-host').textContent = reviewHost;
+    initMethodRows('review-login');
+    initMethodRows('review-signup');
+    {
+      const el = document.querySelector('input[name="overall-pwd"]:checked');
+      if (el) el.checked = false;
+    }
+    document.getElementById('review-note').value = '';
+    document.getElementById('review-submitter').value = '';
+    // 查询该站已有的待审核提交，防止组员重复提交
+    const tip = document.getElementById('review-pending-tip');
+    tip.innerHTML = '<div class="text-muted small">正在查询待审核状态…</div>';
+    fetch('/api/reviews/pending?hostname=' + encodeURIComponent(reviewHost))
+      .then(r => r.json())
+      .then(d => {
+        if (d.total > 0) {
+          tip.innerHTML = `<div class="alert alert-warning py-2 small">
+            该站已有 <b>${d.total}</b> 份待审核提交，
+            请先确认内容是否已有，避免重复提交。</div>`;
+        } else {
+          tip.innerHTML = `<div class="alert alert-success py-2 small">该站暂无待审核提交，可以填写。</div>`;
+        }
+      })
+      .catch(() => { tip.innerHTML = ''; });
+    showReviewModal();
+  }
+});
+document.getElementById('review-submit-btn').addEventListener('click', async () => {
+  const login = readMethodRows('review-login');
+  const signup = readMethodRows('review-signup');
+  const radioVal = (name) => {
+    const el = document.querySelector('input[name="' + name + '"]:checked');
+    return el ? el.value : '';
+  };
+  const payload = {
+    hostname: reviewHost,
+    login: login.text,
+    signup: signup.text,
+    note: document.getElementById('review-note').value,
+    submitter: document.getElementById('review-submitter').value,
+    structured: {
+      login: login.traits,
+      signup: signup.traits
+    },
+    pwd_overall: radioVal('overall-pwd')
+  };
+  if (!payload.login && !payload.signup) { alert('请至少填写登录或注册方法'); return; }
+  const r = await fetch('/api/reviews', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const d = await r.json();
+  alert(d.message || '已提交');
+  hideReview();
+});
+
+// 现场分类结果辅助（异步任务模式；extraLines 供任务结果弹窗复用）
+function extraLines(d, kindLabel) {
+  const srcTag = d && d.from_database
+    ? '（数据库已有该站结果）'
+    : '（现场分类）';
+  const extra = [
+    d && d.confidence ? '置信度 ' + d.confidence : '',
+    d && d.route ? '路线：' + d.route : '',
+    d && d.stop_reason ? '停止原因：' + d.stop_reason : '',
+    d && d.final_url ? '最终页：' + d.final_url : '',
+  ].filter(Boolean).map(t => `<div class="small">${esc(t)}</div>`).join('');
+  return `<div class="small text-muted mt-1">${kindLabel}${srcTag}${extra ? '<br>' + extra : ''}</div>`;
+}
+function securityObservationsHtml(bundle, label = '') {
+  const analyzers = (bundle && bundle.analyzers) || {};
+  const assessment = (bundle && bundle.assessment) || {};
+  const maturity = (bundle && bundle.maturity) || {};
+  if (!Object.keys(analyzers).length && !Object.keys(assessment).length
+      && !Object.keys(maturity).length) return '';
+  const lines = [];
+  const oauth = analyzers.oauth_oidc || {};
+  if (oauth.status === 'observed') {
+    const state = oauth.state && oauth.state.non_empty_observed ? 'state参数' : '未观察到非空state';
+    const pkce = oauth.pkce && oauth.pkce.code_challenge_observed
+      ? `PKCE${(oauth.pkce.methods || []).length ? ' ' + oauth.pkce.methods.join('/') : ''}` : '未观察到PKCE';
+    lines.push(`OAuth/OIDC：${oauth.authorization_endpoint_count || 1} 个授权端点，${state}，${pkce}`);
+  }
+  const jwt = analyzers.jwt || {};
+  if (jwt.status === 'observed') {
+    lines.push(`JWT：观察到 ${jwt.token_count || 0} 个脱敏元数据，算法 ${(jwt.algorithms || []).join('/') || '未知'}，exp${jwt.expiration_claim_present_for_all ? '均存在' : '并非全部存在'}`);
+  }
+  const webauthn = analyzers.webauthn || {};
+  if (webauthn.site_capability_observed) {
+    lines.push(`WebAuthn/Passkey：页面能力已观察（${webauthn.confidence || 'unknown'} 置信度）`);
+  }
+  const mfa = analyzers.mfa || {};
+  const FACTOR_ZH = { password: '口令', sms_otp: '短信验证码', email_otp: '邮箱验证码',
+    qr_or_app_confirmation: '扫码/App确认', federated_identity: '联合身份',
+    webauthn_or_passkey: 'WebAuthn/Passkey' };
+  if ((mfa.factor_capabilities || []).length) {
+    const factors = mfa.factor_capabilities.map(item => FACTOR_ZH[item] || item).join('、');
+    lines.push(`认证能力：${factors}；MFA是否强制：未确定`);
+  }
+  const recovery = analyzers.account_recovery || {};
+  if (recovery.status === 'observed') {
+    const RECOVERY_CHANNEL_ZH = {
+      email: '邮箱', sms_or_phone: '短信/手机', support_or_manual: '客服/人工'
+    };
+    const channels = (recovery.channel_hints || [])
+      .map(item => RECOVERY_CHANNEL_ZH[item] || item);
+    const targetCount = (recovery.same_origin_target_count || 0)
+      + (recovery.cross_origin_target_count || 0);
+    lines.push(`账户恢复：观察到 ${recovery.recovery_entry_count || 0} 个入口`
+      + `${channels.length ? '，渠道提示 ' + channels.join('、') : ''}`
+      + `${targetCount ? '，含目标元数据 ' + targetCount + ' 个' : ''}`
+      + `${recovery.http_target_count ? '，HTTP目标需复核' : ''}`
+      + '；未进入恢复流程');
+  }
+  const maturityOverall = maturity.overall || {};
+  const maturityLevels = Object.fromEntries(
+    (maturity.levels || []).map(item => [item.level, item.name]));
+  const CPAM_ZH = {
+    no_password_protection: '无口令保护',
+    basic_password_authentication: '基础口令认证',
+    secure_password_storage: '安全口令存储',
+    multi_factor_authentication: '多因素认证',
+    risk_based_authentication: '风险认证',
+    public_key_authentication: '公钥认证',
+    zero_trust_authentication: '零信任认证'
+  };
+  const supportedLevel = maturityOverall.evidence_supported_level;
+  const highestCapability = maturityOverall.highest_observed_capability_level;
+  if (Number.isInteger(supportedLevel) || Number.isInteger(highestCapability)) {
+    const pieces = [];
+    if (Number.isInteger(supportedLevel)) {
+      pieces.push(`连续证据支持 Level ${supportedLevel}（${CPAM_ZH[maturityLevels[supportedLevel]] || '能力已观察'}）`);
+    }
+    if (Number.isInteger(highestCapability) && highestCapability !== supportedLevel) {
+      pieces.push(`另观察到 Level ${highestCapability} 方向能力（${CPAM_ZH[maturityLevels[highestCapability]] || '能力已观察'}）`);
+    }
+    lines.push(`CPAM：${pieces.join('；')}；非完整成熟度等级`);
+  }
+  const session = analyzers.session_cookies || {};
+  if (session.status === 'observed') {
+    const all = session.all_cookies || {};
+    const likely = session.session_like_cookies || {};
+    lines.push(`Cookie：共 ${all.count || 0} 个，疑似会话 Cookie ${likely.count || 0} 个（仅统计属性）`);
+  }
+  const transport = analyzers.transport_security || {};
+  if (transport.status === 'observed') {
+    const tls = transport.tls || {};
+    const redirects = transport.redirects || {};
+    const pieces = [transport.https_page_observed ? 'HTTPS' : (transport.final_page_scheme || '协议未知')];
+    if (tls.metadata_observed) pieces.push(tls.version || 'TLS版本未知');
+    if (transport.http_protocol && transport.http_protocol !== 'unknown') pieces.push(transport.http_protocol);
+    if (redirects.http_to_https_observed) pieces.push('观察到HTTP→HTTPS跳转');
+    if (tls.certificate_valid_to_utc) pieces.push('证书有效至 ' + tls.certificate_valid_to_utc.slice(0, 10));
+    lines.push(`传输安全：${pieces.join('，')}`);
+  }
+  const headers = analyzers.http_security_headers || {};
+  if (headers.status === 'observed') {
+    const csp = headers.content_security_policy || {};
+    const framing = headers.anti_framing || {};
+    const present = [];
+    if (headers.strict_transport_security && headers.strict_transport_security.present) present.push('HSTS');
+    if (csp.enforced_present) present.push('CSP');
+    if (headers.x_content_type_options_nosniff) present.push('nosniff');
+    if (framing.x_frame_options !== 'not_observed' || framing.csp_frame_ancestors) present.push('防嵌套策略');
+    if (headers.referrer_policy && headers.referrer_policy !== 'not_observed') present.push('Referrer-Policy');
+    if (headers.permissions_policy_present) present.push('Permissions-Policy');
+    lines.push(`安全响应头：${present.length ? present.join('、') : '未观察到所检查的安全响应头'}`);
+  }
+  const FINDING_ZH = {
+    unsigned_algorithm_observed: 'JWT使用none算法',
+    expiration_claim_missing_in_observed_token: '观察到的JWT并非全部含exp',
+    session_like_cookie_without_secure: '疑似会话Cookie缺少Secure',
+    session_like_cookie_without_http_only: '疑似会话Cookie缺少HttpOnly',
+    plaintext_final_page_observed: '最终页面仍使用HTTP',
+    https_to_http_downgrade_observed: '观察到HTTPS降级到HTTP',
+    legacy_tls_version_observed: '观察到旧版TLS',
+    certificate_expired: '证书已过期',
+    certificate_expires_within_30_days: '证书将在30天内到期',
+    certificate_name_mismatch: '证书名称与当前主机不匹配',
+    browser_reported_insecure_transport: '浏览器报告传输不安全',
+    hsts_not_observed: 'HTTPS响应未观察到HSTS',
+    content_security_policy_not_observed: '未观察到CSP',
+    csp_allows_unsafe_inline: 'CSP允许unsafe-inline',
+    csp_allows_unsafe_eval: 'CSP允许unsafe-eval',
+    anti_framing_policy_not_observed: '未观察到防嵌套策略',
+    nosniff_not_observed: '未观察到nosniff',
+    referrer_policy_not_observed: '未观察到Referrer-Policy',
+  };
+  const findings = [jwt, session, transport, headers]
+    .flatMap(item => item.findings || [])
+    .map(item => FINDING_ZH[item] || item);
+  if (findings.length) lines.push(`需复核：${findings.join('、')}`);
+  const dimensions = assessment.dimensions || {};
+  const overall = assessment.overall || {};
+  const DIMENSION_ZH = {
+    password_policy: '口令策略', authentication: '认证机制',
+    session_cookies: '会话 Cookie', transport_security: '传输安全',
+    http_security_headers: '安全响应头'
+  };
+  const POSTURE_ZH = { strong: '较强', moderate: '中等', weak: '需改进', unknown: '未知' };
+  const RISK_ZH = { high: '已观察到高风险项', medium: '已观察到中风险项',
+    review: '存在待复核项', none_observed: '已覆盖证据中未发现明显风险', unknown: '未知' };
+  const RECOMMENDATION_ZH = {
+    review_minimum_password_length: '复核并提高最小口令长度',
+    allow_longer_passwords: '允许使用更长口令',
+    consider_breached_password_screening: '考虑拦截已泄露口令',
+    verify_oauth_state_generation_manually: '人工验证 OAuth state 的动态生成与校验',
+    verify_pkce_for_oauth_code_flow_manually: '人工验证 OAuth 授权码流程的 PKCE',
+    mfa_enforcement_requires_authenticated_review: '登录后人工确认 MFA 是否强制',
+    authenticated_session_cookie_review_required: '登录后复核真实会话 Cookie',
+    verify_authenticated_session_cookie_attributes: '登录后复核会话 Cookie 属性',
+    set_secure_on_session_cookies: '为会话 Cookie 设置 Secure',
+    set_http_only_on_session_cookies: '为会话 Cookie 设置 HttpOnly',
+    serve_authentication_pages_over_https: '认证页面应仅通过 HTTPS 提供',
+    disable_legacy_tls_versions: '停用旧版 TLS',
+    renew_tls_certificate: '续期 TLS 证书',
+    fix_certificate_name_coverage: '修复证书主机名覆盖',
+    consider_hsts_for_https_authentication_pages: '为 HTTPS 认证页面评估启用 HSTS',
+    deploy_content_security_policy: '部署 Content-Security-Policy',
+    reduce_csp_unsafe_inline: '减少 CSP unsafe-inline',
+    remove_csp_unsafe_eval: '移除 CSP unsafe-eval',
+    deploy_anti_framing_policy: '部署防页面嵌套策略',
+    set_x_content_type_options_nosniff: '设置 X-Content-Type-Options: nosniff',
+    set_referrer_policy: '设置 Referrer-Policy'
+  };
+  let assessmentHtml = '';
+  if (Object.keys(dimensions).length) {
+    const rows = Object.entries(dimensions).map(([name, value]) => {
+      const score = value.score == null ? '—' : `${value.score}/100`;
+      const coverage = Number.isFinite(value.coverage_percent) ? `${value.coverage_percent}%` : '—';
+      return `<tr><td>${esc(DIMENSION_ZH[name] || name)}</td><td>${esc(score)}</td>` +
+        `<td>${esc(coverage)}</td><td>${esc(POSTURE_ZH[value.posture] || value.posture || '未知')}</td></tr>`;
+    }).join('');
+    const scoreText = overall.score == null ? '已知证据不足，暂不计算得分'
+      : `已知证据得分 ${overall.score}/100`;
+    const gradeText = overall.grade ? `等级 ${overall.grade}`
+      : `覆盖率未达到 ${overall.grade_minimum_coverage_percent || 70}%，暂不评级`;
+    const recommendations = [...new Set(Object.values(dimensions)
+      .flatMap(value => value.recommendations || []))]
+      .map(item => RECOMMENDATION_ZH[item] || item).slice(0, 5);
+    assessmentHtml = `<div class="mt-2">
+      <div class="small"><b>${esc(scoreText)}</b>；证据覆盖率 ${esc(overall.coverage_percent == null ? '—' : overall.coverage_percent + '%')}；${esc(gradeText)}</div>
+      <div class="small">风险提示：${esc(RISK_ZH[overall.observed_risk_level] || '未知')}</div>
+      <table class="table table-sm table-bordered mt-1 mb-1">
+        <thead><tr><th>维度</th><th>已知证据得分</th><th>覆盖率</th><th>已知项表现</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${recommendations.length ? `<div class="small"><b>建议：</b>${recommendations.map(esc).join('；')}</div>` : ''}
+      <div class="small text-muted">分数只基于已观察证据，未知项不扣分；不同覆盖率的分数不可直接比较。</div>
+    </div>`;
+  }
+  if (!lines.length && !assessmentHtml) return '';
+  return `<div class="alert alert-light border py-2 mt-2 mb-2">
+    <div><b>${esc(label ? label + '安全能力被动观察' : '安全能力被动观察')}</b></div>
+    ${lines.map(line => `<div class="small">${esc(line)}</div>`).join('')}
+    ${assessmentHtml}
+    <div class="small text-muted">只读、认证前及现有导航证据；不额外请求网站。“未观察到”不等于“不支持”，也不代表已完成安全验证。</div>
+  </div>`;
+}
+const PERM_CHAR_ZH = { p_space: '空格', p_unicd: 'Unicode 字符', p_emoji: 'Emoji',
+  p_spn1: '@', p_spn2: '#', p_spn3: '!', p_spn4: '$' };
+const PERM_SEQ_ZH = { p_rep: '重复字符', p_seq: '连续字符', p_dict: '字典词' };
+function listTrueZh(dict, zhMap) {
+  return Object.keys(dict || {}).filter(k => dict[k] === true)
+    .map(k => zhMap[k] || k).join('、');
+}
+function adaptivePolicyHtml(policy) {
+  const a = (policy || {})._adaptive;
+  const c = (policy || {})._adaptive_composition;
+  const d = (policy || {})._adaptive_conditional;
+  if ((!a || !a.engine) && (!c || !c.engine) && (!d || !d.engine)) return '';
+  const boundary = (label, item) => {
+    item = item || {};
+    const value = item.value == null
+      ? (item.status === 'not_observed_within_range'
+          ? `搜索至 ${item.searched_to || '?'} 位仍未观察到上限` : '无法判断')
+      : `${item.value} 位`;
+    const confidence = Number.isFinite(Number(item.confidence))
+      ? `，置信度 ${Math.round(Number(item.confidence) * 100)}%` : '';
+    return `<div>${label}：${esc(value)}${confidence}</div>`;
+  };
+  const outcomeZh = { accepted: '接受', rejected: '拒绝',
+    inconclusive: '证据不足', not_constructible: '无法构造' };
+  const trace = ((a || {}).decision_trace || []).map(step => {
+    const bounds = (step.bounds_before || []).join('～');
+    return `<tr>
+      <td>${esc(step.phase || '')}</td><td>${esc(step.target_length)}</td>
+      <td>${esc(outcomeZh[step.outcome] || step.outcome || '')}</td>
+      <td>${esc(bounds)}</td><td>${esc(step.decision || '')}</td>
+    </tr>`;
+  }).join('');
+  const classZh = { lower: '小写字母', upper: '大写字母',
+    digit: '数字', symbol: '特殊符号' };
+  const classList = items => (items || []).map(name => classZh[name] || name).join('＋');
+  const compositionSummary = c && c.engine ? (() => {
+    const minimum = c.minimum_character_classes == null
+      ? '无法判断' : `至少 ${c.minimum_character_classes} 类`;
+    const required = (c.required_classes || []).length
+      ? classList(c.required_classes)
+      : (c.minimum_character_classes ? '无固定必需类（任意满足数量的组合均可）' : '无法判断');
+    const acceptedSets = (c.accepted_minimal_sets || [])
+      .map(items => classList(items)).join('；');
+    const minimums = Object.entries(c.class_minimums || {})
+      .filter(([, item]) => item && Number(item.value) > 0)
+      .map(([name, item]) => item.status === 'measured'
+        ? `${classZh[name] || name} ≥ ${item.value} 个`
+        : `${classZh[name] || name} 可确定下界 ${item.value} 个（精确值证据不足）`)
+      .join('；');
+    const statusZh = { measured: '已测量', partial: '部分测量',
+      inconclusive: '证据不足' };
+    const compositionTrace = (c.decision_trace || []).map(step => {
+      const target = step.target_classes
+        ? classList(step.target_classes)
+        : `${classZh[step.target_class] || step.target_class || ''}${step.target_count == null ? '' : ' = ' + step.target_count}`;
+      const profile = step.candidate || {};
+      const structure = profile.length == null ? ''
+        : `${profile.length} 位 / ${classList(profile.classes || [])}`;
+      return `<tr>
+        <td>${esc(step.phase || '')}</td><td>${esc(target)}</td>
+        <td>${esc(outcomeZh[step.outcome] || step.outcome || '')}</td>
+        <td>${esc(structure)}</td><td>${esc(step.decision || '')}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mt-2 pt-2 border-top">
+      <div class="small"><b>字符组成：</b>${esc(minimum)}；状态：${esc(statusZh[c.status] || c.status || '')}；
+        实际探测 ${esc(c.probes_used || 0)} 次</div>
+      <div class="small">固定必需类：${esc(required)}</div>
+      ${acceptedSets ? `<div class="small">已接受的最小组合：${esc(acceptedSets)}</div>` : ''}
+      ${minimums ? `<div class="small">各类最低数量：${esc(minimums)}</div>` : ''}
+      <div class="small text-muted">推断前提：固定长度下，增加字符类别不会使原本合规的口令失效；若页面行为不满足此前提，应结合决策路径人工复核。</div>
+      ${compositionTrace ? `<div class="table-responsive mt-2"><table class="table table-sm table-bordered mb-0">
+        <thead><tr><th>阶段</th><th>目标字符类/数量</th><th>结果</th><th>候选结构</th><th>下一步决策</th></tr></thead>
+        <tbody>${compositionTrace}</tbody></table></div>` : ''}
+    </div>`;
+  })() : '';
+  const conditionalSummary = d && d.engine && d.status !== 'not_applicable' ? (() => {
+    const statusZh = { detected: '检测到分段 OR 规则',
+      not_observed_within_range: '搜索范围内未观察到组成放宽',
+      inconclusive: '证据不足' };
+    const strict = d.strict_branch || {};
+    const relaxed = d.relaxed_branch || {};
+    const ruleText = d.status === 'detected'
+      ? `${strict.min_length} 位起需至少 ${strict.minimum_character_classes} 类；` +
+        `${relaxed.min_length} 位起，${classList(relaxed.accepted_character_classes)}单类/子集也可接受`
+      : (d.status === 'not_observed_within_range'
+          ? `搜索至 ${d.searched_to || '?'} 位，${classList(d.relaxed_subset)}仍未出现放宽`
+          : `条件阈值无法可靠判断：${d.stop_reason || 'unknown'}`);
+    const conditionalTrace = (d.decision_trace || []).map(step => {
+      const profile = step.candidate || {};
+      const structure = profile.length == null ? ''
+        : `${profile.length} 位 / ${classList(profile.classes || [])}`;
+      return `<tr>
+        <td>${esc(step.phase || '')}</td><td>${esc(step.target_length)}</td>
+        <td>${esc(classList(step.target_classes || []))}</td>
+        <td>${esc(outcomeZh[step.outcome] || step.outcome || '')}</td>
+        <td>${esc(structure)}</td><td>${esc(step.decision || '')}</td>
+      </tr>`;
+    }).join('');
+    return `<div class="mt-2 pt-2 border-top">
+      <div class="small"><b>长度×组成条件政策：</b>${esc(statusZh[d.status] || d.status || '')}；
+        实际探测 ${esc(d.probes_used || 0)} 次</div>
+      <div class="small">${esc(ruleText)}</div>
+      <div class="small text-muted">阈值接受结果使用第二个同结构候选复验；未观察到只代表当前搜索范围。</div>
+      ${conditionalTrace ? `<div class="table-responsive mt-2"><table class="table table-sm table-bordered mb-0">
+        <thead><tr><th>阶段</th><th>长度</th><th>放宽候选</th><th>结果</th><th>候选结构</th><th>下一步决策</th></tr></thead>
+        <tbody>${conditionalTrace}</tbody></table></div>` : ''}
+    </div>`;
+  })() : '';
+  const probeSummary = [
+    a && a.engine ? `长度 ${a.probes_used || 0} 次` : '',
+    c && c.engine ? `字符组成 ${c.probes_used || 0} 次` : '',
+    d && d.engine && d.probes_used ? `条件规则 ${d.probes_used} 次` : '',
+  ].filter(Boolean).join('，');
+  return `<details class="mt-2">
+    <summary><b>自适应探测证据</b>：${esc(probeSummary)}${a && a.engine
+      ? `，长度探测相比最坏线性扫描减少约 ${esc(a.probes_saved_vs_worst_case || 0)} 次` : ''}</summary>
+    <div class="border rounded p-2 mt-1 bg-white">
+      <div class="small">引擎：${esc([a && a.engine, c && c.engine,
+        d && d.status !== 'not_applicable' && d.engine].filter(Boolean).join(' + '))}；此决策证据不保存候选口令原文</div>
+      ${a && a.engine ? `<div class="small mt-1">${boundary('最小长度', a.minimum)}${boundary('最大长度', a.maximum)}</div>` : ''}
+      ${trace ? `<div class="table-responsive mt-2"><table class="table table-sm table-bordered mb-0">
+        <thead><tr><th>阶段</th><th>长度</th><th>结果</th><th>搜索区间</th><th>下一步决策</th></tr></thead>
+        <tbody>${trace}</tbody></table></div>` : ''}
+      ${compositionSummary}
+      ${conditionalSummary}
+    </div>
+  </details>`;
+}
+function declaredPolicyEvidenceHtml(policy) {
+  const dom = (policy || {})._declared_policy_evidence || {};
+  const constraints = dom.constraints || {};
+  const declared = dom.declared_policy || {};
+  const parts = [];
+  if (constraints.minlength) parts.push('HTML minlength=' + constraints.minlength);
+  if (constraints.maxlength) parts.push('HTML maxlength=' + constraints.maxlength);
+  if (constraints.pattern_present) parts.push('HTML pattern');
+  if (declared.length_min) parts.push('声明最小 ' + declared.length_min + ' 位');
+  if (declared.length_max) parts.push('声明最大 ' + declared.length_max + ' 位');
+  const labels = {upper: '大写字母', lower: '小写字母', digit: '数字',
+    symbol: '特殊符号', letter: '字母'};
+  const required = (declared.required_classes || []).map(x => labels[x] || x);
+  if (required.length) parts.push('声明需要 ' + required.join('、'));
+  const raw = declared.raw_texts || [];
+  if (!parts.length && !raw.length) return '';
+  return `<div class="alert alert-secondary py-2 mt-2 mb-0 small">
+    <div><b>DOM/页面声明证据（非完整主动实测）</b></div>
+    ${parts.length ? `<div class="mt-1">${parts.map(esc).join('；')}</div>` : ''}
+    ${raw.length ? `<div class="text-muted mt-1">${raw.map(esc).join('<br>')}</div>` : ''}
+  </div>`;
+}
+function measuredPolicyHtml(policy, methodUsed) {
+  const hint = (policy || {})._hint_policy;
+  const hintHtml = hint && hint.raw_texts && hint.raw_texts.length
+    ? `<div class="small text-warning mt-1"><b>页面提示：</b>
+        ${hint.length_min ? '≥' + hint.length_min + '位 ' : ''}${hint.length_max ? '≤' + hint.length_max + '位 ' : ''}
+        ${(hint.charset_hints || []).join('、')}
+        ${hint.raw_texts.map(esc).join('<br>')}
+      </div>`
+    : '';
+  if (methodUsed === 'classified_only') {
+    const pt = policyText(policy);
+    return '<div class="small">密码政策：' +
+      (pt && pt !== '未测量' ? pt : '无可测口令框（仅完成分类）') + '</div>' +
+      hintHtml + declaredPolicyEvidenceHtml(policy);
+  }
+  if (!policy || !Object.keys(policy).length) {
+    return '<div class="small text-muted">未测量到密码政策</div>' + hintHtml +
+      declaredPolicyEvidenceHtml(policy);
+  }
+  const length = policy.length || [];
+  const r = policy.restrictive || {};
+  const p = policy.permissive || {};
+  const adaptiveConditional = policy._adaptive_conditional || {};
+  const conditionalDetected = adaptiveConditional.status === 'detected';
+  const lines = [];
+  const lenParts = [];
+  if (length[0] > 0) lenParts.push('最小 ' + length[0] + ' 位');
+  if (length[1] > 0) lenParts.push('最大 ' + length[1] + ' 位');
+  lines.push('<b>长度：</b>' + (lenParts.length ? lenParts.join('，') : '未确定'));
+  const reqs = [];
+  if (!conditionalDetected && r.r_dig_min) reqs.push('至少 ' + r.r_dig_min + ' 个数字');
+  if (!conditionalDetected && r.r_upp_min) reqs.push('至少 ' + r.r_upp_min + ' 个大写字母');
+  if (!conditionalDetected && r.r_low_min) reqs.push('至少 ' + r.r_low_min + ' 个小写字母');
+  if (!conditionalDetected && r.r_sps_min) reqs.push('至少 ' + r.r_sps_min + ' 个特殊符号');
+  if (r.r_l_start) reqs.push('必须以字母开头');
+  if (r.r_2_word) reqs.push('需多词结构');
+  if (r.r_no_a_sps) reqs.push('不允许特殊符号');
+  const adaptiveComposition = policy._adaptive_composition || {};
+  if (conditionalDetected) {
+    const strict = adaptiveConditional.strict_branch || {};
+    const relaxed = adaptiveConditional.relaxed_branch || {};
+    const label = { lower: '小写字母', upper: '大写字母',
+      digit: '数字', symbol: '特殊符号' };
+    const relaxedClasses = (relaxed.accepted_character_classes || [])
+      .map(name => label[name] || name).join('＋');
+    reqs.push(`${strict.min_length} 位起至少使用 ${strict.minimum_character_classes} 类，` +
+      `或达到 ${relaxed.min_length} 位后允许 ${relaxedClasses}单类/子集`);
+  } else if (adaptiveComposition.minimum_character_classes > 0) {
+    reqs.push('至少使用 ' + adaptiveComposition.minimum_character_classes + ' 类字符');
+  } else if (r.r_cmb44) reqs.push('需含大小写字母+数字+特殊符号四类');
+  else if (r.r_cmb34) reqs.push('需含大小写字母/数字/特殊符号中三类');
+  else if (r.r_cmb24) reqs.push('需含四类字符中两类');
+  lines.push('<b>限制：</b>' + (reqs.length ? reqs.join('；') : '无特殊限制'));
+  const perm = [];
+  const chars = listTrueZh(p.permitted_characters, PERM_CHAR_ZH);
+  const seqs = listTrueZh(p.permitted_sequences, PERM_SEQ_ZH);
+  if (chars) perm.push('字符（' + chars + '）');
+  if (seqs) perm.push('序列（' + seqs + '）');
+  const sd = p.short_and_long_password || {};
+  const slParts = [];
+  if (sd.p_shortd) slParts.push('极短密码被接受');
+  if (sd.p_longd) slParts.push('极长密码被接受');
+  if (slParts.length) perm.push(slParts.join('、'));
+  if (p.breached_password && p.breached_password.p_br) perm.push('拦截泄密口令');
+  lines.push('<b>允许：</b>' + (perm.length ? perm.join('；') : '未检测'));
+  return '<div class="small">' + lines.join('<br>') + '</div>' +
+    adaptivePolicyHtml(policy) + declaredPolicyEvidenceHtml(policy);
+}
+function measuredPwdHtml(loginPwd, signupPwd) {
+  // 站点详情里仅在存在实测口令规则时显示（避免每站都多一行噪音）
+  const has = p => p && typeof p === 'object' && Object.keys(p).length;
+  if (!has(loginPwd) && !has(signupPwd)) return '';
+  const row = (label, p) => has(p)
+    ? `<div class="mt-1"><b>${label}实测口令规则：</b>${measuredPolicyHtml(p)}</div>` : '';
+  return `<div class="alert alert-light py-2 mt-2">${row('登录', loginPwd)}${row('注册', signupPwd)}</div>`;
+}
+function isPolicyMeasured(d) {
+  if (d && d.policy_measured === false) return false;
+  return !!(d && (d.policy_measured === true ||
+    (d.policy && typeof d.policy === 'object' && 'restrictive' in d.policy)));
+}
+function classificationOnlyTableHtml(d) {
+  return `<table class="table table-sm table-bordered align-middle mt-2 mb-0">
+    <thead><tr><th style="width:80px">条目</th><th>注册（程序）</th></tr></thead>
+    <tbody>
+      <tr><td>类型</td><td>${badge(d.flow_type)}</td></tr>
+      <tr><td>方法清单</td><td>${methodsHtml(d.methods)}</td></tr>
+      <tr><td>口令政策</td><td>—</td></tr>
+      <tr><td>测量时间</td><td>${fmtTime(d.measured_at)}</td></tr>
+      <tr><td>程序版本</td><td>v4</td></tr>
+    </tbody>
+  </table>`;
+}
+function policyBoxHtml(d) {
+  const method = d.method_used;
+  const evidenceMethod = d.attempted_method || method;
+  const measured = isPolicyMeasured(d);
+  const displayPolicy = d.partial_policy || d.policy || {};
+  if (!measured) {
+    // 提示政策（inline 无法建立反馈时解析的页面自述规则）
+    const hint = displayPolicy._hint_policy;
+    const hintHtml = hint && hint.raw_texts && hint.raw_texts.length
+      ? `<div class="alert alert-warning py-2 mt-2 mb-0">
+          <div><b>页面提示政策（非实测）</b></div>
+          ${hint.length_min || hint.length_max
+            ? `<div class="small mt-1">长度：${hint.length_min || '?'}${hint.length_max ? ' ~ ' + hint.length_max : ' 以上'}</div>`
+            : ''}
+          ${(hint.charset_hints || []).length
+            ? `<div class="small mt-1">字符要求：${hint.charset_hints.join('、')}</div>`
+            : ''}
+          <div class="small text-muted mt-1">${hint.raw_texts.map(esc).join('<br>')}</div>
+        </div>`
+      : '';
+    return `
+      <div class="alert alert-info py-2 mb-2">
+        <div><b>注册与分类</b> ${badge(d.flow_type)}</div>
+        <div class="mt-2">${classificationOnlyTableHtml(d)}</div>
+        <div class="mt-2">${extraLines(d, '注册')}</div>
+        <div class="small text-muted mt-1">密码政策测试未完成，仅输出注册与分类结果</div>
+        ${hintHtml}
+        ${d.partial_policy ? '' : declaredPolicyEvidenceHtml(displayPolicy)}
+        ${d.partial_policy ? `<div class="alert alert-warning py-2 mt-2 mb-0">
+          <b>部分主动测量证据</b><div class="mt-1">${measuredPolicyHtml(displayPolicy, evidenceMethod)}</div>
+          ${(d.measurement_quality || {}).reasons
+            ? `<div class="small text-muted mt-1">尚缺：${d.measurement_quality.reasons.map(esc).join('、')}</div>` : ''}
+        </div>` : ''}
+        ${d.error ? `<div class="small text-danger mt-1">${esc(d.error)}</div>` : ''}
+      </div>`;
+  }
+  // 类型：实际用哪种方法测的就填哪种（inline / full）；无口令框则不填
+  const typeCell = method === 'inline' ? 'inline（不提交即可判断）'
+    : method === 'full' ? 'full（需提交）'
+    : '—';
+  const methodCell = '进行密码政策测试';
+  const policyCell = measuredPolicyHtml(d.policy, method);
+  return `
+    <div class="alert alert-info py-2 mb-2">
+      <div><b>测试密码政策</b> ${badge(d.flow_type)}</div>
+      <table class="table table-sm table-bordered align-middle mt-2 mb-0">
+        <thead><tr><th style="width:90px">密码政策测试</th><th>结果</th></tr></thead>
+        <tbody>
+          <tr><td>类型</td><td>${typeCell}</td></tr>
+          <tr><td>方法清单</td><td>${methodCell}</td></tr>
+          <tr><td>口令政策</td><td>${policyCell}</td></tr>
+          <tr><td>测量时间</td><td>${fmtTime(d.measured_at)}</td></tr>
+          <tr><td>程序版本</td><td>v4</td></tr>
+        </tbody>
+      </table>
+      ${d.note ? `<div class="small text-muted mt-1">${esc(d.note)}</div>` : ''}
+      ${d.error ? `<div class="small text-danger mt-1">${esc(d.error)}</div>` : ''}
+      ${d.suspicious_login_form ? '<div class="alert alert-warning py-1 mt-1 mb-0">疑似在登录表单上测量，政策数据可能不可信</div>' : ''}
+    </div>`;
+}
+// ── 我的测量任务（异步队列）──
+const TASK_STATUS_ZH = {
+  queued: '排队中', running: '测量中', done: '完成', error: '失败', cancelled: '已取消'
+};
+let taskPollTimer = null;
+const measureTokenInput = document.getElementById('measure-token');
+measureTokenInput.value = sessionStorage.getItem('sites-measure-token') || '';
+measureTokenInput.addEventListener('input', () => {
+  sessionStorage.setItem('sites-measure-token', measureTokenInput.value);
+  if (!measureTokenInput.value.trim()) loadTasks();
+});
+measureTokenInput.addEventListener('change', () => loadTasks());
+
+function measureHeaders(includeJson = false) {
+  const headers = {};
+  if (includeJson) headers['Content-Type'] = 'application/json';
+  const token = measureTokenInput.value.trim();
+  if (token) headers['X-Measure-Token'] = token;
+  return headers;
+}
+
+function taskKindLabel(kind) {
+  return kind === 'policy' ? '口令政策' : (kind === 'classify' ? '分类' : kind);
+}
+function taskResultSummary(t) {
+  const r = t.result || {};
+  const p = r.policy || {};
+  const len = p.length && p.length[0] !== 0 ? `长度 [${p.length}]` : '';
+  const flow = r.flow_type || '';
+  return [flow, len, r.flow_zh || ''].filter(Boolean).join(' · ');
+}
+async function loadTasks() {
+  const tbody = document.getElementById('task-tbody');
+  if (!measureTokenInput.value.trim()) {
+    clearTaskPoll();
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">填写上方测量口令后可查看和管理实时任务</td></tr>';
+    return;
+  }
+  try {
+    const r = await fetch('/api/tasks?limit=20', { headers: measureHeaders() });
+    const d = await r.json();
+    if (!r.ok) {
+      throw new Error(d.detail || '服务器拒绝访问任务列表');
+    }
+    const tasks = d.tasks || [];
+    if (!tasks.length) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">还没有测量任务，在上方提交一个吧</td></tr>';
+      clearTaskPoll();
+      return;
+    }
+    tbody.innerHTML = tasks.map(t => {
+      const running = t.status === 'queued' || t.status === 'running';
+      const badge = t.status === 'done' ? 'success'
+        : t.status === 'error' ? 'danger'
+        : t.status === 'cancelled' ? 'secondary' : 'primary';
+      const summary = t.status === 'done'
+        ? `<span class="text-muted small">${esc(taskResultSummary(t))}</span>`
+        : (t.error ? `<span class="text-danger small">${esc(String(t.error).slice(0, 40))}</span>` : '');
+      return `<tr>
+        <td class="small"><code>${esc(t.task_id)}</code></td>
+        <td>${esc(t.url)}</td>
+        <td class="small">${taskKindLabel(t.kind)}${t.force_retest ? '<div class="badge bg-warning text-dark mt-1">重复测试</div>' : ''}</td>
+        <td><span class="badge bg-${badge}">${running ? '<span class="spinner-border spinner-border-sm me-1"></span>' : ''}${TASK_STATUS_ZH[t.status] || t.status}</span></td>
+        <td class="small text-muted">${fmtTime(t.created_at)}</td>
+        <td class="text-end">
+          ${t.status === 'done' ? `
+            <button class="btn btn-sm btn-outline-primary" onclick="showTaskResult('${t.task_id}')">查看</button>
+            <button class="btn btn-sm btn-outline-success" onclick="addTaskToDb('${t.task_id}')">加入数据库</button>
+            <button class="btn btn-sm btn-outline-danger" onclick="deleteTask('${t.task_id}')">删除</button>
+          ` : ''}
+          ${t.status === 'queued' ? `<button class="btn btn-sm btn-outline-secondary" onclick="cancelTask('${t.task_id}')">取消</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('');
+    // 有进行中任务时自动轮询（每 5 秒）
+    const hasRunning = tasks.some(t => t.status === 'queued' || t.status === 'running');
+    if (hasRunning) {
+      if (!taskPollTimer) {
+        taskPollTimer = setInterval(() => { loadTasks(); }, 5000);
+      }
+    } else {
+      clearTaskPoll();
+    }
+  } catch (err) {
+    document.getElementById('task-tbody').innerHTML =
+      `<tr><td colspan="6" class="text-danger text-center">任务列表加载失败: ${esc(String(err))}</td></tr>`;
+  }
+}
+function clearTaskPoll() {
+  if (taskPollTimer) { clearInterval(taskPollTimer); taskPollTimer = null; }
+}
+async function cancelTask(taskId) {
+  const r = await fetch(`/api/tasks/${taskId}/cancel`, {
+    method: 'POST', headers: measureHeaders()
+  });
+  if (!r.ok) { const d = await r.json(); alert(d.detail || '取消失败'); return; }
+  loadTasks();
+}
+async function deleteTask(taskId) {
+  if (!confirm('确定删除该任务记录？')) return;
+  const r = await fetch(`/api/tasks/${taskId}`, {
+    method: 'DELETE', headers: measureHeaders()
+  });
+  if (!r.ok) { const d = await r.json(); alert(d.detail || '删除失败'); return; }
+  loadTasks();
+}
+async function addTaskToDb(taskId) {
+  const r = await fetch(`/api/tasks/${taskId}`, { headers: measureHeaders() });
+  const t = await r.json();
+  if (!r.ok) { alert(t.detail || '读取任务失败'); return; }
+  if (t.status !== 'done' || !t.result) { alert('任务未完成，无法入库'); return; }
+  const d = t.result;
+  let login = {}, signup = {}, url = '';
+  const mkEntry = (x) => {
+    const isPwdMeasured = isPolicyMeasured(x);
+    return {
+      flow_type: x.flow_type, flow_zh: x.flow_zh,
+      route: x.route || '', final_url: x.final_url || '',
+      steps: x.states || [], raw_states: x.states || [],
+      policy: isPwdMeasured ? (x.classification_policy || {}) : (x.policy || {}),
+      pwd_policy: isPwdMeasured ? (x.policy || {}) : {},
+      pwd_method: x.method_used,
+      confidence: x.confidence, stop_reason: x.stop_reason,
+      primary_method: x.primary_method, evidence: x.evidence || [],
+      security_observations: x.security_observations || {},
+      error: x.error || null, measured_at: x.measured_at
+    };
+  };
+  if (d.entry_kind === 'both') {
+    // 合并结果：注册/登录分别入库（已测侧为库中旧数据，覆盖更新为最新）
+    url = d.url || t.url || '';
+    if (d.signup && d.signup.flow_type) signup = mkEntry(d.signup);
+    if (d.login && d.login.flow_type) login = mkEntry(d.login);
+  } else if (d.entry_kind === 'login') {
+    url = d.url || t.url || '';
+    login = mkEntry(d);
+  } else {
+    url = d.url || t.url || '';
+    signup = mkEntry(d);
+  }
+  if (!login.flow_type && !signup.flow_type) { alert('没有可入库的结果'); return; }
+  const host = url.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+  const token = prompt('请输入管理员口令：', '');
+  if (token === null) return;
+  const res = await fetch('/api/sites', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      hostname: host, url: url, version: 'v4',
+      login: login, signup: signup, admin_token: token
+    })
+  });
+  const resp = await res.json();
+  if (!res.ok) { alert(resp.detail || '写入失败'); return; }
+  alert(resp.message || '已写入数据库');
+  loadStats();
+  search('');
+}
+async function showTaskResult(taskId) {
+  const r = await fetch(`/api/tasks/${taskId}`, { headers: measureHeaders() });
+  const t = await r.json();
+  if (!r.ok) { alert(t.detail || '读取任务失败'); return; }
+  const result = t.result || {};
+  let body;
+  if (t.kind === 'policy') {
+    const p = result.policy || {};
+    const len = p.length && p.length[0] !== 0 ? p.length : null;
+    const quality = result.measurement_quality || {};
+    const outcomeLabel = t.status !== 'done' ? '任务未完成'
+      : quality.complete ? '口令政策完整测量完成'
+      : quality.status === 'partial' ? '任务完成，仅获得部分政策证据'
+      : '任务完成，仅完成注册分类';
+    body = `<div class="alert alert-info py-2">
+        <div><b>${esc(t.url)}</b> — ${outcomeLabel}</div>
+        <div class="small text-muted">${fmtTime(t.created_at)} 提交 · ${fmtTime(t.finished_at)} 完成</div>
+        ${t.force_retest ? '<div class="badge bg-warning text-dark mt-1">已忽略数据库并重新测量</div>' : ''}
+        ${result.from_database ? '<div class="badge bg-secondary mt-1">数据库已有结果，未重复测量</div>' : ''}
+      </div>
+      ${t.status === 'done' ? policyBoxHtml(result) : ''}
+      ${securityObservationsHtml(result.security_observations)}
+      ${t.error ? `<div class="alert alert-danger py-2">${esc(t.error)}</div>` : ''}`;
+  } else if (result.entry_kind === 'both') {
+    // 注册+登录合并结果：已测侧标注"数据库已有"，未测侧为现场结果
+    const signup = result.signup || {};
+    const login = result.login || {};
+    const signupTag = result.signup_from_database ? '（数据库已有）' : '（现场测量）';
+    const loginTag = result.login_from_database ? '（数据库已有）' : '（现场测量）';
+    body = `<div class="alert alert-info py-2">
+        <div><b>${esc(t.url)}</b> — 注册+登录分类</div>
+        <div class="small text-muted">${fmtTime(t.created_at)} 提交${t.finished_at ? ' · ' + fmtTime(t.finished_at) + ' 完成' : ''}</div>
+        ${t.force_retest ? '<div class="badge bg-warning text-dark mt-1">已忽略数据库并重新测量</div>' : ''}
+      </div>
+      ${signup.flow_type ? `
+        <div class="alert alert-info py-2 mb-2"><div><b>注册${signupTag}</b></div>
+          <div class="mt-2">${reportTableHtml(null, signup, 'v4')}</div>
+          <div class="mt-2">${extraLines(signup, '注册')}</div>
+          ${securityObservationsHtml(signup.security_observations, '注册')}
+        </div>` : (signup.error ? `<div class="alert alert-danger py-2">注册失败: ${esc(signup.error)}</div>` : '')}
+      ${login.flow_type ? `
+        <div class="alert alert-info py-2 mb-2"><div><b>登录${loginTag}</b></div>
+          <div class="mt-2">${reportTableHtml(login, null, 'v4')}</div>
+          <div class="mt-2">${extraLines(login, '登录')}</div>
+          ${securityObservationsHtml(login.security_observations, '登录')}
+        </div>` : (login.error ? `<div class="alert alert-danger py-2">登录失败: ${esc(login.error)}</div>` : '')}
+      ${t.error ? `<div class="alert alert-danger py-2">${esc(t.error)}</div>` : ''}`;
+  } else {
+    body = `<div class="alert alert-info py-2">
+        <div><b>${esc(t.url)}</b> — ${TASK_STATUS_ZH[t.status] || t.status}</div>
+        <div class="small text-muted">${fmtTime(t.created_at)} 提交${t.finished_at ? ' · ' + fmtTime(t.finished_at) + ' 完成' : ''}</div>
+        ${t.force_retest ? '<div class="badge bg-warning text-dark mt-1">已忽略数据库并重新测量</div>' : ''}
+      </div>
+      ${t.status === 'done' ? reportTableHtml(
+        result.entry_kind === 'login' ? result : null,
+        result.entry_kind === 'signup' ? result : null, 'v4') : ''}
+      ${result.flow_type ? extraLines(result, '分类') : ''}
+      ${securityObservationsHtml(result.security_observations)}
+      ${t.error ? `<div class="alert alert-danger py-2">${esc(t.error)}</div>` : ''}`;
+  }
+  document.getElementById('modal-title').textContent = '任务结果';
+  document.getElementById('modal-body').innerHTML = body;
+  document.getElementById('detailModal').style.display = 'flex';
+}
+loadTasks();
+document.getElementById('classify-btn').addEventListener('click', async () => {
+  const url = document.getElementById('classify-url').value.trim();
+  const kind = document.getElementById('classify-kind').value;
+  const forceRetest = document.getElementById('force-retest').checked;
+  if (!url) { alert('请输入网站 URL'); return; }
+  const btn = document.getElementById('classify-btn');
+  const box = document.getElementById('classify-result');
+  btn.disabled = true;
+  try {
+    // 异步任务模式：提交立即返回 task_id，后台测量，刷新页面不影响。
+    if (kind === 'policy') {
+      const r = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: measureHeaders(true),
+        body: JSON.stringify({ url, kind: 'policy', entry_kind: 'signup', method: 'auto', force_retest: forceRetest })
+      });
+      const d = await r.json();
+      if (d.detail) { box.innerHTML = `<div class="alert alert-danger py-2">${esc(d.detail)}</div>`; return; }
+      box.innerHTML = `<div class="alert alert-success py-2">
+        <div><b>口令政策测量任务已提交</b></div>
+        <div class="small mt-1">任务 ID: <code>${esc(d.task_id)}</code></div>
+        <div class="small text-muted">${forceRetest ? '已忽略数据库并重新打开网站测量。' : '若数据库已有口令政策，将直接使用已有结果。'}后台任务约需 1-15 分钟，刷新页面不影响测量。</div>
+      </div>`;
+    } else {
+      const entryKind = kind;  // 'both' 原样提交，后端分别查库/现场测
+      const r = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: measureHeaders(true),
+        body: JSON.stringify({ url, kind: 'classify', entry_kind: entryKind, force_retest: forceRetest })
+      });
+      const d = await r.json();
+      if (d.detail) { box.innerHTML = `<div class="alert alert-danger py-2">${esc(d.detail)}</div>`; return; }
+      const label = kind === 'both' ? '注册+登录' : (kind === 'signup' ? '注册' : '登录');
+      box.innerHTML = `<div class="alert alert-success py-2">
+        <div><b>${label}任务已提交</b></div>
+        <div class="small mt-1">任务 ID: <code>${esc(d.task_id)}</code></div>
+        <div class="small text-muted">${forceRetest ? '已忽略数据库，将重新打开网站测量。' : '已测过的部分直接使用数据库结果，未测的部分后台测量。'}完成后在下方"我的测量任务"查看。</div>
+      </div>`;
+    }
+    loadTasks();
+  } catch (err) {
+    box.innerHTML = `<div class="alert alert-danger py-2">请求失败: ${err}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+loadStats();
+search('');
+// 其他浏览器或组员提交的数据无需手动刷新；打开弹窗时暂停，避免打断填写。
+setInterval(() => {
+  const modalOpen = [...document.querySelectorAll('.my-modal')]
+    .some(el => el.style.display && el.style.display !== 'none');
+  if (!modalOpen && document.visibilityState === 'visible') {
+    loadStats();
+    search(document.getElementById('search-input').value);
+  }
+}, 30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Test outputs & logs
+logs/
+
+# Chrome WebDriver artifacts
+chromedriver*.exe
+undetected_chromedriver/
+
+# Windows artifacts
+nul
+
+# Personal URL lists (for batch testing)
+urls_*.txt
+
+# Temporary & debug files
+*.tmp
+*.log
+*.pid
+test_diag*.py
+test_inject*.py
+/.cache/
+/webapp/tasks.json
+
+# Test coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Git merge artifacts
+*.orig
+*.BACKUP.*
+*.BASE.*
+*.LOCAL.*
+*.REMOTE.*
+webapp/browser-linux/
+webapp/sites.db
+*.jsonl.lock
+.data-sync.lock
+.deployed-head
+HANDOFF.md

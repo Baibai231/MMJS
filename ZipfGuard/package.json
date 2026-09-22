@@ -1,0 +1,6 @@
+{
+  "name": "zipfguard",
+  "private": true,
+  "type": "module",
+  "scripts": {"legacy-redteam": "node --input-type=module -e \"console.error('Historical prototype only; use Python run_demo.py for authoritative results')\""}
+}

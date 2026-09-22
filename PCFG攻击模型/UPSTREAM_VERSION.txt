@@ -1,0 +1,5 @@
+project=lakiw/pcfg_cracker
+url=https://github.com/lakiw/pcfg_cracker
+commit=b04bbdadfe8928fd1287fa73ad1aa46a297ff83a
+downloaded=2026-09-20
+local_modifications=none
