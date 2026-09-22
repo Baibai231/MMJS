@@ -14,12 +14,15 @@ with sync_playwright() as p:
     page.on('pageerror',lambda exc: errors.append(str(exc)))
     page.goto('http://127.0.0.1:8765/')
     page.wait_for_function("document.getElementById('seed').value === '42'")
+    assert not page.locator('#experiment-settings').evaluate('(el) => el.open')
+    page.locator('#experiment-settings > summary').click()
     page.locator('#preset').select_option('full')
     page.wait_for_function("document.getElementById('size').value === '20000'")
     assert page.locator('#att-pcfg').input_value() == 'optional'
     page.locator('#preset').select_option('quick')
     page.wait_for_function("document.getElementById('size').value === '1000'")
     page.screenshot(path=str(ROOT/'reports/section1_controls.png'),full_page=True)
+    page.locator('#experiment-settings > summary').click()
     page.locator('#run').click()
     page.wait_for_function("document.getElementById('status').textContent === '实验完成'",timeout=900000)
     assert page.locator('#result svg').count() >= 12
@@ -27,6 +30,7 @@ with sync_playwright() as p:
     page.locator('#result section').filter(has=page.get_by_role('heading',name='M2 · 统一攻击基线')).screenshot(path=str(ROOT/'reports/section1_m2.png'))
     response=page.evaluate('last.result')
     (ROOT/'reports/section1_browser_quick.json').write_text(json.dumps(response,ensure_ascii=False,indent=2),encoding='utf-8')
+    page.locator('#experiment-settings > summary').click()
     page.locator('#source').select_option('upload')
     payload=synthetic_counts(size=100,categories=10)
     page.locator('#upload').set_input_files({'name':'counts.json','mimeType':'application/json','buffer':json.dumps(payload).encode()})
@@ -34,6 +38,7 @@ with sync_playwright() as p:
     page.wait_for_function("document.getElementById('status').textContent === '实验完成'",timeout=60000)
     assert page.get_by_role('heading',name='M2 · 统一攻击基线').count()==0
     assert '均未运行' in page.locator('#result').inner_text()
+    page.locator('#experiment-settings > summary').click()
     page.locator('#upload').set_input_files({'name':'bad.json','mimeType':'application/json','buffer':b'bad'})
     page.locator('#run').click()
     page.wait_for_function("document.getElementById('status').textContent.startsWith('未完成')")

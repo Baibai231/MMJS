@@ -47,27 +47,55 @@ from experiments.config import load_config, validate_config
 from core.data import validate_count_payload
 from hashlib import sha256
 
-INDEX = "<!doctype html><html lang=zh-CN><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ZipfGuard 实验台</title><style>" + STYLE + "</style>" + r'''<body><main><h1>ZipfGuard · 离线实验台</h1><p>统一 Python 实验核心 · 合成机制演示与聚合分布分析</p>
-<section><h2>实验设置</h2><div class="grid">
+
+SETTINGS_STYLE = """
+.settings-panel>summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;list-style:none;margin:0;padding:4px 0;cursor:pointer}
+.settings-panel>summary::-webkit-details-marker{display:none}
+.settings-panel>summary::before{content:"›";font-size:24px;line-height:1;transition:transform .15s}
+.settings-panel[open]>summary::before{transform:rotate(90deg)}
+.settings-panel>summary:focus-visible{outline:2px solid #2463d9;outline-offset:6px;border-radius:4px}
+.settings-title{font-size:19px;font-weight:600}.settings-summary{flex:1;min-width:160px}
+.settings-toggle{font-size:13px;color:#2463d9}.settings-toggle::after{content:"展开参数"}
+.settings-panel[open] .settings-toggle::after{content:"收起参数"}
+.settings-content{border-top:1px solid #e4eaf2;margin-top:18px;padding-top:10px}
+.settings-content h3{font-size:14px;color:#62728a;margin:18px 8px 4px}
+.settings-content .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.settings-content label{min-width:0;margin:8px 0}.settings-content input,.settings-content select{box-sizing:border-box;width:100%;min-width:0}
+.settings-content textarea{box-sizing:border-box;width:100%}
+.experiment-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:20px 0 0}
+button:disabled{opacity:.55;cursor:default}
+@media(max-width:600px){main{padding:16px}section{padding:18px}.settings-summary{flex-basis:100%;order:3}.settings-toggle{margin-left:auto}}
+"""
+
+INDEX = "<!doctype html><html lang=zh-CN><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ZipfGuard 实验台</title><style>" + STYLE + SETTINGS_STYLE + "</style>" + r'''<body><main><h1>ZipfGuard · 离线实验台</h1><p>统一 Python 实验核心 · 合成机制演示与聚合分布分析</p>
+<section aria-label="实验设置">
+<details id="experiment-settings" class="settings-panel">
+<summary><span class="settings-title">实验参数</span><span id="settings-summary" class="settings-summary muted">正在加载配置…</span><span class="settings-toggle" aria-hidden="true"></span></summary>
+<div class="settings-content"><h3>数据与基础参数</h3><div class="grid">
 <label>预设<select id="preset"><option value="quick">快速演示 · 1,000 用户</option><option value="full">完整实验 · 20,000 用户 + 可选 PCFG</option></select></label>
 <label>数据来源<select id="source"><option value="synthetic">合成用户</option><option value="rockyou">RockYou 聚合（仅分布分析）</option><option value="upload">上传聚合 JSON（仅分布分析）</option></select></label>
 <label>随机种子<input id="seed" type="number" min="0"></label><label>样本规模<input id="size" type="number" min="100"></label>
 <label>Zipf 指数<input id="exponent" type="number" step="0.01"></label><label>攻击预算（逗号分隔）<input id="budgets"></label>
 <label>Bootstrap 次数<input id="bootstrap" type="number" min="20"></label><label>风险阈值 q<input id="q" type="number" step="0.01"></label>
-</div><div class="grid" id="attackers"></div><div class="grid">
+</div><h3>攻击器与策略</h3><div class="grid" id="attackers"></div><div class="grid">
 <label>PCFG 生成上限<input id="limit" type="number"></label><label>PCFG 超时秒数<input id="timeout" type="number"></label>
 <label>用户响应<select id="response"><option value="repair">修补优先，再尝试短语</option><option value="phrase">短语优先，再尝试修补</option></select></label>
 <label>响应成本权重（其余为规则成本）<input id="weight" type="number" min="0" max="1" step="0.05"></label><label>策略选择预算<input id="riskbudget" type="number"></label>
+</div><h3>聚合数据选项</h3><div class="grid">
 <label>来源类型<select id="semantics"><option value="unknown">未确认</option><option value="frequency">原始重复行频次</option><option value="unique_dictionary">去重字典</option></select></label>
 <label>RockYou 读取行数<input id="maxlines" type="number" value="1000000"></label><label>保留 top-k<input id="topk" type="number" value="2000"></label>
 <label>聚合文件<input id="upload" type="file" accept=".json"></label></div>
 <details><summary>待比较策略（可编辑 JSON；保留 baseline）</summary><textarea id="policies"></textarea></details>
 <details><summary>完整配置（可修改词表、搜索动作、响应顺序和约束；点击应用后再运行）</summary><textarea id="config"></textarea><button id="apply">应用完整配置</button><button id="export">下载当前配置</button></details>
-<p><button id="run">运行实验</button> <button id="download" disabled>下载结果与 SHA-256</button> <span id="status" role="status"></span></p>
+</div></details>
+<p class="experiment-actions"><button id="run">运行实验</button> <button id="download" disabled>下载结果与 SHA-256</button> <span id="status" role="status"></span></p>
 <p class="muted">PassLLM 尚未接入主评估。可选模型失败会明确排除；不会冒充其他模型。</p></section></main><div id="result"></div>
 <script>
 const $=id=>document.getElementById(id);let cfg=null,last=null;
-function put(c){cfg=c;$('seed').value=c.seed;$('size').value=c.synthetic.size;$('exponent').value=c.synthetic.exponent;$('budgets').value=c.budgets.join(',');$('bootstrap').value=c.bootstrap_repetitions;$('q').value=c.q;$('limit').value=c.pcfg.generation_limit;$('timeout').value=c.pcfg.timeout_seconds;$('weight').value=c.search.response_cost_weight;$('riskbudget').value=c.search.risk_budget;$('response').value=c.response.order[0]==='random-phrase'?'phrase':'repair';$('policies').value=JSON.stringify(c.comparison_policies,null,2);$('config').value=JSON.stringify(c,null,2);$('attackers').replaceChildren();for(const [id,label] of [['frequency','频次'],['synthetic-dictionary','合成字典'],['character-ngram','字符 n-gram'],['pcfg','PCFG']]){const l=document.createElement('label');l.textContent=label;const s=document.createElement('select');s.id='att-'+id;for(const [v,t] of [['off','不参与'],['required','必选'],['optional','可选']]){const o=new Option(t,v);s.add(o)}s.value=c.attackers[id]||'off';l.append(s);$('attackers').append(l)}}
+function updateSettingsSummary(){const source=$('source').selectedOptions[0].textContent;const detail=$('source').value==='synthetic'?$('size').value+' 用户 · 种子 '+$('seed').value:'保留 top-'+$('topk').value;$('settings-summary').textContent=source+' · '+detail}
+$('experiment-settings').addEventListener('input',updateSettingsSummary);
+$('experiment-settings').addEventListener('change',updateSettingsSummary);
+function put(c){cfg=c;$('seed').value=c.seed;$('size').value=c.synthetic.size;$('exponent').value=c.synthetic.exponent;$('budgets').value=c.budgets.join(',');$('bootstrap').value=c.bootstrap_repetitions;$('q').value=c.q;$('limit').value=c.pcfg.generation_limit;$('timeout').value=c.pcfg.timeout_seconds;$('weight').value=c.search.response_cost_weight;$('riskbudget').value=c.search.risk_budget;$('response').value=c.response.order[0]==='random-phrase'?'phrase':'repair';$('policies').value=JSON.stringify(c.comparison_policies,null,2);$('config').value=JSON.stringify(c,null,2);$('attackers').replaceChildren();for(const [id,label] of [['frequency','频次'],['synthetic-dictionary','合成字典'],['character-ngram','字符 n-gram'],['pcfg','PCFG']]){const l=document.createElement('label');l.textContent=label;const s=document.createElement('select');s.id='att-'+id;for(const [v,t] of [['off','不参与'],['required','必选'],['optional','可选']]){const o=new Option(t,v);s.add(o)}s.value=c.attackers[id]||'off';l.append(s);$('attackers').append(l)}updateSettingsSummary()}
 function get(){const c=structuredClone(cfg);c.seed=+$('seed').value;c.synthetic.size=+$('size').value;c.synthetic.exponent=+$('exponent').value;c.budgets=$('budgets').value.split(',').map(Number);c.bootstrap_repetitions=+$('bootstrap').value;c.q=+$('q').value;c.pcfg.generation_limit=+$('limit').value;c.pcfg.timeout_seconds=+$('timeout').value;c.search.response_cost_weight=+$('weight').value;c.search.rule_cost_weight=1-c.search.response_cost_weight;c.search.risk_budget=+$('riskbudget').value;const expected=$('response').value==='phrase'?'random-phrase':'append-symbol';if(c.response.order[0]!==expected)c.response.order=$('response').value==='phrase'?['random-phrase','append-symbol','append-symbol-digit']:['append-symbol','append-symbol-digit','random-phrase'];c.comparison_policies=JSON.parse($('policies').value);c.attackers={};for(const id of ['frequency','synthetic-dictionary','character-ngram','pcfg']){const mode=$('att-'+id).value;if(mode!=='off')c.attackers[id]=mode}return c}
 async function preset(){try{const r=await fetch('/api/config/'+$('preset').value);put(await r.json())}catch(e){$('status').textContent=e.message}}
 function download(name,text){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
