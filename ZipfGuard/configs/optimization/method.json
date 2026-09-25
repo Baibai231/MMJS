@@ -1,0 +1,13 @@
+{
+  "method": "validation-risk-under-modification-cap-v1",
+  "hypothesis": "Under a modification-rate cap, choosing at most two HTPG features by validation attack risk may beat IGR order.",
+  "hypothesis_established": false,
+  "cost_metric": "fraction of evaluated users whose password string changes",
+  "cost_caps_proposed": [0.05, 0.1, 0.2],
+  "caps_are_measured_results": false,
+  "selection_data": "validation only",
+  "test_labels_used_for_selection": false,
+  "max_features": 2,
+  "tie_rule_for_current_experiments": "experimental_strict",
+  "paper_baseline_tie_rule": "paper_compatible"
+}

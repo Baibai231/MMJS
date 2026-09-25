@@ -8,6 +8,7 @@ attacker set. Ablations change one switch at a time.
 from __future__ import annotations
 
 import argparse
+import functools
 import hashlib
 import json
 import random
@@ -22,6 +23,12 @@ from core.attackers import _fit_ngram
 from core.htpg_features import HTPGFeatureExtractor, contains_keyboard_walk
 from core.markov_substitute import NOT_OMEN, SUBSTITUTE_ID, enumerate_markov, raw_positions
 from core.metrics import evaluate_open_generation, evaluate_ranking
+from experiments.evaluation_validity import (
+    finalize_closed_publication,
+    format_closed_metric,
+    seed_summary,
+    splits_allow_closed_publication,
+)
 from experiments.provenance import robustness_manifest
 from experiments.suggestion_compare import (
     COST_WEIGHT,
@@ -32,14 +39,16 @@ from experiments.suggestion_compare import (
     _paper_features,
     adopts,
     apply_edit,
+    blocked_length_edit,
     directed_coverage,
+    executor_closure,
     shared_length_response,
     summarize_execution,
 )
 from policy.htpg_generator import PAPER_POLICIES, password_digest
 
 
-PROTOCOL_VERSION = "robustness-v3"
+PROTOCOL_VERSION = "robustness-v4"
 BUDGET = 40
 MECHANISMS = ("zipf", "long_tail", "unknown_structure")
 YEAR = re.compile(r"(?:19|20)\d{2}$")
@@ -80,10 +89,38 @@ def legacy_edit(password: str, salt: str) -> str:
     return updated
 
 
-def public_candidates(mechanism: str) -> list[str]:
-    """Policy-aware dictionary, hash-sorted, independent of draw order."""
-    pool: set[str] = set()
-    for word in support_strings(mechanism):
+def edit_leak_counts(before: Sequence[str], after: Sequence[str], candidates: Sequence[str] | set[str]) -> dict:
+    """Separate passwords that were already outside from passwords an edit pushed outside."""
+    allowed = candidates if isinstance(candidates, set) else set(candidates)
+    originally_outside = 0
+    after_outside = 0
+    edit_caused = 0
+    for left, right in zip(before, after):
+        left_inside = left in allowed
+        right_inside = right in allowed
+        originally_outside += int(not left_inside)
+        after_outside += int(not right_inside)
+        edit_caused += int(left_inside and not right_inside)
+    users = len(before)
+    return {
+        "users": users,
+        "originally_outside": originally_outside,
+        "after_outside": after_outside,
+        "edit_caused_outside": edit_caused,
+        "headline_published": edit_caused == 0,
+    }
+
+
+@functools.lru_cache(maxsize=8)
+def public_candidates(mechanism: str) -> tuple[str, ...]:
+    """Policy-aware dictionary, hash-sorted, independent of draw order.
+
+    Directed edits come from ``executor_closure``, which calls the same
+    ``execute_suggestion`` path as the experiment. Test passwords are not added.
+    """
+    support = support_strings(mechanism)
+    pool: set[str] = set(executor_closure(support, EXTRACTOR))
+    for word in support:
         pool.add(word)
         pool.update(directed_coverage(word))
         for feature in PAPER_POLICIES:
@@ -106,7 +143,9 @@ def public_candidates(mechanism: str) -> list[str]:
             pool.add(shared_length_response(word, minimum, response_mode="deterministic"))
             for bucket in range(5):
                 pool.add(shared_length_response(word, minimum, response_mode="diversified", bucket=bucket))
-    return hash_order(pool)
+            pool.add(blocked_length_edit(word, response_mode="deterministic"))
+            pool.add(blocked_length_edit(word, f"bucket-{bucket}", response_mode="diversified"))
+    return tuple(hash_order(pool))
 
 
 def _split(passwords: Sequence[str], train_ratio: float = 0.6, validation_ratio: float = 0.2):
@@ -206,7 +245,12 @@ def sample_mechanism(
 
 
 def _rank_frequency(train: Sequence[str], candidates: Sequence[str]) -> list[str]:
-    allowed = set(candidates)
+    """Rank the pre-registered closed list by training counts.
+
+    Training strings outside that list are omitted. The omission is not a
+    defense: an edit that creates such a string must withhold the headline.
+    """
+    allowed = candidates if isinstance(candidates, set) else set(candidates)
     counts = Counter(password for password in train if password in allowed)
     return sorted(counts, key=lambda value: (-counts[value], _sha(value)))
 
@@ -336,9 +380,7 @@ def _apply_named(
         for password, user_id in zip(passwords, user_ids):
             triggered = password_digest(password) in model["head_digests"] or len(password) < 8
             if triggered and adopts(user_id, "length", seed=adoption_seed, adoption_rate=adoption_rate):
-                rewritten.append(shared_length_response(
-                    password, 14, user_id=user_id, response_mode=response_mode,
-                ))
+                rewritten.append(blocked_length_edit(password, user_id, response_mode=response_mode))
             else:
                 rewritten.append(password)
         return rewritten
@@ -350,21 +392,10 @@ def _apply_named(
             response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=adoption_seed,
         )
     if mode == "no_igr":
-        eligibility = {password: set(PAPER_POLICIES) for password in set(passwords)}
-        changed = []
-        for password, user_id in zip(passwords, user_ids):
-            current = password
-            if password_digest(password) not in model["head_digests"]:
-                changed.append(current)
-                continue
-            for feature in features:
-                if feature not in eligibility[password]:
-                    continue
-                edited = apply_edit(current, feature, salt=user_id)
-                if edited != current:
-                    current = edited
-            changed.append(current)
-        return changed
+        return _apply_plan(
+            passwords, user_ids, features, model, weighting, trace,
+            response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=adoption_seed,
+        )
     if mode == "per_password":
         changed = []
         for password, user_id in zip(passwords, user_ids):
@@ -408,6 +439,8 @@ def _select_features(
         return []
     if mode == "paper_igr_unique":
         return _paper_features(model)
+    if mode == "no_igr":
+        return ["length", "lsd_structure"]
     use_cost = mode != "no_cost"
     use_budget = mode != "no_budget"
     adaptive = mode != "no_adaptive"
@@ -434,6 +467,10 @@ def _select_features(
         gain = baseline["worst_rate"] - attacked["worst_rate"]
         modification = _modification_rate(scenario["validation"], validation_after)
         score = (gain if use_budget else 0.0) - (COST_WEIGHT * modification if use_cost else 0.0)
+        train_leak = edit_leak_counts(scenario["train"], train_after, candidates)
+        validation_leak = edit_leak_counts(scenario["validation"], validation_after, candidates)
+        if train_leak["edit_caused_outside"] or validation_leak["edit_caused_outside"]:
+            score = float("-inf")
         rows.append((score, feature))
     rows.sort(key=lambda item: (-item[0], item[1]))
     chosen = [feature for score, feature in rows if score > 0]
@@ -488,11 +525,21 @@ def evaluate_scenario(
             scenario["train"], scenario["train_id"], features, model, apply_mode, weighting,
             response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=scenario["seed"],
         )
+        validation_after = _apply_named(
+            scenario["validation"], scenario["validation_id"], features, model, apply_mode, weighting,
+            response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=scenario["seed"],
+        )
         test_after = _apply_named(
             scenario["test"], scenario["test_id"], features, model, apply_mode, weighting,
             response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=scenario["seed"],
             trace=test_trace,
         )
+        candidate_audit = {
+            "train": edit_leak_counts(scenario["train"], train_after, candidates),
+            "validation": edit_leak_counts(scenario["validation"], validation_after, candidates),
+            "test": edit_leak_counts(scenario["test"], test_after, candidates),
+        }
+        headline_published = all(split["headline_published"] for split in candidate_audit.values())
         frozen = _score_split(
             scenario["train"], test_after, candidates, budget,
             with_markov=with_markov, with_ngram=True,
@@ -514,10 +561,17 @@ def evaluate_scenario(
             "adaptive_coverage": adaptive["worst_coverage"],
             "adaptive_attacks": adaptive["attacks"],
             "patterns_after": _pattern_rates(test_after),
-            "outside_candidate_rate": sum(item not in set(candidates) for item in test_after) / len(test_after) if test_after else 0.0,
+            "outside_candidate_rate": (
+                candidate_audit["test"]["after_outside"] / candidate_audit["test"]["users"]
+                if candidate_audit["test"]["users"] else 0.0
+            ),
+            "candidate_audit": candidate_audit,
+            "headline_published": headline_published,
+            "baseline_name": "head_triggered_length_response" if mode == "modern_blocklist" else mode,
+            "comparison_role": "fixed_length_and_lsd_control" if mode == "no_igr" else mode,
             "weighting": weighting,
             "execution_status_counts": None if apply_mode in {
-                "legacy_complexity", "modern_blocklist", "nist_single_factor_15", "nist_mfa_8", "no_igr",
+                "legacy_complexity", "modern_blocklist", "nist_single_factor_15", "nist_mfa_8",
             } else summarize_execution(test_trace),
         }
     head_index = [password_digest(password) in model["head_digests"] for password in scenario["test"]]
@@ -533,7 +587,10 @@ def evaluate_scenario(
         phase = "frozen" if use_frozen else "adaptive"
         baseline_rate = arms["none"]["frozen_worst_rate" if use_frozen else "adaptive_worst_rate"]
         compared_rate = row["frozen_worst_rate" if use_frozen else "adaptive_worst_rate"]
-        row["absolute_point_change_vs_none"] = baseline_rate - compared_rate
+        point_change = baseline_rate - compared_rate
+        row["absolute_point_change_vs_none"] = point_change if row["headline_published"] else None
+        row["withheld_point_change"] = None if row["headline_published"] else point_change
+        row["withheld_reason"] = None if row["headline_published"] else "修改把原先在候选集内的口令推到了封闭候选之外，主指标不发布。"
         row["comparison_phase"] = phase
         row["paired_vs_none"] = {
             attacker: _paired_interval(
@@ -557,7 +614,7 @@ def evaluate_scenario(
             "frequency_absolute_point_change": None if head_before is None else head_before - head_after,
         }
         row["relative_change_vs_none"] = (
-            None if baseline_rate == 0 else (baseline_rate - compared_rate) / baseline_rate
+            None if (not row["headline_published"] or baseline_rate == 0) else (baseline_rate - compared_rate) / baseline_rate
         )
         row["relative_change_note"] = "相对变化单独存放，不能与绝对百分点差混写成同一个百分数。"
         none_open = arms["none"]["open_adaptive_worst_rate"]
@@ -566,6 +623,8 @@ def evaluate_scenario(
             None if none_open is None or this_open is None else none_open - this_open
         )
         row["open_change_note"] = "开放生成的百分点差单独计算，不并进封闭排序的最坏攻击者。"
+        row["open_published"] = none_open is not None and this_open is not None
+        finalize_closed_publication(row, open_attackers={SUBSTITUTE_ID})
     attack_seconds = time.perf_counter() - attack_started
     _current, peak_bytes = tracemalloc.get_traced_memory()
     if not tracing:
@@ -601,11 +660,11 @@ def evaluate_scenario(
             "adoption_seed": scenario["seed"],
             "shared_by": [
                 "modern_blocklist", "nist_single_factor_15", "nist_mfa_8",
-                "paper_igr_unique", "budget_cost", "per_password",
+                "paper_igr_unique", "budget_cost", "per_password", "no_igr",
             ],
-            "not_shared_by": ["legacy_complexity", "no_igr"],
+            "not_shared_by": ["legacy_complexity"],
             "legacy_note": "历史类别混合规则保留自己的改写，不参与策略和响应的交叉比较。",
-            "no_igr_note": "该消融仍走无方向改写，不能单独解释成信息增益比的作用。",
+            "no_igr_note": "特征固定为长度和 LSD。执行和拒绝规则与其他定向臂相同，不再使用无方向改写。",
             "blocklist_trigger_remains_arm_specific": True,
             "measured_user_study": False,
         },
@@ -634,12 +693,16 @@ def evaluate_scenario(
     }
 
 
-def _mean_range(values: list[float]) -> dict:
+def _mean_range(values: list[float | None]) -> dict:
+    present = [value for value in values if value is not None]
+    if not present:
+        return {"seeds": 0, "mean": None, "min": None, "max": None, "withheld": len(values)}
     return {
-        "seeds": len(values),
-        "mean": sum(values) / len(values),
-        "min": min(values),
-        "max": max(values),
+        "seeds": len(present),
+        "mean": sum(present) / len(present),
+        "min": min(present),
+        "max": max(present),
+        "withheld": len(values) - len(present),
     }
 
 
@@ -653,6 +716,7 @@ def _optional_mean(values: list[float | None]) -> dict | None:
 def multi_budget_curve(
     *, mechanism: str = "long_tail", size: int = 900, seed: int = 1,
     selection_budget: int = BUDGET, budgets: Sequence[int] = (10, 20, 40, 80),
+    response_mode: str = "deterministic", adoption_rate: float = 1.0,
 ) -> dict:
     """Select once at the pre-registered budget, then score that plan at several budgets."""
     scenario = sample_mechanism(mechanism, size=size, seed=seed)
@@ -660,21 +724,49 @@ def multi_budget_curve(
     model = _head_model(scenario["train"], EXTRACTOR)
     model["train_passwords"] = list(scenario["train"])
     modes = ("none", "modern_blocklist", "paper_igr_unique", "budget_cost")
-    plans = {mode: _select_features(scenario, model, candidates, selection_budget, mode) for mode in modes}
+    plans = {
+        mode: _select_features(
+            scenario, model, candidates, selection_budget, mode,
+            response_mode=response_mode, adoption_rate=adoption_rate,
+        )
+        for mode in modes
+    }
     series = []
     for budget in budgets:
         point = {"budget": int(budget), "arms": {}}
         for mode in modes:
             features = plans[mode]
+            weighting = "unique" if mode == "paper_igr_unique" else "frequency"
             apply_mode = "modern_blocklist" if mode == "modern_blocklist" else "budget_cost"
-            train_after = _apply_named(scenario["train"], scenario["train_id"], features, model, apply_mode)
-            test_after = _apply_named(scenario["test"], scenario["test_id"], features, model, apply_mode)
+            train_after = _apply_named(
+                scenario["train"], scenario["train_id"], features, model, apply_mode, weighting,
+                response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=seed,
+            )
+            validation_after = _apply_named(
+                scenario["validation"], scenario["validation_id"], features, model, apply_mode, weighting,
+                response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=seed,
+            )
+            test_after = _apply_named(
+                scenario["test"], scenario["test_id"], features, model, apply_mode, weighting,
+                response_mode=response_mode, adoption_rate=adoption_rate, adoption_seed=seed,
+            )
+            audit = {
+                "train": edit_leak_counts(scenario["train"], train_after, candidates),
+                "validation": edit_leak_counts(scenario["validation"], validation_after, candidates),
+                "test": edit_leak_counts(scenario["test"], test_after, candidates),
+            }
+            leak_published = splits_allow_closed_publication(audit)
             adaptive = _score_split(train_after, test_after, candidates, int(budget), with_markov=True, with_ngram=True)
             point["arms"][mode] = {
-                "closed_rate": adaptive["closed_worst_rate"],
+                "closed_rate": adaptive["closed_worst_rate"] if leak_published else None,
                 "open_rate": adaptive["open_worst_rate"],
                 "closed_attacker": adaptive["closed_worst_attacker"],
                 "open_attacker": adaptive["open_worst_attacker"],
+                "weighting": weighting,
+                "headline_published": leak_published,
+                "candidate_audit": audit,
+                "withheld_reason": None if leak_published else "预算曲线沿用三阶段封闭审计，任一阶段的修改漏收都不发布封闭命中率。",
+                "edit_caused_outside": audit["test"]["edit_caused_outside"],
             }
         series.append(point)
     return {
@@ -697,6 +789,8 @@ def run_grid(
     sizes: Sequence[int] = (300, 600, 900),
     mechanisms: Sequence[str] = MECHANISMS,
     budget: int = BUDGET,
+    response_mode: str = "deterministic",
+    adoption_rate: float = 1.0,
 ) -> dict:
     """Every seed is kept. The summary is the mean and the range, not the best seed."""
     grouped: dict[str, dict[int, list[dict]]] = {mechanism: {size: [] for size in sizes} for mechanism in mechanisms}
@@ -706,7 +800,10 @@ def run_grid(
             for seed in seeds:
                 scenario = sample_mechanism(mechanism, size=int(size), seed=int(seed))
                 grouped[mechanism][int(size)].append(
-                    evaluate_scenario(scenario, budget=budget, candidates=candidates, with_markov=True)
+                    evaluate_scenario(
+                        scenario, budget=budget, candidates=candidates, with_markov=True,
+                        response_mode=response_mode, adoption_rate=adoption_rate,
+                    )
                 )
     mechanisms_out = {}
     for mechanism, by_size in grouped.items():
@@ -718,20 +815,36 @@ def run_grid(
                 "saturated_seeds": sum(row["main_budget_saturated"] for row in rows),
                 "decided_by_576_seeds": sum(row["main_budget_decided_by_576"] for row in rows),
                 "arms": {
-                    arm: _mean_range([
-                        row["arms"][arm]["absolute_point_change_vs_none"] for row in rows
-                    ]) | {
+                    arm: seed_summary(
+                        [row["arms"][arm]["absolute_point_change_vs_none"] for row in rows],
+                        [bool(row["arms"][arm].get("headline_published")) for row in rows],
+                    ) | {
                         "seeds_with_nonpositive_gain": sum(
-                            row["arms"][arm]["absolute_point_change_vs_none"] <= 0 for row in rows
+                            row["arms"][arm]["absolute_point_change_vs_none"] is not None
+                            and row["arms"][arm]["absolute_point_change_vs_none"] <= 0 for row in rows
                         ),
-                        "frequency_paired_point_mean": _mean_range([
-                            row["arms"][arm]["paired_vs_none"]["frequency"]["point"] for row in rows
-                        ])["mean"],
-                        "frequency_paired_lower_min": min(
-                            row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0] for row in rows
+                        "frequency_paired_point_mean": (
+                            _mean_range([
+                                row["arms"][arm]["paired_vs_none"]["frequency"]["point"] for row in rows
+                            ])["mean"]
+                            if all(row["arms"][arm].get("headline_published") for row in rows)
+                            else None
+                        ),
+                        "frequency_paired_lower_min": (
+                            min(
+                                row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0] for row in rows
+                            )
+                            if all(
+                                row["arms"][arm].get("headline_published")
+                                and row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0] is not None
+                                for row in rows
+                            )
+                            else None
                         ),
                         "seeds_whose_frequency_paired_lower_bound_is_positive": sum(
-                            row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0] > 0 for row in rows
+                            (row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0] or 0) > 0
+                            and bool(row["arms"][arm].get("headline_published"))
+                            for row in rows
                         ),
                         "modification_mean": _mean_range([
                             row["arms"][arm]["test_modification_rate"] for row in rows
@@ -764,6 +877,8 @@ def run_grid(
     return {
         "protocol": PROTOCOL_VERSION,
         "budget": budget,
+        "response_mode": response_mode,
+        "adoption_rate": adoption_rate,
         "denominator": "test_users",
         "threat": {
             "offline_guess_budget": budget,
@@ -785,7 +900,10 @@ def run_grid(
     }
 
 
-def run_ablation(*, seed: int = 1, size: int = 300, budget: int = BUDGET) -> dict:
+def run_ablation(
+    *, seed: int = 1, size: int = 300, budget: int = BUDGET,
+    response_mode: str = "deterministic", adoption_rate: float = 1.0,
+) -> dict:
     """One frozen zipf scenario. Each row turns off a single switch."""
     scenario = sample_mechanism("zipf", size=size, seed=seed)
     shared = sample_mechanism("zipf", size=size, seed=seed, shared_template=True)
@@ -793,7 +911,10 @@ def run_ablation(*, seed: int = 1, size: int = 300, budget: int = BUDGET) -> dic
     modes = (
         "none", "budget_cost", "no_curvature", "no_igr", "no_budget", "no_cost", "no_adaptive",
     )
-    full = evaluate_scenario(scenario, budget=budget, candidates=candidates, modes=modes, with_markov=True)
+    full = evaluate_scenario(
+        scenario, budget=budget, candidates=candidates, modes=modes, with_markov=True,
+        response_mode=response_mode, adoption_rate=adoption_rate,
+    )
     def forced_length(passwords: list[str], salts: list[str]) -> float:
         return _concentration([
             apply_edit(password, "length", salt=salt) for password, salt in zip(passwords, salts)
@@ -818,7 +939,10 @@ def run_ablation(*, seed: int = 1, size: int = 300, budget: int = BUDGET) -> dic
     }
     return {
         "protocol": PROTOCOL_VERSION,
-        "frozen": {"mechanism": "zipf", "seed": seed, "size": size, "budget": budget},
+        "frozen": {
+            "mechanism": "zipf", "seed": seed, "size": size, "budget": budget,
+            "response_mode": response_mode, "adoption_rate": adoption_rate,
+        },
         "rows": rows,
         "shared_template_concentration": forced_length(shared["test"], shared["test_id"]),
         "per_user_template_concentration": forced_length(scenario["test"], scenario["test_id"]),
@@ -827,17 +951,66 @@ def run_ablation(*, seed: int = 1, size: int = 300, budget: int = BUDGET) -> dic
     }
 
 
+def frequency_plan_check(
+    mechanism: str, *, size: int = 900, seed: int = 1, budget: int = BUDGET,
+    response_mode: str = "deterministic",
+) -> dict:
+    """Frequency-only selection diagnostic. It does not publish a leaked gain."""
+    scenario = sample_mechanism(mechanism, size=size, seed=seed)
+    candidates = public_candidates(mechanism)
+    model = _head_model(scenario["train"], EXTRACTOR)
+    model["train_passwords"] = list(scenario["train"])
+    features = _select_features(
+        scenario, model, candidates, budget, "budget_cost", response_mode=response_mode,
+    )
+    rewritten = {
+        split: _apply_named(
+            scenario[split], scenario[f"{split}_id"], features, model, "budget_cost", "frequency",
+            response_mode=response_mode, adoption_seed=seed,
+        )
+        for split in ("train", "validation", "test")
+    }
+    leaks = {split: edit_leak_counts(scenario[split], rewritten[split], candidates) for split in rewritten}
+    published = all(item["headline_published"] for item in leaks.values())
+    baseline = _score_split(
+        scenario["train"], scenario["test"], candidates, budget, with_markov=False, with_ngram=False,
+    )
+    adaptive = _score_split(
+        rewritten["train"], rewritten["test"], candidates, budget, with_markov=False, with_ngram=False,
+    )
+    return {
+        "mechanism": mechanism,
+        "response_mode": response_mode,
+        "features": features,
+        "frequency_point_change": None if not published else baseline["worst_rate"] - adaptive["worst_rate"],
+        "leaks": leaks,
+        "headline_published": published,
+        "closed_protocol": "closed_hash_order",
+        "open_generation_not_mixed": True,
+    }
+
+
 def public_comparison_html(report: dict) -> str:
-    """HTML table of arm rates. The caller must already have dropped passwords."""
+    """HTML table of arm rates. Unpublished closed gains show the reason, not zero."""
     rows = []
     for name, arm in report["arms"].items():
-        change = arm["absolute_point_change_vs_none"]
+        published = bool(arm.get("headline_published", arm.get("absolute_point_change_vs_none") is not None))
+        reason = arm.get("withheld_reason")
+        head = arm.get("head_users") or {}
         rows.append(
-            "<tr><td>{}</td><td>{:.3f}</td><td>{}</td><td>{}</td><td>{:.3f}</td></tr>".format(
+            "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:.3f}</td></tr>".format(
                 name,
-                change,
-                "—" if arm["open_absolute_point_change_vs_none"] is None else f"{arm['open_absolute_point_change_vs_none']:.3f}",
-                "—" if arm["head_users"]["frequency_absolute_point_change"] is None else f"{arm['head_users']['frequency_absolute_point_change']:.3f}",
+                format_closed_metric(arm.get("absolute_point_change_vs_none"), published=published, reason=reason),
+                format_closed_metric(
+                    arm.get("open_absolute_point_change_vs_none"),
+                    published=arm.get("open_published", arm.get("open_absolute_point_change_vs_none") is not None),
+                    reason=None if arm.get("open_absolute_point_change_vs_none") is not None else "开放生成没有结果",
+                ),
+                format_closed_metric(
+                    head.get("frequency_absolute_point_change"),
+                    published=published,
+                    reason=reason,
+                ),
                 arm["test_modification_rate"],
             )
         )
@@ -856,16 +1029,28 @@ def main() -> int:
     parser.add_argument("--seeds", default="1,2,3,4,5")
     parser.add_argument("--sizes", default="300,600,900")
     parser.add_argument("--budget", type=int, default=BUDGET)
+    parser.add_argument("--response-mode", default="deterministic", choices=("deterministic", "diversified"))
+    parser.add_argument("--adoption-rate", type=float, default=1.0)
     args = parser.parse_args()
     seeds = tuple(int(item) for item in args.seeds.split(",") if item)
     sizes = tuple(int(item) for item in args.sizes.split(",") if item)
     from experiments.provenance import robustness_manifest
     from experiments.response_sensitivity import sensitivity
     payload = {
-        "grid": run_grid(seeds=seeds, sizes=sizes, budget=args.budget),
-        "ablation": run_ablation(seed=seeds[0], size=sizes[0], budget=args.budget),
-        "response_sensitivity": sensitivity(size=sizes[0], seed=seeds[0], budget=args.budget),
-        "provenance": robustness_manifest(),
+        "grid": run_grid(
+            seeds=seeds, sizes=sizes, budget=args.budget,
+            response_mode=args.response_mode, adoption_rate=args.adoption_rate,
+        ),
+        "ablation": run_ablation(
+            seed=seeds[0], size=sizes[0], budget=args.budget,
+            response_mode=args.response_mode, adoption_rate=args.adoption_rate,
+        ),
+        "response_sensitivity": sensitivity(
+            size=sizes[0], seed=seeds[0], budget=args.budget, response_mode=args.response_mode,
+        ),
+        "provenance": robustness_manifest(
+            budget=args.budget, seeds=list(seeds), sizes=list(sizes),
+        ),
         "plaintext_retained": False,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -873,8 +1058,12 @@ def main() -> int:
     for mechanism, by_size in payload["grid"]["mechanisms"].items():
         for size, row in by_size.items():
             gain = row["arms"]["budget_cost"]["mean"]
+            published = row["arms"]["budget_cost"].get("comparison_published", gain is not None)
+            shown = f"{gain:.4f}" if published and gain is not None else "未发布"
             print(
-                f"{mechanism} n={size} budget_cost_mean_points={gain:.4f} "
+                f"{mechanism} n={size} budget_cost_mean_points={shown} "
+                f"valid_seeds={row['arms']['budget_cost'].get('valid_seeds')} "
+                f"planned_seeds={row['arms']['budget_cost'].get('planned_seeds')} "
                 f"saturated_seeds={row['saturated_seeds']} support={row['support_size']}"
             )
     return 0

@@ -79,6 +79,90 @@ class RobustnessProtocolTests(unittest.TestCase):
         rendered = json.dumps(report)
         self.assertNotIn("stem00", rendered)
 
+    def test_executor_forms_are_inside_the_closed_list(self):
+        from experiments.suggestion_compare import execute_suggestion, public_executor_actions
+        from experiments.robustness_protocol import EXTRACTOR, public_candidates, support_strings
+        words = support_strings("zipf")
+        actions = public_executor_actions(words, EXTRACTOR)
+        candidates = set(public_candidates("zipf"))
+        self.assertTrue(set(held_out_strings()).isdisjoint(candidates))
+        produced = []
+        for word in words[:4]:
+            for feature, action, target in actions:
+                result = execute_suggestion(word, feature, action, target, EXTRACTOR)
+                if result["status"] != "success":
+                    continue
+                self.assertTrue(result["password"] in candidates, result["password"])
+                produced.append(result["password"])
+        for word in produced[:12]:
+            for feature, action, target in actions:
+                if action in {"increase_length", "decrease_length"}:
+                    continue
+                result = execute_suggestion(word, feature, action, target, EXTRACTOR)
+                if result["status"] == "success":
+                    self.assertTrue(result["password"] in candidates, result["password"])
+        from experiments.suggestion_compare import shared_length_response
+        diversified = shared_length_response("stem00", 14, response_mode="diversified", bucket=3)
+        self.assertTrue(diversified in candidates, diversified)
+        deterministic = shared_length_response("stem00", 14, response_mode="deterministic")
+        self.assertTrue(deterministic in candidates, deterministic)
+
+    def test_edit_leak_is_not_published_as_a_gain(self):
+        from experiments.robustness_protocol import edit_leak_counts
+        audit = edit_leak_counts(["known"], ["rebuilt"], {"known"})
+        self.assertEqual(audit["edit_caused_outside"], 1)
+        self.assertEqual(audit["originally_outside"], 0)
+        self.assertFalse(audit["headline_published"])
+        original = edit_leak_counts(["qxheld0000"], ["qxheld0000"], set())
+        self.assertEqual(original["edit_caused_outside"], 0)
+        self.assertEqual(original["originally_outside"], 1)
+        self.assertTrue(original["headline_published"])
+
+    def test_refusal_and_long_blocked_password_use_the_shared_executor(self):
+        from core.htpg_features import HTPGFeatureExtractor
+        from experiments.robustness_protocol import _apply_named
+        from policy.htpg_generator import password_digest
+        password = "abc"
+        model = {
+            "head_digests": {password_digest(password)},
+            "extractor": HTPGFeatureExtractor(["joy"], ["smith"]),
+            "igr": {"features": [{
+                "feature": "length",
+                "status_frequency": "ok",
+                "rank_frequency": 1,
+                "igr_frequency": 1.0,
+                "head_summary_frequency": {"mean": 3},
+                "tail_summary_frequency": {"mean": 14},
+            }]},
+        }
+        kept = _apply_named([password], ["user-1"], ["length"], model, "no_igr", adoption_rate=0)
+        self.assertEqual(kept, [password])
+        followed = _apply_named([password], ["user-1"], ["length"], model, "no_igr", adoption_rate=1)
+        self.assertNotEqual(followed[0], password)
+        blocked = "abcdefghijklmn"
+        changed = _apply_named(
+            [blocked], ["user-1"], [], {"head_digests": {password_digest(blocked)}}, "modern_blocklist",
+        )
+        self.assertNotEqual(changed[0], blocked)
+        self.assertGreaterEqual(len(changed[0]), 15)
+
+    def test_v3_deterministic_false_gains_do_not_publish(self):
+        from experiments.robustness_protocol import frequency_plan_check
+        for mechanism, leaked_users in (("zipf", 9), ("long_tail", 20)):
+            report = frequency_plan_check(mechanism, size=900, seed=1, budget=40, response_mode="deterministic")
+            self.assertTrue(report["headline_published"], mechanism)
+            self.assertEqual(report["leaks"]["test"]["edit_caused_outside"], 0, mechanism)
+            self.assertNotEqual(report["leaks"]["test"]["edit_caused_outside"], leaked_users)
+            self.assertIsNotNone(report["frequency_point_change"])
+
+    def test_outer_manifest_keeps_the_requested_budget(self):
+        from experiments.provenance import robustness_manifest
+        report = robustness_manifest(budget=17, seeds=[7], sizes=[300])
+        self.assertEqual(report["protocol"], "robustness-v4")
+        self.assertEqual(report["budget"], 17)
+        self.assertEqual(report["seeds"], [7])
+        self.assertEqual(report["sizes"], [300])
+
 
 if __name__ == "__main__":
     unittest.main()

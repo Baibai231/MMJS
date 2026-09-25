@@ -183,6 +183,8 @@ def execute_open_compare(request):
                 "closed_absolute_point_change": arm["absolute_point_change_vs_none"],
                 "open_absolute_point_change": arm["open_absolute_point_change_vs_none"],
                 "head_frequency_absolute_point_change": arm["head_users"]["frequency_absolute_point_change"],
+                "headline_published": arm.get("headline_published"),
+                "withheld_reason": arm.get("withheld_reason"),
                 "head_users": arm["head_users"]["users"],
                 "all_users": arm["all_users"]["users"],
                 "test_modification_rate": arm["test_modification_rate"],

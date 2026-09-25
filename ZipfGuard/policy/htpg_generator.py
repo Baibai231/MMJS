@@ -20,6 +20,13 @@ from core.htpg_igr import CATEGORICAL_FEATURES
 
 
 GENERATOR_VERSION = "htpg-generator-v2"
+TIE_RULES = {
+    "paper_compatible": "suggest when d_head <= d_tail, matching Algorithm 3",
+    "experimental_strict": "suggest only when d_head < d_tail",
+}
+ACTIVE_TIE_RULE = "experimental_strict"
+PAPER_DATE_YEAR_MIN = 1980
+PAPER_DATE_YEAR_MAX = 2020
 _BOOLEAN_ACTIONS = {
     "capital": ("use_capital", "avoid_capital"),
     "date": ("use_date", "avoid_date"),
@@ -52,6 +59,7 @@ def suggest_for_password(
     extractor: HTPGFeatureExtractor,
     limit: int | None = None,
     weighting: str = "unique",
+    tie_rule: str = ACTIVE_TIE_RULE,
 ) -> dict:
     if not isinstance(password, str) or password == "":
         raise ValueError("建议对象必须是非空字符串")
@@ -68,6 +76,8 @@ def suggest_for_password(
         }
     if weighting not in ("unique", "frequency"):
         raise ValueError("weighting 只能是 unique 或 frequency")
+    if tie_rule not in TIE_RULES:
+        raise ValueError("tie_rule 只能是 paper_compatible 或 experimental_strict")
     status_key = f"status_{weighting}"
     rank_key = f"rank_{weighting}"
     summary_head = f"head_summary_{weighting}"
@@ -94,6 +104,7 @@ def suggest_for_password(
         decision = _closer_to_head(
             feature, vector.get(feature), row,
             status_key=status_key, summary_head=summary_head, summary_tail=summary_tail,
+            tie_rule=tie_rule,
         )
         if decision is None:
             continue
@@ -114,7 +125,8 @@ def suggest_for_password(
             "distance_definition": (
                 "categorical_mode_0_or_1" if feature in CATEGORICAL_FEATURES else "absolute_difference_from_side_mean"
             ),
-            "tie_policy": "experimental_strict: suggest only when d_head < d_tail; the paper counts d_head <= d_tail as head",
+            "tie_policy": TIE_RULES[tie_rule],
+            "tie_rule": tie_rule,
         })
     return {
         "generator_version": GENERATOR_VERSION,
@@ -131,6 +143,7 @@ def _closer_to_head(
     status_key: str = "status_unique",
     summary_head: str = "head_summary_unique",
     summary_tail: str = "tail_summary_unique",
+    tie_rule: str = ACTIVE_TIE_RULE,
 ) -> tuple[bool, float, float, object, str] | None:
     if value is None or row.get(status_key) != "ok":
         return None
@@ -143,7 +156,7 @@ def _closer_to_head(
             return None
         d_head = 0.0 if value == head["mode"] else 1.0
         d_tail = 0.0 if value == tail["mode"] else 1.0
-        if d_head >= d_tail:
+        if not _suggest_for_distance(d_head, d_tail, tie_rule):
             return None
         target = f"tail mode {tail['mode']}"
     else:
@@ -156,10 +169,18 @@ def _closer_to_head(
         numeric = float(value)
         d_head = abs(head_mean - numeric)
         d_tail = abs(tail_mean - numeric)
-        if d_head >= d_tail:
+        if not _suggest_for_distance(d_head, d_tail, tie_rule):
+            return None
+        if feature == "length" and tie_rule == "paper_compatible" and not (tail_mean > numeric):
             return None
         target = f"tail mean {tail_mean:.4g}"
     return True, d_head, d_tail, value, target
+
+
+def _suggest_for_distance(d_head: float, d_tail: float, tie_rule: str) -> bool:
+    if tie_rule == "paper_compatible":
+        return d_head <= d_tail
+    return d_head < d_tail
 
 
 def _action_name(feature: str, head: Mapping[str, object], tail: Mapping[str, object]) -> str:

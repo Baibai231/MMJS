@@ -139,6 +139,37 @@ class HTPGMethodTests(unittest.TestCase):
         avoided_actions = {item["feature"]: item["action"] for item in avoided["suggestions"]}
         self.assertEqual(avoided_actions["capital"], "avoid_capital")
 
+    def test_paper_tie_rule_includes_equal_distance_and_blocks_shorter_length(self):
+        extractor = HTPGFeatureExtractor(["joy"], ["smith"])
+        report = {"features": [
+            {
+                "feature": "length", "status_unique": "ok", "rank_unique": 1, "igr_unique": 0.4,
+                "head_summary_unique": {"mean": 4}, "tail_summary_unique": {"mean": 8},
+            },
+            {
+                "feature": "lsd_structure", "status_unique": "ok", "rank_unique": 2, "igr_unique": 0.2,
+                "head_summary_unique": {"mode": "L3"}, "tail_summary_unique": {"mode": "L8"},
+            },
+        ]}
+        head = {password_digest("abcdef")}
+        strict = suggest_for_password(
+            "abcdef", head_digests=head, igr_report=report, extractor=extractor, tie_rule="experimental_strict",
+        )
+        paper = suggest_for_password(
+            "abcdef", head_digests=head, igr_report=report, extractor=extractor, tie_rule="paper_compatible",
+        )
+        self.assertEqual(strict["suggestions"], [])
+        self.assertEqual({item["feature"] for item in paper["suggestions"]}, {"length", "lsd_structure"})
+        shorter = {"features": [{
+            "feature": "length", "status_unique": "ok", "rank_unique": 1, "igr_unique": 0.4,
+            "head_summary_unique": {"mean": 10}, "tail_summary_unique": {"mean": 4},
+        }]}
+        blocked = suggest_for_password(
+            "abcdefghij", head_digests={password_digest("abcdefghij")}, igr_report=shorter,
+            extractor=extractor, tie_rule="paper_compatible",
+        )
+        self.assertEqual(blocked["suggestions"], [])
+
     def test_directed_edits_meet_their_targets(self):
         from experiments.suggestion_compare import edit_meets_target, execute_suggestion
         extractor = HTPGFeatureExtractor(["joy"], ["smith"])

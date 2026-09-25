@@ -14,4 +14,13 @@ macOS 或 Linux 把 `.\.venv\Scripts\python.exe` 换成 `.venv/bin/python`。缺
 
 论文复现命令只写频数和拟合参数。合成对照不读取 RockYou。`reports/` 里的 JSON 是当次结果；提交或演示用的图如果来自这些文件，必须标成缓存，并带上文件哈希。现场还可以重跑上面的单元测试和一条小预算合成命令。
 
+原场景计划与缺口：
+
+```powershell
+.\.venv\Scripts\python.exe -c "from experiments.paper_scenarios import reproduction_plan; import json; print(json.dumps(reproduction_plan(), ensure_ascii=False, indent=2))"
+.\.venv\Scripts\python.exe -c "from ai.omen_adapter import omen_status; import json; print(json.dumps(omen_status(), ensure_ascii=False, indent=2))"
+```
+
+这两条不生成猜测。`reproduction_plan()` 在 178、CSDN、RenRen 缺失时返回 incomplete，命中率为空。`omen_status()` 在没有作者程序时返回未接入。
+
 Python 版本以 `.python-version` 和虚拟环境实际版本为准。第三方 PCFG 上游提交记录在 `ai/pcfg_adapter.py` 的说明和 README 里。

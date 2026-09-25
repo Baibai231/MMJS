@@ -56,7 +56,7 @@ def robustness_manifest(*, budget: int = 40, seeds: list[int] | None = None, siz
         files[relative] = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
     joined = "".join(files[relative] for relative in relative_paths)
     return {
-        "protocol": "robustness-v3",
+        "protocol": "robustness-v4",
         "budget": int(budget),
         "seeds": seeds,
         "sizes": sizes,

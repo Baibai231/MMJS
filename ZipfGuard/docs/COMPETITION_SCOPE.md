@@ -12,7 +12,7 @@
 
 | 评分意图 | 证据 |
 | --- | --- |
-| 创新性 | `experiments/robustness_protocol.py` 的预算/成本臂，以及同文件消融 |
+| 创新性 | 预算/成本选择仍是假设，见 `docs/PHASE_DECISION.md`。代码在 `experiments/htpg_optimization.py`，尚未证明优于论文 IGR |
 | 可复现 | `docs/REPRODUCE.md` 的三条命令；结果里的配置与数据哈希沿用原流水线 |
 | 实用性 | 修改率、三种事先设定的采用率、长度加黑名单和 NIST 长度基线 |
 | 不能写成成果的数字 | 论文 69%、25%、80.23%；MAYA 上的猜测成功率；真实记忆率 |

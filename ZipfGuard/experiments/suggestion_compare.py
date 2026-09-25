@@ -33,6 +33,18 @@ from policy.htpg_generator import PAPER_POLICIES, password_digest, suggest_for_p
 COMPARE_VERSION = "suggestion-compare-v2"
 EXECUTION_STATUSES = ("success", "already_satisfied", "unable", "conflict")
 RESPONSE_MODES = ("deterministic", "diversified")
+EXECUTOR_BOOLEAN_ACTIONS = (
+    ("capital", "use_capital"),
+    ("capital", "avoid_capital"),
+    ("date", "use_date"),
+    ("date", "avoid_date"),
+    ("keyboard", "use_keyboard_walk"),
+    ("keyboard", "avoid_keyboard_walk"),
+    ("word_type", "use_emotion_word"),
+    ("word_type", "avoid_emotion_word"),
+    ("lastname", "use_lastname"),
+    ("lastname", "avoid_lastname"),
+)
 COST_WEIGHT = 0.25
 STEMS = tuple(f"stem{index:02d}" for index in range(60))
 TAILS = tuple(f"long{index:02d}{suffix}" for index in range(12) for suffix in ("aa", "bb", "cc", "dd"))
@@ -353,6 +365,87 @@ def _realize_lsd(password: str, mode: str | None) -> str | None:
     return "".join(rendered)
 
 
+def length_bucket_user_ids() -> tuple[str, ...]:
+    """One user id for each diversified length suffix. Experiment ids hash into these five."""
+    found: dict[int, str] = {}
+    index = 0
+    while len(found) < 5:
+        user_id = f"cover-{index}"
+        bucket = hashlib.sha256(f"length|{user_id}".encode("utf-8")).digest()[0] % 5
+        found.setdefault(bucket, user_id)
+        index += 1
+    return tuple(found[bucket] for bucket in range(5))
+
+
+def blocked_length_edit(password: str, user_id: str = "", *, response_mode: str = "deterministic") -> str:
+    """Head-triggered length response. A blocked string must change, including when it is already long."""
+    minimum = 14 if len(password) < 14 else len(password) + 1
+    return shared_length_response(password, minimum, user_id=user_id, response_mode=response_mode)
+
+
+def public_executor_actions(words: Sequence[str], extractor: HTPGFeatureExtractor) -> list[tuple[str, str, str | None]]:
+    """Actions the directed executor can be asked to perform on this support.
+
+    Targets come from support strings and the public length bounds, not from test passwords.
+    """
+    actions: list[tuple[str, str, str | None]] = [(feature, action, None) for feature, action in EXECUTOR_BOOLEAN_ACTIONS]
+    structures = sorted({extractor.extract(word).lsd_structure for word in words})
+    places = sorted({extractor.extract(word).specplace for word in words})
+    actions.extend(
+        ("lsd_structure", "change_lsd_toward_tail_mode", f"tail mode {structure}") for structure in structures
+    )
+    actions.extend(
+        ("specplace", "move_special_placement_toward_tail_mode", f"tail mode {place}") for place in places
+    )
+    longest = max((len(word) for word in words), default=1)
+    for length in range(1, longest + 3):
+        actions.append(("length", "increase_length", f"tail mean {length}"))
+        actions.append(("length", "decrease_length", f"tail mean {length}"))
+    return actions
+
+
+def _executor_successes(
+    password: str, actions: Sequence[tuple[str, str, str | None]], extractor: HTPGFeatureExtractor,
+    response_mode: str, user_ids: Sequence[str],
+) -> set[str]:
+    found: set[str] = set()
+    for feature, action, target in actions:
+        identities = user_ids if action in {"increase_length", "decrease_length"} else ("",)
+        for user_id in identities:
+            result = execute_suggestion(
+                password, feature, action, target, extractor,
+                user_id=user_id, response_mode=response_mode,
+            )
+            if result["status"] == "success":
+                found.add(result["password"])
+    return found
+
+
+def executor_closure(words: Sequence[str], extractor: HTPGFeatureExtractor) -> set[str]:
+    """One-step and two-step outputs of ``execute_suggestion`` for both response modes.
+
+    This is the closed-candidate generator. A hand-written edit list must not replace it.
+    """
+    material = list(dict.fromkeys(words))
+    actions = public_executor_actions(material, extractor)
+    user_ids = length_bucket_user_ids()
+    pool = set(material)
+    step = set()
+    for word in material:
+        for response_mode in RESPONSE_MODES:
+            step |= _executor_successes(word, actions, extractor, response_mode, user_ids)
+        step.add(blocked_length_edit(word, response_mode="deterministic"))
+        for user_id in user_ids:
+            step.add(blocked_length_edit(word, user_id, response_mode="diversified"))
+    pool |= step
+    second = set()
+    for word in step:
+        for response_mode in RESPONSE_MODES:
+            second |= _executor_successes(word, actions, extractor, response_mode, user_ids)
+    pool |= second
+    return pool
+
+
 def directed_coverage(word: str) -> set[str]:
     """Forms a directed response can produce, so they can be pre-registered."""
     bases = {word, word.lower()}
@@ -596,7 +689,7 @@ def _apply_modern(passwords: Sequence[str], user_ids: Sequence[str], head_digest
     rewritten = []
     for password, user_id in zip(passwords, user_ids):
         if password_digest(password) in head_digests or len(password) < 8:
-            rewritten.append(apply_edit(password, "length", salt=user_id))
+            rewritten.append(blocked_length_edit(password, user_id))
         else:
             rewritten.append(password)
     return rewritten
@@ -625,6 +718,17 @@ def _paired_interval(before: Sequence[bool], after: Sequence[bool], seed: int) -
     }
 
 
+def _closed_audit(scenario: dict, candidates: Sequence[str], train_after: Sequence[str], validation_after: Sequence[str], test_after: Sequence[str]) -> tuple[dict, bool]:
+    from experiments.evaluation_validity import splits_allow_closed_publication
+    from experiments.robustness_protocol import edit_leak_counts
+    audit = {
+        "train": edit_leak_counts(scenario["train"], train_after, candidates),
+        "validation": edit_leak_counts(scenario["validation"], validation_after, candidates),
+        "test": edit_leak_counts(scenario["test"], test_after, candidates),
+    }
+    return audit, splits_allow_closed_publication(audit)
+
+
 def compare_scenario(scenario: dict, *, budget: int = 40) -> dict:
     extractor = HTPGFeatureExtractor(["joy", "happy"], ["smith", "li"])
     model = _head_model(scenario["train"], extractor)
@@ -637,8 +741,11 @@ def compare_scenario(scenario: dict, *, budget: int = 40) -> dict:
     results = {}
     adaptive_flags = {}
     for name, features in feature_arms.items():
-        train_after = _apply_plan(scenario["train"], scenario["train_id"], features, model, "frequency")
-        test_after = _apply_plan(scenario["test"], scenario["test_id"], features, model, "frequency")
+        weighting = "unique" if name == "paper_igr_unique" else "frequency"
+        train_after = _apply_plan(scenario["train"], scenario["train_id"], features, model, weighting)
+        validation_after = _apply_plan(scenario["validation"], scenario["validation_id"], features, model, weighting)
+        test_after = _apply_plan(scenario["test"], scenario["test_id"], features, model, weighting)
+        audit, published = _closed_audit(scenario, candidates, train_after, validation_after, test_after)
         frozen = _final_attack(scenario["train"], test_after, candidates, budget)
         adaptive = _final_attack(train_after, test_after, candidates, budget)
         adaptive_flags[name] = adaptive["flags"]
@@ -649,9 +756,14 @@ def compare_scenario(scenario: dict, *, budget: int = 40) -> dict:
             "adaptive_worst_rate": adaptive["worst_rate"],
             "adaptive_coverage": adaptive["worst_coverage"],
             "adaptive_attacks": adaptive["attacks"],
+            "candidate_audit": audit,
+            "headline_published": published,
+            "formal_publication_path": False,
         }
     modern_train = _apply_modern(scenario["train"], scenario["train_id"], model["head_digests"])
+    modern_validation = _apply_modern(scenario["validation"], scenario["validation_id"], model["head_digests"])
     modern_test = _apply_modern(scenario["test"], scenario["test_id"], model["head_digests"])
+    modern_audit, modern_published = _closed_audit(scenario, candidates, modern_train, modern_validation, modern_test)
     modern_frozen = _final_attack(scenario["train"], modern_test, candidates, budget)
     modern_adaptive = _final_attack(modern_train, modern_test, candidates, budget)
     adaptive_flags["modern_blocklist"] = modern_adaptive["flags"]
@@ -662,7 +774,11 @@ def compare_scenario(scenario: dict, *, budget: int = 40) -> dict:
         "adaptive_worst_rate": modern_adaptive["worst_rate"],
         "adaptive_coverage": modern_adaptive["worst_coverage"],
         "adaptive_attacks": modern_adaptive["attacks"],
-        "rule": "训练集头部字符串精确黑名单，或长度小于 8，则做长度拆分；不强制字符类别",
+        "rule": "头部触发的长度响应：头部或短口令必须改变，已经达到 14 的头部口令也要加长。",
+        "candidate_audit": modern_audit,
+        "headline_published": modern_published,
+        "formal_publication_path": False,
+        "comparison_role": "head_triggered_length_response",
     }
     none_rate = results["none"]["adaptive_worst_rate"]
     for name, row in results.items():
@@ -674,6 +790,11 @@ def compare_scenario(scenario: dict, *, budget: int = 40) -> dict:
             )
             for attacker in ("frequency", "character-ngram")
         }
+        if not row.get("headline_published", True):
+            from experiments.evaluation_validity import finalize_closed_publication
+            row["withheld_point_change"] = row["absolute_point_change_vs_none"]
+            row["withheld_reason"] = "旧比较入口检测到修改导致的候选漏收，封闭收益不发布。"
+            finalize_closed_publication(row, open_attackers=set())
     saturated = results["none"]["adaptive_worst_rate"] >= 0.99 and results["none"]["adaptive_coverage"] >= 0.99
     public_fit = {key: value for key, value in model["fit"].items()}
     return {
@@ -694,6 +815,8 @@ def compare_scenario(scenario: dict, *, budget: int = 40) -> dict:
         "test_attackers": ["frequency", "character-ngram"],
         "main_budget_saturated": saturated,
         "plaintext_retained": False,
+        "formal_publication_path": False,
+        "publication_note": "这是旧比较入口。正式封闭发布走 robustness_protocol，并且在修改漏收时不发布收益。",
     }
 
 
@@ -706,16 +829,28 @@ def run_two_scenarios(*, seed: int = 7, size: int = 900, budget: int = 40) -> di
 
 
 def _arm_summary(rows: Sequence[dict], arm: str) -> dict:
-    gains = [row["arms"][arm]["absolute_point_change_vs_none"] for row in rows]
+    from experiments.evaluation_validity import seed_summary
+    summary = seed_summary(
+        [row["arms"][arm]["absolute_point_change_vs_none"] for row in rows],
+        [bool(row["arms"][arm].get("headline_published", True)) for row in rows],
+    )
     lower_bounds = [
-        row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0] for row in rows
+        row["arms"][arm]["paired_vs_none"]["frequency"]["ci95"][0]
+        for row in rows
+        if row["arms"][arm].get("headline_published", True)
     ]
     return {
-        "seeds": len(gains),
-        "mean_absolute_point_change": sum(gains) / len(gains),
-        "min_absolute_point_change": min(gains),
-        "max_absolute_point_change": max(gains),
-        "seeds_whose_frequency_paired_lower_bound_is_positive": sum(bound > 0 for bound in lower_bounds),
+        "seeds": summary["planned_seeds"],
+        "valid_seeds": summary["valid_seeds"],
+        "comparison_published": summary["comparison_published"],
+        "mean_absolute_point_change": summary["mean"],
+        "min_absolute_point_change": summary["min"],
+        "max_absolute_point_change": summary["max"],
+        "diagnostic_valid_subset_mean": summary["diagnostic_valid_subset_mean"],
+        "unpublished_reason": summary["unpublished_reason"],
+        "seeds_whose_frequency_paired_lower_bound_is_positive": sum(
+            bound is not None and bound > 0 for bound in lower_bounds
+        ) if summary["comparison_published"] else None,
     }
 
 

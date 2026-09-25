@@ -1,0 +1,42 @@
+{
+  "schema": "paper-sites-v1",
+  "paper_doi": "10.1109/TIFS.2022.3152357",
+  "identity_note": "同名不等于论文表 I 的同一文件。missing 不能用其它站点改名。",
+  "sites": [
+    {
+      "paper_name": "Rockyou",
+      "status": "local_frequency_file_not_proven_identical",
+      "paper_total": 32510281,
+      "local_withcount_total": 32603388,
+      "local_withcount_sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+      "roles_allowed": ["distribution_check"]
+    },
+    {
+      "paper_name": "000webhost",
+      "status": "maya_same_name_not_proven_identical",
+      "paper_total": 15271654,
+      "maya_occurrence_total": 15270702,
+      "payload_sha256": "9ab1bc94e88e62dd0555ff439622b532728322e6ca19297d100667884edb4d31",
+      "roles_allowed": ["external_generalization"]
+    },
+    {
+      "paper_name": "Yahoo",
+      "status": "maya_same_name_not_proven_identical",
+      "paper_total": 442830,
+      "maya_occurrence_total": 442838,
+      "payload_sha256": "00bb4123b333ff5d98d05deabf4ee36305ea0d1e5449e7fff0fcb47897079557",
+      "roles_allowed": ["external_generalization"]
+    },
+    {"paper_name": "178", "status": "missing", "paper_total": 9072966, "roles_allowed": []},
+    {"paper_name": "CSDN", "status": "missing", "paper_total": 4410531, "roles_allowed": []},
+    {"paper_name": "RenRen", "status": "missing", "paper_total": 3229436, "roles_allowed": []}
+  ],
+  "cross_site": {
+    "paper_sentence": "IV.A.1 says one test set and the remaining four as training, while Table I has six sets.",
+    "project_choice": "do not invent a unique original pairing. All ordered A to B pairs would be a project operationalization, not a claim that the paper specified 30 directions."
+  },
+  "attacks": {
+    "pcfg": "adapter keeps raw generation indexes; paper 1e8 cross-site run is not done",
+    "omen": "not integrated; markov substitute is not OMEN"
+  }
+}

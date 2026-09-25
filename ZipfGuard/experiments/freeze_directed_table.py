@@ -39,7 +39,11 @@ def render(payload: dict, candidate_hashes: dict[str, str]) -> str:
         arms = payload["mechanisms"][mechanism]["900"]["arms"]
         cells = []
         for key in ("modern_blocklist", "paper_igr_unique", "budget_cost"):
-            cells.append(f"{arms[key]['mean'] * 100:.1f}")
+            value = arms[key]["mean"]
+            if value is None or arms[key].get("comparison_published") is False:
+                cells.append("未发布")
+            else:
+                cells.append(f"{value * 100:.1f}")
         outside = arms["budget_cost"]["outside_candidate_rate"]["mean"]
         lines.append(f"| {mechanism} | " + " | ".join(cells) + f" | {outside:.3f} |")
     lines.append("")
