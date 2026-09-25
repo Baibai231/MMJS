@@ -35,16 +35,59 @@ def wilson_interval(successes: int, total: int, z: float = 1.95996398454) -> tup
     return max(0.0, center - radius), min(1.0, center + radius)
 
 
+def evaluate_open_generation(
+    stream: Sequence[str], samples: Iterable[str], budgets=(100, 1_000, 10_000),
+) -> dict:
+    """Score a raw generator stream without deleting out-of-set guesses.
+
+    The rank of a string is the 1-based index of its first appearance. Guesses
+    that lie outside a candidate set still consume budget, so a target that
+    appears third stays at rank 3 after two out-of-set guesses.
+    """
+    positions = []
+    seen: set[str] = set()
+    unique = []
+    for index, value in enumerate(stream, start=1):
+        text = str(value)
+        if text in seen:
+            continue
+        seen.add(text)
+        unique.append(text)
+        positions.append(index)
+    return evaluate_ranking(unique, samples, budgets, positions=positions)
+
+
 def evaluate_ranking(
     ranking: Sequence[str], samples: Iterable[str], budgets=(100, 1_000, 10_000),
+    positions: Sequence[int] | None = None,
 ) -> dict:
-    """Evaluate one frozen ranking without changing or clipping requested budgets."""
-    unique_ranking = list(dict.fromkeys(str(value) for value in ranking))
+    """Evaluate one frozen ranking without changing or clipping requested budgets.
+
+    ``positions`` are 1-based indexes in an original generator stream. When
+    they are present, matched guesses keep those indexes and are not renumbered
+    after a candidate-set filter. Omit them only for a closed ranking, where
+    every listed string was scored inside one shared candidate set.
+    """
+    raw_ranking = [str(value) for value in ranking]
+    if positions is None:
+        unique_ranking = list(dict.fromkeys(raw_ranking))
+        ranks = {value: index + 1 for index, value in enumerate(unique_ranking)}
+    else:
+        if len(positions) != len(raw_ranking):
+            raise ValueError("开放生成的原始序号必须与猜测列表等长")
+        ranks = {}
+        unique_ranking = []
+        for value, position in zip(raw_ranking, positions):
+            if isinstance(position, bool) or int(position) != position or int(position) < 1:
+                raise ValueError("开放生成序号必须是正整数")
+            if value in ranks:
+                continue
+            ranks[value] = int(position)
+            unique_ranking.append(value)
     sample_values = [str(sample) for sample in samples]
     normalized_budgets = sorted({int(value) for value in budgets if int(value) > 0})
     if not normalized_budgets:
         raise ValueError("至少需要一个正攻击预算")
-    ranks = {value: index + 1 for index, value in enumerate(unique_ranking)}
     actual_ranks = [ranks.get(value, math.inf) for value in sample_values]
     total = len(actual_ranks)
     covered = sum(math.isfinite(rank) for rank in actual_ranks)

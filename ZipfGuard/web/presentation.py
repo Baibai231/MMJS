@@ -79,7 +79,10 @@ def report_html(result, *, document=True):
     parts = ['<main><section><h1>ZipfGuard · 实验结果</h1><div class="metrics">']
     for label, value in (("数据集", result['dataset']['dataset_id']), ("样本数", result['dataset']['total_count']), ("选择模型", a['selected_model']), (f"q={a['risk_threshold']['q']:.1%} 风险排名", a['risk_threshold']['model_rank'])):
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong></div>')
-    parts += ['</div><p class="muted">' + escape(metadata.get('evaluation_scope', '')) + '</p>', '<p class="muted">合成有限空间和预设用户行为下的机制演示，不代表真实世界防御效果；Wilson 区间为逐点区间。</p></section>']
+    parts += ['</div><p class="muted">' + escape(metadata.get('evaluation_scope', '')) + '</p>']
+    if metadata.get('saturated_by_grammar_ceiling'):
+        parts.append('<p class="muted">' + escape(metadata.get('saturation_note', '')) + '</p>')
+    parts.append('<p class="muted">合成有限空间和预设用户行为下的机制演示，不代表真实世界防御效果；Wilson 区间为逐点区间。</p></section>')
     source = result['dataset'].get('metadata', {})
     if not result.get('simulation'):
         parts.append('<section><h2>聚合数据 · 仅运行分布分析</h2><div class="notice">M2 攻击、M3 用户响应和 M4 策略搜索均未运行：输入只有聚合频次，没有固定划分的用户口令及行为数据。</div>')

@@ -13,7 +13,8 @@ from pathlib import Path
 from ai.pcfg_adapter import PCFGConfig
 from experiments.config import load_config
 from core.data import load_count_json, write_count_json
-from core.rockyou import aggregate_rockyou
+from core.counted_corpus import CorpusFormatError, looks_like_counted_corpus
+from core.rockyou import aggregate_rockyou, aggregate_rockyou_withcount
 from experiments.pipeline import render_markdown, run_pipeline, write_json, write_report
 
 
@@ -25,7 +26,7 @@ def main() -> int:
     parser.add_argument("--source-semantics", choices=["unknown", "frequency", "unique_dictionary"], default="unknown")
     parser.add_argument("--input", type=Path, help="aggregate count JSON")
     parser.add_argument("--rockyou", type=Path, help="Rockyou-style line file; only aggregate counts are retained")
-    parser.add_argument("--max-lines", type=int, default=1_000_000)
+    parser.add_argument("--max-lines", type=int, default=None, help="读取行数上限；逐行词表默认 1000000，带频次文件默认读完")
     parser.add_argument("--top-k", type=int, default=2_000)
     parser.add_argument("--json-out", type=Path, default=Path("reports/demo.json"))
     parser.add_argument("--report-out", type=Path, default=Path("reports/demo.md"))
@@ -51,7 +52,21 @@ def main() -> int:
     if args.input and args.rockyou:
         parser.error("--input 与 --rockyou 只能选择一个")
     if args.rockyou:
-        payload = aggregate_rockyou(args.rockyou, max_lines=args.max_lines, top_k=args.top_k, source_semantics=args.source_semantics)
+        try:
+            counted = looks_like_counted_corpus(args.rockyou)
+        except CorpusFormatError as exc:
+            parser.error(str(exc))
+        if counted:
+            payload = aggregate_rockyou_withcount(
+                args.rockyou, max_lines=args.max_lines, top_k=args.top_k,
+            )
+        else:
+            payload = aggregate_rockyou(
+                args.rockyou,
+                max_lines=1_000_000 if args.max_lines is None else args.max_lines,
+                top_k=args.top_k,
+                source_semantics=args.source_semantics,
+            )
         result = run_pipeline(
             payload, config=config, seed=args.seed, bootstrap_repetitions=args.bootstrap,
             include_pcfg=args.pcfg,

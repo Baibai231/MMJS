@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+<rect width="640" height="360" fill="#fff"/>
+<text x="24" y="28" font-family="sans-serif" font-size="16">安全收益与修改率，合成用户</text>
+<polyline fill="none" stroke="#2463d9" stroke-width="2" points="36.0,324.0 322.5,188.9 604.0,36.0 319.2,169.1 290.9,194.9"/>
+<text x="24" y="340" font-family="sans-serif" font-size="12">横轴修改率，纵轴绝对百分点差。分母是测试用户。不是实测记忆率。</text>
+</svg>

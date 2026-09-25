@@ -90,17 +90,21 @@ def run_policy_attack_experiment(
                 frozen_ranking if unchanged_response else
                 attacker.fit_select_rank(train, validation, candidates)
             )
-            frozen_evaluation = evaluate_ranking(frozen_ranking.guesses, test, normalized_budgets)
-            adaptive_evaluation = evaluate_ranking(adaptive_ranking.guesses, test, normalized_budgets)
+            frozen_evaluation = evaluate_ranking(
+                frozen_ranking.guesses, test, normalized_budgets, positions=frozen_ranking.open_positions,
+            )
+            adaptive_evaluation = evaluate_ranking(
+                adaptive_ranking.guesses, test, normalized_budgets, positions=adaptive_ranking.open_positions,
+            )
             attack_rows.append({
                 "attacker_id": attacker.attacker_id,
                 "label": attacker.label,
                 "frozen": {
-                    "ranking": frozen_ranking.summary(),
+                    "ranking": frozen_ranking.summary(reveal_guesses=True),
                     "evaluation": frozen_evaluation,
                 },
                 "adaptive": {
-                    "ranking": adaptive_ranking.summary(),
+                    "ranking": adaptive_ranking.summary(reveal_guesses=True),
                     "evaluation": adaptive_evaluation,
                 },
                 "adaptive_minus_frozen": _attack_delta(

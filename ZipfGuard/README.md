@@ -80,4 +80,28 @@ python -m unittest discover -s tests -v
 
 ## 结论边界
 
-本轮修复文档第一大点的工程与展示问题，没有完成第二、三大点的科学实验重设计。默认仍是 576 项合成空间、规则化响应和有限支持排序；PCFG 当前先生成再匹配，匹配后的排名不能解释为开放生成的绝对猜测预算。字典顺序与生成器先验、候选空间规模、公开基准、多种子/消融和用户研究仍待处理。页面和报告明确显示这些边界，不能据此声称已证明真实世界防御效果。
+本轮在工程闭环之外增加了论文 HTPG 基线。默认 `run_demo` 仍是 576 项空间，高预算会饱和。PCFG 的开放评价保留原始生成序号。另有一个同预算协议，支持集大于 576，马尔可夫替代按原始生成序号计预算，并标明它不是论文里的 OMEN：
+
+```powershell
+python -m experiments.robustness_protocol --output reports\robustness_protocol.json
+```
+
+这个协议比较无策略、传统字符类别、长度加黑名单、论文 IGR 和新的预算/成本排序。数字是合成用户上的结果。
+
+论文复现入口（只输出统计，不输出口令）：
+
+```powershell
+python -m experiments.reproduce_htpg_baseline --input ..\rockyou-withcount.txt --output reports\htpg_rockyou_fit.json
+python -m experiments.reproduce_htpg_baseline --input ..\rockyou-withcount.txt --output reports\htpg_rockyou_features.json --with-features
+```
+
+曲率切分、九特征 IGR 和逐口令建议是独立基线，不替代上面的合成策略搜索。网站分类代码不在本目录的参赛入口里。
+
+独立于 RockYou 的 MAYA 站点只做聚合拟合，不把口令写进报告。需要可选依赖 `gdown` 和 `py7zr`。语料下载到 `local_datasets/maya/`，该目录不进入版本库。
+
+```powershell
+python -m pip install -e ".[maya]"
+python -m experiments.external_maya_validation --output reports\maya_external_validation.json
+```
+
+默认会下载 MAYA 目录里的全部站点，已完成的聚合结果会按文件哈希复用。MAYA 的 rockyou 会算进同一张表，但标成不是独立于论文基线的站点。频率大于 3 的论文门槛失败时，结果会保留，并额外给出标明不是论文口径的敏感性拟合。类别数超过 `--max-feature-types`（默认 700 万）时只保留频次拟合，不计算 IGR。

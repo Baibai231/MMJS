@@ -11,6 +11,7 @@ dependencies = ["numpy>=1.23"]
 
 [project.optional-dependencies]
 web = ["streamlit>=1.35"]
+maya = ["gdown>=5.2", "py7zr>=0.22"]
 
 [tool.setuptools]
 packages = ["core", "ai", "policy", "experiments", "web"]

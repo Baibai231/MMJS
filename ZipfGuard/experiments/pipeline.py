@@ -21,6 +21,7 @@ from core.distributions import analyze_counts
 from core.synthetic import (
     aggregate_synthetic_counts,
     aligned_train_validation_counts,
+    candidate_space,
     generate_synthetic_dataset,
     validate_synthetic_dataset,
 )
@@ -32,6 +33,24 @@ from ai.registry import build_attackers, OptionalAttackerFailed
 from ai.passllm_adapter import PassLLMConfig, runtime_status as passllm_status
 from policy.engine import PasswordPolicy
 from policy.engine import optimize_policies
+
+
+def grammar_ceiling(budgets: Sequence[int], grammar_size: int | None) -> dict[str, Any]:
+    """Mark budgets that can exhaust the public synthetic grammar."""
+    if grammar_size is None:
+        saturated: list[int] = []
+    else:
+        saturated = [int(budget) for budget in budgets if int(budget) >= int(grammar_size)]
+    return {
+        "historical_grammar_size": grammar_size,
+        "budgets_at_or_above_grammar_size": saturated,
+        "saturated_by_grammar_ceiling": bool(saturated),
+        "saturation_note": (
+            "这些预算不小于公开语法的候选数。猜中率到顶只能说明候选被穷尽，不能当作防御结论。"
+            if saturated else
+            "请求的预算仍小于公开语法候选数。"
+        ),
+    }
 
 
 def _run_pipeline(
@@ -194,6 +213,8 @@ def run_pipeline(payload=None, *, config=None, seed=None, budgets=None,
         runtime_ms=round((time.perf_counter() - started) * 1000, 2),
         evaluation_scope="封闭合成候选排序；PCFG 生成后匹配候选，排名按匹配顺序计数；不是开放生成预算评测",
     )
+    if result["simulation"] is not None:
+        result["metadata"].update(grammar_ceiling(result["metadata"]["budgets"], len(candidate_space())))
     result["metadata"]["pcfg"]["failure"] = next((r["reason"] for r in failures if r["attacker_id"] == "pcfg"), None)
     return result
 

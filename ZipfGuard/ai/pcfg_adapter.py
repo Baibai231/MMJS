@@ -230,6 +230,25 @@ def runtime_status(config: PCFGConfig | None = None) -> dict[str, Any]:
     }
 
 
+def split_closed_and_open(
+    stream: Sequence[str], allowed: set[str],
+) -> tuple[tuple[str, ...], tuple[int, ...]]:
+    """Keep matched guesses, but record their indexes in the raw stream.
+
+    Out-of-set lines are omitted from the returned strings and still occupy
+    their original 1-based positions. The matched list is not renumbered.
+    """
+    guesses: list[str] = []
+    positions: list[int] = []
+    seen: set[str] = set()
+    for index, line in enumerate(stream, start=1):
+        if line in allowed and line not in seen:
+            guesses.append(line)
+            positions.append(index)
+            seen.add(line)
+    return tuple(guesses), tuple(positions)
+
+
 def _unique_candidates(candidates: Sequence[str]) -> list[str]:
     values: list[str] = []
     for raw_value in candidates:
@@ -249,7 +268,8 @@ class PCFGAttacker(BaselineAttacker):
 
     def __init__(self, config: PCFGConfig | None = None):
         self.config = (config or PCFGConfig.workspace_default()).normalized()
-        self._generation_cache: dict[tuple[str, str], tuple[tuple[str, ...], int]] = {}
+        self._generation_cache: dict[tuple[str, str], tuple[tuple[str, ...], tuple[int, ...], int]] = {}
+        self._shutdown_abort = False
 
     def status(self) -> dict[str, Any]:
         return runtime_status(self.config)
@@ -468,12 +488,12 @@ class PCFGAttacker(BaselineAttacker):
 
     def _generate(
         self, backend: Path, ruleset_name: str, allowed_candidates: Sequence[str],
-    ) -> tuple[tuple[str, ...], int, bool]:
+    ) -> tuple[tuple[str, ...], tuple[int, ...], int, bool]:
         candidate_key = self._candidate_key(allowed_candidates)
         cache_key = (ruleset_name, candidate_key)
         if cache_key in self._generation_cache:
-            guesses, count = self._generation_cache[cache_key]
-            return guesses, count, True
+            guesses, positions, count = self._generation_cache[cache_key]
+            return guesses, positions, count, True
 
         allowed = set(allowed_candidates)
         session_name = f"zipfguard_{os.getpid()}_{ruleset_name[-8:]}"
@@ -488,11 +508,20 @@ class PCFGAttacker(BaselineAttacker):
                 backend, command, error_type=PCFGGenerationError, operation="候选生成",
             )
             if completed.returncode != 0:
-                detail = (completed.stderr or completed.stdout)[-2000:].strip()
-                raise PCFGGenerationError(
-                    f"PCFG 候选生成失败（exit={completed.returncode}）"
-                    + (f"：{detail}" if detail else "")
+                stderr = completed.stderr or ""
+                finished = (
+                    "No more guesses to generate" in stderr or "Limit reached" in stderr
                 )
+                # CPython can abort while joining the guesser's stdin thread after
+                # the guess list has already been written. Keep that list only for
+                # this known shutdown fault; every other non-zero exit still fails.
+                if not (finished and "_enter_buffered_busy" in stderr):
+                    detail = (stderr or completed.stdout)[-2000:].strip()
+                    raise PCFGGenerationError(
+                        f"PCFG 候选生成失败（exit={completed.returncode}）"
+                        + (f"：{detail}" if detail else "")
+                    )
+                self._shutdown_abort = True
             if "Starting to generate password guesses" not in completed.stderr:
                 raise PCFGGenerationError("PCFG 候选生成未进入有效运行阶段")
             # Upstream emits one empty banner line on stdout before guesses.
@@ -502,15 +531,10 @@ class PCFGAttacker(BaselineAttacker):
             stream = [line for line in completed.stdout.splitlines() if line]
             if len(stream) > self.config.generation_limit:
                 raise PCFGGenerationError("PCFG 上游输出超过适配器候选硬上限")
-            guesses: list[str] = []
-            seen: set[str] = set()
-            for line in stream:
-                if line in allowed and line not in seen:
-                    guesses.append(line)
-                    seen.add(line)
-            result = (tuple(guesses), len(stream))
+            guesses, positions = split_closed_and_open(stream, allowed)
+            result = (guesses, positions, len(stream))
             self._generation_cache[cache_key] = result
-            return result[0], result[1], False
+            return guesses, positions, len(stream), False
         finally:
             session_file.unlink(missing_ok=True)
 
@@ -527,7 +551,7 @@ class PCFGAttacker(BaselineAttacker):
         ruleset_name = self._ruleset_name(key)
         backend = self._prepare_backend()
         training = self._train(backend, train, ruleset_name, key)
-        guesses, generated_count, generation_cache_hit = self._generate(
+        guesses, open_positions, generated_count, generation_cache_hit = self._generate(
             backend, ruleset_name, public_candidates,
         )
         return RankingResult(
@@ -545,9 +569,12 @@ class PCFGAttacker(BaselineAttacker):
                 "generation_limit": self.config.generation_limit,
                 "generated_count": generated_count,
                 "matched_candidates": len(guesses),
+                "ranking_protocol": "open_generation",
+                "open_rank_definition": "1-based index in the raw PCFG stream; out-of-set guesses consume budget and matches are not renumbered",
                 "training_cache_hit": bool(training["cache_hit"]),
                 "generation_cache_hit": generation_cache_hit,
                 "deterministic_order": True,
+                "interpreter_shutdown_abort": self._shutdown_abort,
             },
             selection={
                 "method": "upstream PCFG probability order; no validation tuning",
@@ -556,4 +583,5 @@ class PCFGAttacker(BaselineAttacker):
                 "test_used_for_parameters": False,
             },
             training_size=len(train), validation_size=len(validation),
+            open_positions=open_positions,
         )

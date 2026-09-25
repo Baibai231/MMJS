@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+<rect width="640" height="360" fill="#fff"/>
+<text x="24" y="28" font-family="sans-serif" font-size="16">长尾 900 用户、预算 40 的绝对百分点差</text>
+<rect x="48" y="280.0" width="48" height="0.0" fill="#2463d9"/><text x="48" y="300" font-family="sans-serif" font-size="11">none</text><rect x="128" y="176.8" width="48" height="103.2" fill="#2463d9"/><text x="128" y="300" font-family="sans-serif" font-size="11">legacy</text><rect x="208" y="60.0" width="48" height="220.0" fill="#2463d9"/><text x="208" y="300" font-family="sans-serif" font-size="11">modern</text><rect x="288" y="161.7" width="48" height="118.3" fill="#2463d9"/><text x="288" y="300" font-family="sans-serif" font-size="11">paper</text><rect x="368" y="181.4" width="48" height="98.6" fill="#2463d9"/><text x="368" y="300" font-family="sans-serif" font-size="11">new</text>
+<text x="24" y="340" font-family="sans-serif" font-size="12">五种子均值。分母是测试用户。离线猜测，不是登录次数。攻击器含频次、n-gram 和固定阶马尔可夫。</text>
+</svg>

@@ -166,11 +166,13 @@ def _validation_row(
         attack_rows = []
         for attacker in attackers:
             ranking = attacker.fit_select_rank(train, validation, candidates)
-            evaluation = evaluate_ranking(ranking.guesses, validation, budgets)
+            evaluation = evaluate_ranking(
+                ranking.guesses, validation, budgets, positions=ranking.open_positions,
+            )
             attack_rows.append({
                 "attacker_id": attacker.attacker_id,
                 "label": attacker.label,
-                "ranking": ranking.summary(),
+                "ranking": ranking.summary(reveal_guesses=True),
                 "evaluation": evaluation,
             })
         budget = config.risk_budget

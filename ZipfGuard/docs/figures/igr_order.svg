@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
+<rect width="640" height="360" fill="#fff"/>
+<text x="24" y="28" font-family="sans-serif" font-size="16">RockYou 等权 IGR，前六项</text>
+<rect x="48" y="279.5" width="48" height="0.5" fill="#2463d9"/><text x="48" y="300" font-family="sans-serif" font-size="11">capital</text><rect x="128" y="279.5" width="48" height="0.5" fill="#2463d9"/><text x="128" y="300" font-family="sans-serif" font-size="11">lsd_stru</text><rect x="208" y="279.6" width="48" height="0.4" fill="#2463d9"/><text x="208" y="300" font-family="sans-serif" font-size="11">length</text><rect x="288" y="279.6" width="48" height="0.4" fill="#2463d9"/><text x="288" y="300" font-family="sans-serif" font-size="11">date</text><rect x="368" y="279.6" width="48" height="0.4" fill="#2463d9"/><text x="368" y="300" font-family="sans-serif" font-size="11">specplac</text><rect x="448" y="279.7" width="48" height="0.3" fill="#2463d9"/><text x="448" y="300" font-family="sans-serif" font-size="11">lowercas</text>
+<text x="24" y="340" font-family="sans-serif" font-size="12">分母是不同口令。示例建议只用合成字符串，不在这张图里。</text>
+</svg>

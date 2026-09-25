@@ -36,9 +36,16 @@ class RankingResult:
     selection: Mapping[str, Any]
     training_size: int
     validation_size: int
+    open_positions: tuple[int, ...] | None = None
 
-    def summary(self, *, top_n: int = 10) -> dict[str, Any]:
-        return {
+    def summary(self, *, top_n: int = 10, reveal_guesses: bool = False) -> dict[str, Any]:
+        """Aggregate fields only, unless the caller explicitly reveals guesses.
+
+        Real-data exports must keep ``reveal_guesses`` false. Synthetic grammar
+        strings may be revealed by ``run_attack_baselines`` because that path
+        rejects anything except the synthetic dataset validator.
+        """
+        payload: dict[str, Any] = {
             "attacker_id": self.attacker_id,
             "label": self.label,
             "version": self.version,
@@ -47,8 +54,14 @@ class RankingResult:
             "selection": dict(self.selection),
             "training_size": self.training_size,
             "validation_size": self.validation_size,
-            "top_guesses": list(self.guesses[:max(0, int(top_n))]),
+            "open_position_count": None if self.open_positions is None else len(self.open_positions),
+            "open_rank_of_first_match": None if not self.open_positions else int(self.open_positions[0]),
+            "top_guesses_withheld": not reveal_guesses,
         }
+        if reveal_guesses:
+            payload["top_guesses"] = list(self.guesses[:max(0, int(top_n))])
+            payload["guess_disclosure"] = "explicit reveal; do not use for leaked corpora"
+        return payload
 
 
 class BaselineAttacker(ABC):
@@ -225,8 +238,10 @@ def run_attack_baselines(
     for attacker in attackers or default_attackers():
         ranking = attacker.fit_select_rank(train, validation, candidates)
         rows.append({
-            "attacker": ranking.summary(),
-            "evaluation": evaluate_ranking(ranking.guesses, test, budgets),
+            "attacker": ranking.summary(reveal_guesses=True),
+            "evaluation": evaluate_ranking(
+                ranking.guesses, test, budgets, positions=ranking.open_positions,
+            ),
         })
     return {
         "dataset_id": normalized["dataset_id"],

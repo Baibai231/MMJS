@@ -67,7 +67,9 @@ button:disabled{opacity:.55;cursor:default}
 @media(max-width:600px){main{padding:16px}section{padding:18px}.settings-summary{flex-basis:100%;order:3}.settings-toggle{margin-left:auto}}
 """
 
-INDEX = "<!doctype html><html lang=zh-CN><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ZipfGuard 实验台</title><style>" + STYLE + SETTINGS_STYLE + "</style>" + r'''<body><main><h1>ZipfGuard · 离线实验台</h1><p>统一 Python 实验核心 · 合成机制演示与聚合分布分析</p>
+INDEX = "<!doctype html><html lang=zh-CN><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>ZipfGuard 实验台</title><style>" + STYLE + SETTINGS_STYLE + "</style>" + r'''<body><main><h1>ZipfGuard · 离线实验台</h1><p>统一 Python 实验核心。下面四步是现场要看的链路，不需要先读源码。</p>
+<ol><li>数据来源：合成演示和真实聚合用不同标签。RockYou 页面只做分布，不跑策略。</li><li>论文复现：Zipf 曲率、九特征 IGR、只对头部给出的建议。</li><li>新方法建议：同一批候选上，用验证集的预算和修改率排序。</li><li>同预算对照：无策略、传统字符类别、长度加黑名单、论文 IGR、预算/成本排序。</ol>
+<p class="muted">合成演示会标成合成。聚合分析会标成聚合，并写明截断。模型失败会显示原因，不会换成另一个模型。预算是离线猜测次数，不是在线登录次数。</p>
 <section aria-label="实验设置">
 <details id="experiment-settings" class="settings-panel">
 <summary><span class="settings-title">实验参数</span><span id="settings-summary" class="settings-summary muted">正在加载配置…</span><span class="settings-toggle" aria-hidden="true"></span></summary>
@@ -88,7 +90,8 @@ INDEX = "<!doctype html><html lang=zh-CN><meta charset=utf-8><meta name=viewport
 <details><summary>待比较策略（可编辑 JSON；保留 baseline）</summary><textarea id="policies"></textarea></details>
 <details><summary>完整配置（可修改词表、搜索动作、响应顺序和约束；点击应用后再运行）</summary><textarea id="config"></textarea><button id="apply">应用完整配置</button><button id="export">下载当前配置</button></details>
 </div></details>
-<p class="experiment-actions"><button id="run">运行实验</button> <button id="download" disabled>下载结果与 SHA-256</button> <span id="status" role="status"></span></p>
+<p class="experiment-actions"><button id="run">运行历史 576 项演示</button> <button id="open-compare">同预算对照（300 用户）</button> <button id="download" disabled>下载结果与 SHA-256</button> <span id="status" role="status"></span></p>
+<p class="muted">“运行历史 576 项演示”会在高预算饱和，只作旧基线。“同预算对照”使用更大的支持集和原始生成序号，不读取 RockYou。</p>
 <p class="muted">PassLLM 尚未接入主评估。可选模型失败会明确排除；不会冒充其他模型。</p></section></main><div id="result"></div>
 <script>
 const $=id=>document.getElementById(id);let cfg=null,last=null;
@@ -101,7 +104,9 @@ async function preset(){try{const r=await fetch('/api/config/'+$('preset').value
 function download(name,text){const a=document.createElement('a'),url=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'}));a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 $('preset').onchange=preset;$('apply').onclick=()=>{try{put(JSON.parse($('config').value));$('status').textContent='配置已应用'}catch(e){$('status').textContent=e.message}};$('export').onclick=()=>{try{download('experiment.json',JSON.stringify(get(),null,2))}catch(e){$('status').textContent=e.message}};
 $('run').onclick=async()=>{$('run').disabled=true;$('download').disabled=true;$('status').textContent='正在计算…';$('result').replaceChildren();last=null;try{const c=get();$('config').value=JSON.stringify(c,null,2);let payload=null;if($('source').value==='upload'){const f=$('upload').files[0];if(!f)throw Error('请选择聚合 JSON 文件');payload=JSON.parse(await f.text())}const res=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:c,source:$('source').value,payload,max_lines:+$('maxlines').value,top_k:+$('topk').value,source_semantics:$('semantics').value})});const data=await res.json();if(!res.ok)throw Error(data.error);last=data;$('result').innerHTML=data.html;$('download').disabled=false;$('status').textContent='实验完成'}catch(e){$('status').textContent='未完成：'+e.message}finally{$('run').disabled=false}};
-$('download').onclick=()=>{download('zipfguard_report.json',last.json);download('zipfguard_report.json.sha256',last.sha256+'  zipfguard_report.json\n')};preset();
+$('download').onclick=()=>{download('zipfguard_report.json',last.json);download('zipfguard_report.json.sha256',last.sha256+'  zipfguard_report.json\n')};
+$('open-compare').onclick=async()=>{$('open-compare').disabled=true;$('status').textContent='正在计算同预算对照…';$('result').replaceChildren();last=null;try{const res=await fetch('/api/open-compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({seed:+$('seed').value||1})});const data=await res.json();if(!res.ok)throw Error(data.error);last=data;$('result').innerHTML=data.html;$('download').disabled=false;$('status').textContent='同预算对照完成'}catch(e){$('status').textContent='未完成：'+e.message}finally{$('open-compare').disabled=false}};
+preset();
 </script></body></html>'''
 
 
@@ -128,7 +133,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(_json_safe({"error": str(exc)}), status=500)
 
     def do_POST(self):
-        if urlparse(self.path).path != "/api/run":
+        path = urlparse(self.path).path
+        if path not in ("/api/run", "/api/open-compare"):
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -139,6 +145,10 @@ class Handler(BaseHTTPRequestHandler):
                 raise ValueError("请求大小无效")
             request = json.loads(self.rfile.read(length))
             with _cache_lock:
+                if path == "/api/open-compare":
+                    result = execute_open_compare(request)
+                    content = json.dumps(result["report"], ensure_ascii=False, indent=2, allow_nan=False) + "\n"
+                    return self._send(_json_safe({"html": result["html"], "json": content, "sha256": sha256(content.encode("utf-8")).hexdigest()}))
                 result = execute_request(request)
             content = json.dumps(result, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
             return self._send(_json_safe({"result": result, "html": report_html(result, document=False),
@@ -150,6 +160,42 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, format, *args):
         return
+
+
+def execute_open_compare(request):
+    from experiments.provenance import robustness_manifest
+    from experiments.robustness_protocol import evaluate_scenario, public_comparison_html, sample_mechanism
+    seed = request.get("seed", 1)
+    if type(seed) is not int or seed < 0:
+        raise ValueError("种子必须是非负整数")
+    report = evaluate_scenario(sample_mechanism("zipf", size=300, seed=seed), budget=40, with_markov=True)
+    if "stem00" in json.dumps(report):
+        raise RuntimeError("对照结果含有口令字符串")
+    public = {
+        "support_size": report["support_size"],
+        "candidate_count": report["candidate_count"],
+        "budget": report["budget"],
+        "test_users": report["test_users"],
+        "main_budget_saturated": report["main_budget_saturated"],
+        "main_budget_decided_by_576": report["main_budget_decided_by_576"],
+        "arms": {
+            name: {
+                "closed_absolute_point_change": arm["absolute_point_change_vs_none"],
+                "open_absolute_point_change": arm["open_absolute_point_change_vs_none"],
+                "head_frequency_absolute_point_change": arm["head_users"]["frequency_absolute_point_change"],
+                "head_users": arm["head_users"]["users"],
+                "all_users": arm["all_users"]["users"],
+                "test_modification_rate": arm["test_modification_rate"],
+                "closed_protocol": arm["adaptive_worst_attacker_protocol"],
+            }
+            for name, arm in report["arms"].items()
+        },
+        "selection_bias_note": "多条策略放在同一张表里时，挑最高的一行会夸大收益。预先指定的比较是预算/成本排序对论文 IGR 和长度加黑名单。",
+        "plaintext_retained": False,
+        "historical_576_grammar": False,
+        "provenance": robustness_manifest(),
+    }
+    return {"report": public, "html": public_comparison_html(report)}
 
 
 def execute_request(request):

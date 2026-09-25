@@ -34,3 +34,40 @@ def manifest(config, dataset, attackers):
         "python": sys.version, "python_executable": sys.executable, "platform": platform.platform(),
         "dependencies": dict(sorted((d.metadata["Name"], d.version) for d in importlib.metadata.distributions() if d.metadata["Name"])),
     }
+
+
+def robustness_manifest(*, budget: int = 40, seeds: list[int] | None = None, sizes: list[int] | None = None) -> dict:
+    """Hashes for the open-budget comparison. No generated passwords are included."""
+    relative_paths = (
+        "experiments/suggestion_compare.py",
+        "experiments/robustness_protocol.py",
+        "experiments/response_sensitivity.py",
+        "experiments/htpg_iteration.py",
+        "core/markov_substitute.py",
+        "core/metrics.py",
+        "core/htpg_fit.py",
+        "core/htpg_igr.py",
+        "core/htpg_features.py",
+        "policy/htpg_generator.py",
+        "core/attackers.py",
+    )
+    files = {}
+    for relative in relative_paths:
+        files[relative] = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+    joined = "".join(files[relative] for relative in relative_paths)
+    return {
+        "protocol": "robustness-v3",
+        "budget": int(budget),
+        "seeds": seeds,
+        "sizes": sizes,
+        "budget_is_not_login_attempts": True,
+        "source_sha256": hashlib.sha256(joined.encode("utf-8")).hexdigest(),
+        "source_files": files,
+        "git_commit": git_output("rev-parse", "HEAD"),
+        "git_dirty": bool(git_output("status", "--porcelain")),
+        "python": sys.version,
+        "platform": platform.platform(),
+        "markov_substitute": "fixed-order-markov-not-omen",
+        "passllm": "not_participating",
+        "plaintext_retained": False,
+    }
