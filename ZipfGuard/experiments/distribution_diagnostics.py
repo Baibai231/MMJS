@@ -28,15 +28,17 @@ def summarize_audit(path: Path = AUDIT) -> dict:
             "alpha_rounded_3dp": row.get("alpha_rounded_3dp"),
             "cutoff_rank": row.get("cutoff_rank"),
             "frequency_use": row.get("frequency_use"),
-            "account_risk_applicable": row.get("frequency_use") == "occurrence_not_verified_accounts",
+            "occurrence_weighted_metric_available": row.get("frequency_use") == "occurrence_not_verified_accounts",
+            "account_risk_applicable": False,
+            "account_risk_status": "unknown",
         })
-    applicable = [row for row in sites if row["account_risk_applicable"]]
+    applicable = [row for row in sites if row["occurrence_weighted_metric_available"]]
     return {
         "protocol": "research19-v1",
         "sites": len(sites),
         "paper_threshold_sites": sum(bool(row["paper_threshold"]) for row in sites),
         "feature_computed_sites": sum(row["feature_status"] == "computed" for row in sites),
-        "account_risk_not_claimed_sites": [row["name"] for row in sites if not row["account_risk_applicable"]],
+        "account_risk_not_claimed_sites": [row["name"] for row in sites if row["account_risk_status"] != "verified_accounts"],
         "macro_mean_repeat_ratio": (
             None if not applicable else sum(row["repeat_ratio"] for row in applicable) / len(applicable)
         ),

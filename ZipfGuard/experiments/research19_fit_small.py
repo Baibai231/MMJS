@@ -21,9 +21,29 @@ MAX_UNIQUE = 200_000
 MLE_UNIQUE = 4_000
 
 
+def _known_unique(name: str) -> int | None:
+    audit = ROOT / "reports" / "research19" / "data_audit.json"
+    if not audit.is_file():
+        return None
+    payload = json.loads(audit.read_text(encoding="utf-8"))
+    for row in payload.get("sites", []):
+        if row.get("name") == name and isinstance(row.get("unique_types"), int):
+            return row["unique_types"]
+    return None
+
+
 def main() -> int:
     rows = []
     for name in dataset_names():
+        known = _known_unique(name)
+        if known is not None and known > MAX_UNIQUE:
+            rows.append({
+                "site": name,
+                "status": "incomplete",
+                "reason": f"数据卡记录的独特字符串 {known} 超过 {MAX_UNIQUE}，这次没有把文件读进内存",
+            })
+            print(name, "incomplete", flush=True)
+            continue
         payload = next((ROOT / f"local_datasets/maya/{name}/extracted").rglob("*.pickle"))
         _meta, counts = load_occurrence_counter(payload)
         unique = len(counts)

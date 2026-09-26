@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import sys
 import time
 from pathlib import Path
 
-from core.attack_stream import account_emissions, evaluate_ordered_stream
+from core.attack_stream import score_axes
 from core.occurrence_frequency import load_occurrence_counter
 from experiments.research19_smoke import BUDGETS, occurrence_split
 
@@ -35,17 +36,10 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _mark_incomplete(scored: dict, unique_count: int) -> list[dict]:
-    points = []
-    for point in scored["points"]:
-        item = dict(point)
-        if item["budget"] > unique_count:
-            item["cracked"] = None
-            item["rate"] = None
-            item["incomplete"] = True
-            item["reason"] = "唯一候选数没有达到该预算"
-        points.append(item)
-    return points
+def scheduled_passllm_trajectories(sample_size: int, batch_size: int) -> int:
+    """Match the artifact: it plans sample_size * 1.1 trajectories, then keeps sample_size."""
+    times = math.ceil((sample_size * 1.1) / batch_size)
+    return times * batch_size
 
 
 def _length_domain(test: list[str], max_chars: int) -> dict:
@@ -58,29 +52,36 @@ def _length_domain(test: list[str], max_chars: int) -> dict:
     }
 
 
-def _score(lines: list[str], test: list[str], *, max_chars: int) -> dict:
-    counted = account_emissions(
+def _records(lines: list[str], max_chars: int) -> list[dict]:
+    return [
         {
             "text": line,
             "valid": isinstance(line, str) and line != "",
             "in_domain": isinstance(line, str) and 0 < len(line) <= max_chars,
         }
         for line in lines
-    )
-    budgets = tuple(sorted(set(BUDGETS) | {counted["unique_candidates"]}))
-    scored = evaluate_ordered_stream(counted["ordered_unique"], test, budgets)
+    ]
+
+
+def _score(lines: list[str], test: list[str], *, max_chars: int, completion: str) -> dict:
+    records = _records(lines, max_chars)
     within = [password for password in test if len(password) <= max_chars]
-    within_scored = evaluate_ordered_stream(counted["ordered_unique"], within, budgets)
+    scored = score_axes(records, test, BUDGETS, completion=completion, include_produced=True)
+    within_scored = score_axes(records, within, BUDGETS, completion=completion, include_produced=True)
     return {
-        "raw_emissions": counted["raw_emissions"],
-        "valid_candidates": counted["valid_candidates"],
-        "unique_candidates": counted["unique_candidates"],
-        "duplicate_count": counted["duplicate_count"],
-        "outside_domain": counted["outside_domain"],
-        "empty": counted["raw_emissions"] - counted["valid_candidates"],
+        "raw_emissions": scored["raw_emissions"],
+        "valid_candidates": scored["valid_candidates"],
+        "unique_candidates": scored["unique_candidates"],
+        "duplicate_count": scored["duplicate_count"],
+        "outside_domain": scored["outside_domain"],
+        "empty": scored["raw_emissions"] - scored["valid_candidates"],
         "max_char_length_observed": max((len(line) for line in lines if line), default=0),
-        "points_all_test_rows": _mark_incomplete(scored, counted["unique_candidates"]),
-        "points_within_length_domain": _mark_incomplete(within_scored, counted["unique_candidates"]),
+        "completion": scored["completion"],
+        "points_raw_position": scored["axes"]["raw_position"]["points"],
+        "points_valid_position": scored["axes"]["valid_position"]["points"],
+        "points_unique_position": scored["axes"]["unique_position"]["points"],
+        "points_raw_position_within_length": within_scored["axes"]["raw_position"]["points"],
+        "points_unique_position_within_length": within_scored["axes"]["unique_position"]["points"],
         "length_domain": _length_domain(test, max_chars),
     }
 
@@ -189,7 +190,10 @@ def passllm_sample(limit: int) -> dict:
         "device": "cpu",
         "prompt_id": 1,
         "pii_used": False,
-        "requested_raw_emissions": limit,
+        "requested_retained_outputs": limit,
+        "scheduled_trajectories": scheduled_passllm_trajectories(limit, 8),
+        "generation_order_available": False,
+        "verification_order": "score_descending_within_retained_pool",
         "seconds": round(time.perf_counter() - started, 3),
         "base_sha256": _file_sha256(PASSLLM_BASE / "model.safetensors"),
         "lora_sha256": _file_sha256(PASSLLM_LORA / "adapter_model.safetensors"),
@@ -225,7 +229,17 @@ def main() -> int:
             report[name] = {"status": "failed", "error": type(exc).__name__}
             continue
         lines = generated.pop("lines")
-        report[name] = {**generated, **_score(lines, split["test"], max_chars=max_chars)}
+        completion = "reached_budget" if len(lines) >= limit else "resource_truncated"
+        scored = _score(lines, split["test"], max_chars=max_chars, completion=completion)
+        scored["points_are_generation_order"] = name != "passllm"
+        if name == "passllm":
+            scored["points_sorted_retained_position"] = scored.pop("points_raw_position")
+            scored["points_sorted_retained_within_length"] = scored.pop("points_raw_position_within_length")
+            scored["points_raw_position"] = None
+            scored["points_raw_position_within_length"] = None
+            scored["generation_budget_cracked"] = None
+            scored["generation_budget_reason"] = "保留并按分数排序后的顺序不是原始生成位置，原始生成预算没有逐条位置"
+        report[name] = {**generated, **scored}
         del lines
     output = ROOT / "reports" / "research19" / "neural_eval.json"
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -235,7 +249,8 @@ def main() -> int:
             "status": report[name].get("status"),
             "seconds": report[name].get("seconds"),
             "unique": report[name].get("unique_candidates"),
-            "points": report[name].get("points_all_test_rows"),
+            "points_raw_position": report[name].get("points_raw_position"),
+            "generation_order": report[name].get("points_are_generation_order"),
         }
         for name in ("passgpt", "passllm")
     }

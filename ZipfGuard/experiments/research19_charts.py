@@ -26,22 +26,42 @@ def _bar(rows: list[tuple[str, float]], title: str, output: Path) -> None:
     output.write_text("\n".join(parts) + "\n", encoding="utf-8")
 
 
+def _require_rows(payload: dict, path: Path, field: str) -> list[dict]:
+    rows = payload.get("rows")
+    if not isinstance(rows, list) or not rows:
+        raise ValueError(f"{path} 没有 rows。拒绝画成一张没有柱子的图。")
+    checked = [row for row in rows if row.get("status") in (None, "completed")]
+    if not checked or any(field not in row for row in checked):
+        raise ValueError(f"{path} 缺少 {field}。这是旧结果，拒绝画成一张没有柱子的图。")
+    return rows
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    frequency = json.loads((ROOT / "reports/research19/frequency_matrix.json").read_text(encoding="utf-8"))
+    frequency_path = ROOT / "reports/research19/frequency_matrix.json"
+    frequency = json.loads(frequency_path.read_text(encoding="utf-8"))
+    frequency_rows = _require_rows(frequency, frequency_path, "points_axis")
     rows = []
-    for row in frequency["rows"]:
+    for row in frequency_rows:
         if row["status"] != "completed":
             continue
         point = row["points"][-1]
+        if point.get("cracked") is None or not point.get("total"):
+            continue
         rows.append((row["site"], point["cracked"] / point["total"]))
+    if not rows:
+        raise ValueError(f"{frequency_path} 没有可画的完成预算，拒绝生成空图。")
     _bar(rows, "Train-frequency cracked rate at budget 1000", OUT / "frequency_budget_1000.svg")
-    diagnostics = json.loads((ROOT / "reports/research19/distribution_diagnostics.json").read_text(encoding="utf-8"))
+    diagnostics_path = ROOT / "reports/research19/distribution_diagnostics.json"
+    diagnostics = json.loads(diagnostics_path.read_text(encoding="utf-8"))
+    diagnostic_rows = _require_rows(diagnostics, diagnostics_path, "occurrence_weighted_metric_available")
     repeats = [
         (row["name"], row["repeat_ratio"])
-        for row in diagnostics["rows"]
-        if row.get("repeat_ratio") is not None and row.get("account_risk_applicable")
+        for row in diagnostic_rows
+        if row.get("repeat_ratio") is not None and row.get("occurrence_weighted_metric_available")
     ]
+    if not repeats:
+        raise ValueError(f"{diagnostics_path} 没有可加权的重复率，拒绝生成空图。")
     _bar(repeats, "Repeat ratio from occurrence counts", OUT / "repeat_ratio.svg")
     print(OUT)
     return 0

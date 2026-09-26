@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL_ID = "research19-v1"
 LEXICON_RELATIVE = "resources/htpg_reference_v1.json"
 ANALYSIS_SOURCES = (
+    "core/counted_corpus.py",
     "core/htpg_fit.py",
     "core/htpg_igr.py",
     "core/htpg_features.py",
@@ -17,6 +18,7 @@ ANALYSIS_SOURCES = (
     "core/occurrence_frequency.py",
     "experiments/external_maya_validation.py",
     "experiments/evaluation_validity.py",
+    "experiments/research19_manifest.py",
 )
 HISTORICAL_PROTOCOLS = {"robustness-v1", "robustness-v2", "robustness-v3"}
 HISTORICAL_WARNING = "历史协议结果。不能自动显示为 research19 或当前 robustness-v4 的方法效果。"
@@ -53,13 +55,25 @@ def fit_config_sha256() -> str:
     return sha256_bytes(json.dumps(config, sort_keys=True).encode("utf-8"))
 
 
-def analysis_cache_key(*, payload_sha256: str, max_feature_types: int) -> dict:
+def lexicon_identity_sha256(extractor) -> str:
+    """Hash the lexicon actually used, not only the default path."""
+    recorded = (getattr(extractor, "lexicon_metadata", None) or {}).get("sha256")
+    if isinstance(recorded, str) and len(recorded) == 64:
+        return recorded
+    payload = json.dumps(
+        {"word_type": extractor.word_terms, "lastname": extractor.surname_terms},
+        ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+    )
+    return sha256_bytes(payload.encode("utf-8"))
+
+
+def analysis_cache_key(*, payload_sha256: str, max_feature_types: int, lexicon_digest: str | None = None) -> dict:
     """Identity that must change when data, code, lexicon, or fit config changes."""
     parts = {
         "payload_sha256": payload_sha256,
         "max_feature_types": int(max_feature_types),
         "analysis_source_sha256": analysis_source_sha256(),
-        "lexicon_sha256": lexicon_sha256(),
+        "lexicon_sha256": lexicon_digest if lexicon_digest is not None else lexicon_sha256(),
         "fit_config_sha256": fit_config_sha256(),
     }
     parts["cache_key_sha256"] = sha256_bytes(json.dumps(parts, sort_keys=True).encode("utf-8"))

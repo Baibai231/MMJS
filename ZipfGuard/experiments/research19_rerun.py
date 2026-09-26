@@ -1,4 +1,8 @@
-"""Small-budget entry points. This does not launch the 1e5 or 19-site neural runs."""
+"""Small-budget entry points.
+
+This does not launch neural evaluation, the 19-site fit, or the confirmation
+experiment. PassLLM and PassGPT stay in ``experiments.research19_neural_eval``.
+"""
 from __future__ import annotations
 
 import subprocess
@@ -8,6 +12,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMANDS = (
+    [sys.executable, "-m", "experiments.distribution_diagnostics"],
+    [sys.executable, "-m", "experiments.research19_splits"],
     [sys.executable, "-m", "experiments.research19_smoke"],
     [sys.executable, "-m", "experiments.research19_frequency_matrix"],
     [sys.executable, "-m", "experiments.research19_transfer"],

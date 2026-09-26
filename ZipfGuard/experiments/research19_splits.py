@@ -41,9 +41,11 @@ def unique_disjoint_rows(counts: Counter[str], seed: int) -> dict[str, list[str]
     return chosen
 
 
-def _digest(rows: list[str]) -> str:
-    payload = "\n".join(sorted(set(rows))).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
+def digest_multiset(rows: list[str]) -> str:
+    """Hash each distinct string with its count. Newlines inside a string stay inside JSON."""
+    counts = Counter(rows)
+    payload = json.dumps(sorted(counts.items()), ensure_ascii=False, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def manifest_for(counts: Counter[str], seed: int) -> dict:
@@ -56,7 +58,7 @@ def manifest_for(counts: Counter[str], seed: int) -> dict:
             "unique_strings": {name: len(values) for name, values in sets.items()},
             "string_overlap_train_test": len(sets["train"] & sets["test"]),
             "same_string_may_cross_splits": overlap_allowed,
-            "sha256": {name: _digest(values) for name, values in rows.items()},
+            "sha256": {name: digest_multiset(values) for name, values in rows.items()},
         }
     return {
         "seed": seed,

@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from core.attack_stream import evaluate_ordered_stream
+from core.attack_stream import score_axes
 from core.occurrence_frequency import load_occurrence_counter
 from experiments.research19_smoke import frequency_attack, omen_attack, occurrence_split, pcfg_attack
 
@@ -20,15 +20,19 @@ TOTAL = 900
 SHARE = 300
 
 
-def _cracked(ordered: list[str], targets: list[str], budget: int) -> dict:
-    usable = min(budget, len(ordered))
-    point = evaluate_ordered_stream(ordered, targets, (usable,))["points"][0]
-    point["requested_budget"] = budget
-    point["unique_candidates"] = len(ordered)
-    if len(ordered) < budget:
-        point["incomplete"] = True
-        point["reason"] = "唯一候选数少于请求预算，命中数只统计已经生成的候选"
-    return point
+def _cracked(ordered: list[str], targets: list[str], budget: int, *, completion: str) -> dict:
+    ledger = score_axes(
+        ({"text": guess, "valid": True} for guess in ordered),
+        targets, (budget, len(ordered)), completion=completion,
+    )
+    points = ledger["axes"]["unique_position"]["points"]
+    requested = next(point for point in points if point["budget"] == budget)
+    produced = next(point for point in points if point["budget"] == len(ordered))
+    requested["unique_candidates"] = len(ordered)
+    requested["requested_budget"] = budget
+    requested["produced_budget_cracked"] = produced["cracked"]
+    requested["produced_budget"] = produced["budget"]
+    return requested
 
 
 def _union(streams: dict[str, list[str]], share: int) -> list[str]:
@@ -53,7 +57,10 @@ def main() -> int:
     }
     streams = {name: attack.pop("ordered_unique") for name, attack in attacks.items()}
     validation = {
-        name: _cracked(streams[name], split["validation"], TOTAL)
+        name: _cracked(
+            streams[name], split["validation"], TOTAL,
+            completion="dictionary_exhausted" if name == "frequency" else "reached_budget",
+        )
         for name in streams
     }
     ranked = sorted(
@@ -61,9 +68,15 @@ def main() -> int:
         key=lambda name: (-validation[name]["cracked"], name),
     )
     best = ranked[0] if ranked else None
-    test_best = None if best is None else _cracked(streams[best], split["test"], TOTAL)
+    test_best = None if best is None else _cracked(
+        streams[best], split["test"], TOTAL,
+        completion="dictionary_exhausted" if best == "frequency" else "reached_budget",
+    )
     combined = _union(streams, SHARE)
-    test_union = _cracked(combined, split["test"], TOTAL)
+    test_union = _cracked(
+        combined, split["test"], TOTAL,
+        completion="reached_budget" if len(combined) >= TOTAL else "resource_truncated",
+    )
     report = {
         "protocol": "research19-v1",
         "site": "hak5",

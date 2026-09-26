@@ -61,23 +61,143 @@ def account_emissions(records: Iterable[dict]) -> dict:
     }
 
 
-def evaluate_ordered_stream(ordered: Sequence[str], targets: Sequence[str], budgets: Sequence[int]) -> dict:
-    """First raw position in ``ordered`` is the guess rank. Missing targets stay uncracked."""
+COMPLETIONS = {
+    "reached_budget",
+    "dictionary_exhausted",
+    "resource_truncated",
+    "failed",
+    "interrupted",
+    "unspecified",
+}
+
+
+def _axis_points(
+    ordered: Sequence[str | None], targets: Sequence[str], budgets: Sequence[int], *,
+    completion: str, axis: str, terminal: str,
+) -> dict:
     position = {}
     for index, guess in enumerate(ordered, start=1):
-        position.setdefault(guess, index)
-    points = []
+        if isinstance(guess, str) and guess != "":
+            position.setdefault(guess, index)
+    produced = len(ordered)
     total = len(targets)
+    points = []
     for budget in budgets:
-        cracked = sum(position.get(target, 10**18) <= budget for target in targets)
-        points.append({
-            "budget": int(budget),
-            "cracked": cracked,
+        budget = int(budget)
+        point_completion = completion
+        if terminal == "interrupted":
+            point_completion = "reached_before_interrupt" if budget <= produced else "interrupted"
+        base = {
+            "budget": budget,
+            "axis": axis,
             "total": total,
+            "produced": produced,
+            "completion": point_completion,
+        }
+        if point_completion in {"failed", "interrupted"} or point_completion not in COMPLETIONS | {"reached_before_interrupt"}:
+            points.append({**base, "cracked": None, "rate": None, "incomplete": True,
+                           "reason": "生成没有正常结束，不能把短序列写成该预算已完成"})
+            continue
+        if budget > produced and completion != "dictionary_exhausted":
+            points.append({**base, "cracked": None, "rate": None, "incomplete": True,
+                           "reason": "该轴上的候选数没有达到预算，序列短本身不能证明已经穷尽"})
+            continue
+        cracked = sum(position.get(target, 10**18) <= min(budget, produced) for target in targets)
+        note = None
+        if budget > produced and completion == "dictionary_exhausted":
+            note = "词典已经穷尽，更高预算没有新的候选"
+        elif point_completion == "reached_before_interrupt":
+            note = "这个预算在中断前已经发出"
+        points.append({
+            **base,
+            "cracked": cracked,
             "rate": None if total == 0 else cracked / total,
             "incomplete": False,
+            "reason": note,
         })
-    return {"points": points, "plaintext_retained": False}
+    return {"points": points, "produced": produced}
+
+
+def score_axes(
+    records: Iterable[dict], targets: Sequence[str], budgets: Sequence[int], *,
+    completion: str, include_produced: bool = False,
+) -> dict:
+    """Score one emission log on three axes that must not share a budget label.
+
+    ``raw_position`` counts every emission, including invalid output.
+    ``valid_position`` counts valid emissions, including duplicates.
+    ``unique_position`` counts the first time each valid string appears.
+    A short list is incomplete unless ``completion`` is ``dictionary_exhausted``.
+    An interrupted run keeps that as the terminal state even if the caller
+    asked for ``reached_budget``. Budgets already emitted stay scorable.
+    """
+    if completion not in COMPLETIONS:
+        raise ValueError(f"未知完成状态：{completion}")
+    raw_slots: list[str | None] = []
+    valid_order: list[str] = []
+    unique: list[str] = []
+    seen: set[str] = set()
+    valid_count = duplicate_count = outside_domain = 0
+    interrupted = False
+    for record in records:
+        if record.get("interrupted"):
+            interrupted = True
+            raw_slots.append(None)
+            break
+        text = record.get("text")
+        valid = bool(record.get("valid")) and isinstance(text, str) and text != ""
+        if record.get("in_domain") is False:
+            outside_domain += 1
+        if not valid:
+            raw_slots.append(None)
+            continue
+        valid_count += 1
+        raw_slots.append(text)
+        valid_order.append(text)
+        if text in seen:
+            duplicate_count += 1
+            continue
+        seen.add(text)
+        unique.append(text)
+    terminal = "interrupted" if interrupted else completion
+    budget_list = tuple(budgets)
+    if include_produced:
+        budget_list = tuple(sorted(set(budget_list) | {len(raw_slots), len(valid_order), len(unique)}))
+    return {
+        "raw_emissions": len(raw_slots),
+        "valid_candidates": valid_count,
+        "unique_candidates": len(unique),
+        "duplicate_count": duplicate_count,
+        "outside_domain": outside_domain,
+        "interrupted": interrupted,
+        "requested_completion": completion,
+        "completion": terminal,
+        "axes": {
+            "raw_position": _axis_points(
+                raw_slots, targets, budget_list, completion=completion, axis="raw_position", terminal=terminal,
+            ),
+            "valid_position": _axis_points(
+                valid_order, targets, budget_list, completion=completion, axis="valid_position", terminal=terminal,
+            ),
+            "unique_position": _axis_points(
+                unique, targets, budget_list, completion=completion, axis="unique_position", terminal=terminal,
+            ),
+        },
+        "ordered_unique": unique,
+        "plaintext_retained": False,
+    }
+
+
+def evaluate_ordered_stream(ordered: Sequence[str], targets: Sequence[str], budgets: Sequence[int]) -> dict:
+    """Score an already built sequence on the unique-position axis.
+
+    Callers that still have the original emission log should use ``score_axes``.
+    Budgets beyond this sequence stay incomplete.
+    """
+    axis = _axis_points(
+        list(ordered), targets, budgets, completion="unspecified", axis="unique_position", terminal="unspecified",
+    )
+    return {"points": axis["points"], "plaintext_retained": False}
 
 
 def checkpoint_raw(counted: dict) -> dict:

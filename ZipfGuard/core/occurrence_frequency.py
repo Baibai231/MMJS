@@ -80,8 +80,10 @@ def load_occurrence_counter(path: str | Path) -> tuple[dict, Counter[str]]:
     digest = _digest_file(source)
     with source.open("rb") as handle:
         header = handle.read(16)
+    stats: Counter[str] | None = None
     if header.startswith(b"\x80"):
-        mode, rows, skipped, counts = _counter_from_pickle(source)
+        mode, rows, stats, counts = _counter_from_pickle(source)
+        skipped = int(stats["non_string"] + stats["empty"] + stats["internal_control"])
     else:
         mode, rows, skipped, counts = _counter_from_text(source)
     if not counts:
@@ -98,10 +100,57 @@ def load_occurrence_counter(path: str | Path) -> tuple[dict, Counter[str]]:
         "top1_count": int(max(counts.values())),
         "plaintext_retained": False,
     }
+    if stats is not None:
+        meta["preprocess_version"] = PREPROCESS_VERSION
+        meta["trailing_lf_removed"] = int(stats["removed_lf"])
+        meta["trailing_crlf_removed"] = int(stats["removed_crlf"])
+        meta["rows_without_record_terminator"] = int(stats["no_record_terminator"])
+        meta["rows_excluded_internal_controls"] = int(stats["internal_control"])
+        meta["rows_excluded_empty"] = int(stats["empty"])
+        meta["rows_excluded_non_string"] = int(stats["non_string"])
     return meta, counts
 
 
-def _counter_from_pickle(source: Path) -> tuple[str, int, int, Counter[str]]:
+PREPROCESS_VERSION = "maya-pickle-record-terminator-v1"
+
+
+def _has_control(text: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in text)
+
+
+def normalize_pickle_string(item: str) -> tuple[str | None, dict[str, int]]:
+    """Drop one MAYA record terminator. Do not delete characters inside the value.
+
+    The seven local MAYA pickles store each string with one trailing LF.
+    A CR LF terminator is accepted the same way. Terminator removal is counted
+    even when the remaining value is excluded for an internal control character.
+    """
+    flags = {
+        "removed_lf": 0,
+        "removed_crlf": 0,
+        "no_record_terminator": 0,
+        "empty": 0,
+        "internal_control": 0,
+    }
+    if item.endswith("\r\n"):
+        body = item[:-2]
+        flags["removed_crlf"] = 1
+    elif item.endswith("\n"):
+        body = item[:-1]
+        flags["removed_lf"] = 1
+    else:
+        body = item
+        flags["no_record_terminator"] = 1
+    if body == "":
+        flags["empty"] = 1
+        return None, flags
+    if _has_control(body):
+        flags["internal_control"] = 1
+        return None, flags
+    return body, flags
+
+
+def _counter_from_pickle(source: Path) -> tuple[str, int, Counter[str], Counter[str]]:
     with source.open("rb") as handle:
         payload = _SequenceUnpickler(handle).load()
     if isinstance(payload, dict):
@@ -109,19 +158,21 @@ def _counter_from_pickle(source: Path) -> tuple[str, int, int, Counter[str]]:
     if not isinstance(payload, Iterable):
         raise CorpusFormatError("pickle 不是口令序列")
     counts: Counter[str] = Counter()
-    rows = skipped = 0
+    stats: Counter[str] = Counter()
+    rows = 0
     for item in payload:
         rows += 1
         if not isinstance(item, str):
-            skipped += 1
+            stats["non_string"] += 1
             continue
-        text = item.strip("\n")
-        if not text:
-            skipped += 1
+        text, flags = normalize_pickle_string(item)
+        for key, value in flags.items():
+            stats[key] += value
+        if text is None:
             continue
         counts[text] += 1
     del payload
-    return "maya_pickle_occurrence", rows, skipped, counts
+    return "maya_pickle_occurrence", rows, stats, counts
 
 
 def _counter_from_text(source: Path) -> tuple[str, int, int, Counter[str]]:

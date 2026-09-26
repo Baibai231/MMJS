@@ -13,7 +13,7 @@ from collections import Counter
 from pathlib import Path
 
 from ai.pcfg_adapter import PCFGAttacker, PCFGConfig
-from core.attack_stream import account_emissions, evaluate_ordered_stream
+from core.attack_stream import score_axes
 from core.occurrence_frequency import load_occurrence_counter
 
 
@@ -42,7 +42,10 @@ def frequency_attack(train: list[str], test: list[str], budgets: tuple[int, ...]
     counts = Counter(train)
     ordered = sorted(counts, key=lambda word: (-counts[word], word))
     counts.clear()
-    scored = evaluate_ordered_stream(ordered, test, budgets)
+    ledger = score_axes(
+        ({"text": word, "valid": True} for word in ordered),
+        test, budgets, completion="dictionary_exhausted",
+    )
     train_set = set(ordered)
     return {
         "protocol": "train_frequency_open_dictionary",
@@ -50,7 +53,11 @@ def frequency_attack(train: list[str], test: list[str], budgets: tuple[int, ...]
         "train_types": len(ordered),
         "test_rows": len(test),
         "test_rows_seen_in_train": sum(password in train_set for password in test),
-        "points": scored["points"],
+        "completion": ledger["completion"],
+        "points_axis": "unique_position",
+        "points": ledger["axes"]["unique_position"]["points"],
+        "raw_position_points": ledger["axes"]["raw_position"]["points"],
+        "valid_position_points": ledger["axes"]["valid_position"]["points"],
         **({"ordered_unique": ordered} if return_stream else {}),
     }
 
@@ -73,18 +80,22 @@ def omen_attack(train: list[str], test: list[str], limit: int, *, return_stream:
         if generated.returncode != 0:
             return {"status": "failed", "stage": "enumNG", "returncode": generated.returncode}
         lines = [line for line in generated.stdout.splitlines() if line]
-        counted = account_emissions({"text": line, "valid": True} for line in lines)
-        scored = evaluate_ordered_stream(counted["ordered_unique"], test, BUDGETS)
+        completion = "reached_budget" if len(lines) >= limit else "resource_truncated"
+        ledger = score_axes(({"text": line, "valid": True} for line in lines), test, BUDGETS, completion=completion)
         return {
             "status": "completed",
             "mode": "stdout_no_success_feedback",
             "feedback_mode_used": False,
             "requested_raw_emissions": limit,
-            "raw_emissions": counted["raw_emissions"],
-            "unique_candidates": counted["unique_candidates"],
-            "duplicate_count": counted["duplicate_count"],
-            "points": scored["points"],
-            **({"ordered_unique": counted["ordered_unique"]} if return_stream else {}),
+            "raw_emissions": ledger["raw_emissions"],
+            "unique_candidates": ledger["unique_candidates"],
+            "duplicate_count": ledger["duplicate_count"],
+            "completion": ledger["completion"],
+            "points_axis": "raw_position",
+            "points": ledger["axes"]["raw_position"]["points"],
+            "valid_position_points": ledger["axes"]["valid_position"]["points"],
+            "unique_position_points": ledger["axes"]["unique_position"]["points"],
+            **({"ordered_unique": ledger["ordered_unique"]} if return_stream else {}),
         }
     finally:
         train_path.unlink(missing_ok=True)
@@ -99,15 +110,19 @@ def pcfg_attack(train: list[str], test: list[str], limit: int, *, return_stream:
     except Exception as exc:
         return {"status": "failed", "error": type(exc).__name__, "candidate_filter_applied": False}
     stream = generated.pop("stream")
-    counted = account_emissions({"text": line, "valid": True} for line in stream)
-    scored = evaluate_ordered_stream(stream, test, BUDGETS)
+    completion = "reached_budget" if len(stream) >= limit else "resource_truncated"
+    ledger = score_axes(({"text": line, "valid": True} for line in stream), test, BUDGETS, completion=completion)
     return {
         "status": "completed",
         **generated,
-        "unique_candidates": counted["unique_candidates"],
-        "duplicate_count": counted["duplicate_count"],
-        "points": scored["points"],
-        **({"ordered_unique": counted["ordered_unique"]} if return_stream else {}),
+        "unique_candidates": ledger["unique_candidates"],
+        "duplicate_count": ledger["duplicate_count"],
+        "completion": ledger["completion"],
+        "points_axis": "raw_position",
+        "points": ledger["axes"]["raw_position"]["points"],
+        "valid_position_points": ledger["axes"]["valid_position"]["points"],
+        "unique_position_points": ledger["axes"]["unique_position"]["points"],
+        **({"ordered_unique": ledger["ordered_unique"]} if return_stream else {}),
     }
 
 
@@ -122,6 +137,9 @@ def main() -> int:
         "same_string_may_cross_splits": True,
         "rows": {name: len(rows) for name, rows in split.items()},
         "source_sha256": meta["source_sha256"],
+        "preprocess_version": meta.get("preprocess_version"),
+        "trailing_lf_removed": meta.get("trailing_lf_removed"),
+        "rows_excluded_internal_controls": meta.get("rows_excluded_internal_controls"),
         "frequency": frequency_attack(split["train"], split["test"], BUDGETS),
         "omen": omen_attack(split["train"], split["test"], 1000),
         "pcfg_open_stream": pcfg_attack(split["train"], split["test"], 1000),

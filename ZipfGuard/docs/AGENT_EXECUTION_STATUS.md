@@ -41,6 +41,10 @@
 
 A08 的 0 次猜中是 PassGPT 在 hak5 测试集 598 条上实际跑完预算 100 和 1000 的结果。PassLLM 预算 1000 没有写成 0，因为唯一候选只有 968。
 
+2026-09-26 第二次核验之后，评价器把原始位置和唯一位置分成两根轴。序列比预算短时，除非明确是词典穷尽，否则该预算是 incomplete，不能写成 0。PassLLM 请求 1000 条时，作者代码会安排 1104 条轨迹，返回值是保留后再排序的结果，不是原始生成顺序。出现次数可以做加权统计，账户风险仍是 unknown。缓存键使用这次实际词表，并把 `core/counted_corpus.py` 算进分析指纹。旧协议图表写成 `*_historical.svg`，不再覆盖成当前结果。
+
+2026-09-26 第三次核验之后，MAYA pickle 只去掉一条记录末尾的 LF 或 CR LF，并单独计数。值内部的控制字符整条排除，不删字符后继续计数。原始位置包含无效输出；有效输出位置另记。运行若被中断，终态是 interrupted，中断前已经发出的预算仍可计分。旧 schema 的图会拒绝生成，而不是画成空图。
+
 A00 交付：`configs/research19/protocol.json`、`experiments/research19_manifest.py`。缓存键包含数据、分析源码、词表和拟合配置。`robustness-v2` 不能显示为当前方法结果。
 
 A01 交付：`docs/DATASET_CARDS_19.md`、`reports/research19/data_audit.json`。LinkedIn 与 Ashley Madison 的频次语义待确认。上游去重仍是 unknown。没有把出现次数写成账户人数。
