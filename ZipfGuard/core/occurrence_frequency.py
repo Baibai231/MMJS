@@ -78,7 +78,8 @@ def load_occurrence_counter(path: str | Path) -> tuple[dict, Counter[str]]:
         raise FileNotFoundError(source)
     ensure_not_lfs_pointer(source)
     digest = _digest_file(source)
-    header = source.read_bytes()[:16]
+    with source.open("rb") as handle:
+        header = handle.read(16)
     if header.startswith(b"\x80"):
         mode, rows, skipped, counts = _counter_from_pickle(source)
     else:

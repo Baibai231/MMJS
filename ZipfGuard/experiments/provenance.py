@@ -50,6 +50,11 @@ def robustness_manifest(*, budget: int = 40, seeds: list[int] | None = None, siz
         "core/htpg_features.py",
         "policy/htpg_generator.py",
         "core/attackers.py",
+        "experiments/evaluation_validity.py",
+        "experiments/provenance.py",
+        "experiments/external_maya_validation.py",
+        "experiments/research19_manifest.py",
+        "resources/htpg_reference_v1.json",
     )
     files = {}
     for relative in relative_paths:

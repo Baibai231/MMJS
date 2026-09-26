@@ -1,5 +1,7 @@
 # ZipfGuard 研究依据与引用映射
 
+> **新增研究方向的文献：**分布、拟合、PassLLM、PassGPT、MAYA 与评价依据已在 [最新任务书第 8 节](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/PIPELINE_NEXT_PHASE_2026-09-25.md) 补齐。实施优先级以该任务书为准；下面保留原 R1–R8 引用记录。
+
 > 核查日期：2026-09-25。以下使用原论文、出版社、会议或作者原始来源。引用用途是支持问题定义、基线和评估设计，不代表这些论文已经证明 ZipfGuard 的改进有效。
 >
 > 主任务见 [Agent 执行任务书](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/AGENT_NEXT_PHASE_TASK.md)。用户要求参加全国密码竞赛并使用多篇论文支撑；比赛届次、官方格式与具体截止日期尚未确认。

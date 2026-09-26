@@ -1,5 +1,7 @@
 # Agent 执行状态
 
+> **后续核验与范围调整：**见 [19 数据集核验与下一阶段任务书](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/PIPELINE_NEXT_PHASE_2026-09-25.md)。下表是旧 T00–T10 的交付状态，不代表全部科研实验已经完成；新主线按 A00–A12 验收。
+
 > 对照三份任务文档。日期 2026-09-25。比赛名称、截止日期和提交格式仍是待确认，没有编造。
 
 | 任务 | 状态 | 证据 |
@@ -16,3 +18,15 @@
 | T10 决定 | 完成 | 假设未得到支持。见 `docs/PHASE_DECISION.md` |
 
 验证：`python -m unittest tests.test_next_phase_contracts tests.test_evaluation_validity tests.test_htpg_baseline.HTPGMethodTests.test_paper_tie_rule_includes_equal_distance_and_blocks_shorter_length -q`
+
+## 当前主线 A00–A12
+
+| 任务 | implemented | tested | experiment_completed | claim_supported |
+| --- | --- | --- | --- | --- |
+| A00 指纹与旧结果隔离 | 是 | `tests/test_research19_identity.py` | 否 | 否 |
+| A01 19 站数据卡 | 是 | 由现有聚合报告生成，未重跑拟合 | 否 | 否 |
+| A02–A12 | 否 | 否 | 否 | 否 |
+
+A00 交付：`configs/research19/protocol.json`、`experiments/research19_manifest.py`。缓存键包含数据、分析源码、词表和拟合配置。`robustness-v2` 不能显示为当前方法结果。
+
+A01 交付：`docs/DATASET_CARDS_19.md`、`reports/research19/data_audit.json`。LinkedIn 与 Ashley Madison 的频次语义待确认。上游去重仍是 unknown。没有把出现次数写成账户人数。

@@ -15,6 +15,7 @@ from core.htpg_features import HTPGFeatureExtractor
 from core.site_distribution import analyze_occurrence_file
 from data.maya_catalog import dataset_card
 from data.maya_fetch import DEFAULT_DATASETS, MAX_ARCHIVE_BYTES, ensure_dataset
+from experiments.research19_manifest import analysis_cache_key
 
 
 ROCKYOU_IGR_UNIQUE_ORDER = (
@@ -34,7 +35,7 @@ CLAIM = {
     "weights_refit": False,
     "rockyou_order_role": "MAYA 的 rockyou 不是独立外部站点。它只和其余站点一起做同样的聚合拟合，不重估建议策略。",
 }
-CACHE_VERSION = "maya-aggregate-v2"
+CACHE_VERSION = "maya-aggregate-v3"
 
 
 def spearman(left: list[str], right: list[str]) -> float | None:
@@ -103,19 +104,20 @@ def _load_cache(path: Path, payload_sha256: str, max_feature_types: int) -> dict
     if not path.is_file():
         return None
     cached = json.loads(path.read_text(encoding="utf-8"))
+    identity = analysis_cache_key(payload_sha256=payload_sha256, max_feature_types=max_feature_types)
     if cached.get("cache_version") != CACHE_VERSION:
         return None
-    if cached.get("payload_sha256") != payload_sha256 or cached.get("max_feature_types") != max_feature_types:
+    if cached.get("cache_key_sha256") != identity["cache_key_sha256"]:
         return None
     result = cached.get("result")
     return result if isinstance(result, dict) else None
 
 
 def _save_cache(path: Path, payload_sha256: str, max_feature_types: int, result: dict) -> None:
+    identity = analysis_cache_key(payload_sha256=payload_sha256, max_feature_types=max_feature_types)
     path.write_text(json.dumps({
         "cache_version": CACHE_VERSION,
-        "payload_sha256": payload_sha256,
-        "max_feature_types": max_feature_types,
+        **identity,
         "result": result,
         "plaintext_retained": False,
     }, ensure_ascii=False) + "\n", encoding="utf-8")

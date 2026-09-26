@@ -1,5 +1,7 @@
 # ZipfGuard 下一阶段完整目标与执行计划
 
+> **最新主线（2026-09-25）：**请以 [19 数据集核验与下一阶段任务书](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/PIPELINE_NEXT_PHASE_2026-09-25.md) 为准：固定 19 个 MAYA 数据集，重点推进分布、拟合、分析、多模型攻击和评价；修改建议保留为固定对照。下文是较早版本的工程与统计补充。
+
 > **用户补充后的执行主线：**参加全国密码竞赛，要求多篇论文支撑，并在 HTPG 原论文场景上优化。请以 [Agent 详细执行任务书](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/AGENT_NEXT_PHASE_TASK.md) 为实施主文档，以 [研究引用表](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/RESEARCH_REFERENCES.md) 为文献依据。本文件保留为工程验收与统计设计补充；其中合成 40 次预算实验用于回归诊断，不能替代原场景主实验。
 
 > 制定日期：2026-09-25。依据第四次核查，正式项目目录为 `/Users/cjx_main/Desktop/new/MMJS/ZipfGuard`。
