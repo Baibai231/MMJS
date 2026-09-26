@@ -83,7 +83,7 @@ def combine_raw_prefixes(raw_streams: dict[str, list[str]], share: int) -> dict:
 
 
 def main() -> int:
-    _meta, counts = load_occurrence_counter(PAYLOAD)
+    meta, counts = load_occurrence_counter(PAYLOAD)
     split = occurrence_split(counts, seed=19)
     attacks = {
         "frequency": frequency_attack(split["train"], split["validation"], (TOTAL,), return_stream=True),
@@ -121,6 +121,8 @@ def main() -> int:
         "protocol": "research19-v1",
         "site": "hak5",
         "seed": 19,
+        "source_sha256": meta["source_sha256"],
+        "preprocess_version": meta["preprocess_version"],
         "stage": "exploratory_not_frozen",
         "h2_confirmation": False,
         "total_generation_budget": TOTAL,

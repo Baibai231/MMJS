@@ -26,6 +26,8 @@ def main() -> int:
     target_meta, target_counts = load_occurrence_counter(ROOT / _pickle(pair["target_site"]))
     train_split = occurrence_split(train_counts, seed=pair["seed"])
     target_split = occurrence_split(target_counts, seed=pair["seed"])
+    if train_meta["preprocess_version"] != target_meta["preprocess_version"]:
+        raise SystemExit("训练站和目标站的预处理版本不一致")
     train = train_split["train"]
     target = target_split["test"]
     report = {
@@ -33,6 +35,7 @@ def main() -> int:
         "pair": pair,
         "train_source_sha256": train_meta["source_sha256"],
         "target_source_sha256": target_meta["source_sha256"],
+        "preprocess_version": train_meta["preprocess_version"],
         "train_rows": len(train),
         "target_test_rows": len(target),
         "frequency": frequency_attack(train, target, budgets),

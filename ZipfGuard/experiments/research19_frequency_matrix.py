@@ -19,6 +19,7 @@ MAX_UNIQUE = 200_000
 
 def main() -> int:
     rows = []
+    preprocess_version = None
     for name in dataset_names():
         payload = next(Path(f"local_datasets/maya/{name}/extracted").rglob("*.pickle"))
         meta, counts = load_occurrence_counter(payload)
@@ -34,10 +35,19 @@ def main() -> int:
             continue
         split = occurrence_split(counts, seed=19)
         scored = frequency_attack(split["train"], split["test"], BUDGETS)
-        rows.append({"site": name, "status": "completed", "source_sha256": meta["source_sha256"], **scored})
+        preprocess_version = meta["preprocess_version"]
+        rows.append({
+            "site": name,
+            "status": "completed",
+            "source_sha256": meta["source_sha256"],
+            "preprocess_version": preprocess_version,
+            **scored,
+        })
         print(name, scored["points"][-1]["cracked"], "/", scored["test_rows"], flush=True)
     report = {
         "protocol": "research19-v1",
+        "seed": 19,
+        "preprocess_version": preprocess_version,
         "attacker": "train_frequency_open_dictionary",
         "test_frequency_used_for_ranking": False,
         "budgets": list(BUDGETS),

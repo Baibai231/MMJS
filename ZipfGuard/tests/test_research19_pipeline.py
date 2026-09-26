@@ -240,8 +240,9 @@ class Research19PipelineTests(unittest.TestCase):
         self.assertEqual(quota["generation_raw_emitted"], 900)
         self.assertEqual(quota["unique_verification_candidates"], 821)
         self.assertEqual(quota["emitted_cracked"], 93)
-        self.assertTrue(quota["unique_budget_900_incomplete"])
-        self.assertIsNone(quota["unique_budget_900_cracked"])
+        self.assertEqual(quota["unique_budget_requested"], 900)
+        self.assertTrue(quota["unique_budget_incomplete"])
+        self.assertIsNone(quota["unique_budget_cracked"])
         points = matrix["hak5"]["passllm"]["points_sorted_retained_position"]
         self.assertTrue(all(point["axis"] == "sorted_retained_position" for point in points))
         self.assertIsNone(matrix["hak5"]["passllm"]["points_raw_position"])
@@ -267,6 +268,45 @@ class Research19PipelineTests(unittest.TestCase):
         self.assertEqual(built["quota"]["emitted_cracked"], 93)
         self.assertIn("Gray: 10", figure)
         self.assertIn("Blue/orange: 7", figure)
+
+    def test_matrix_rejects_a_mismatched_hak5_identity(self):
+        source = Path(__file__).resolve().parents[1] / "reports" / "research19"
+        with tempfile.TemporaryDirectory() as temporary:
+            report_dir = Path(temporary)
+            for name in (
+                "hak5_smoke.json", "neural_eval.json", "frequency_matrix.json",
+                "transfer_hak5_hotmail.json", "quota_hak5.json", "preprocess_identity.json",
+            ):
+                shutil.copy(source / name, report_dir / name)
+            smoke = json.loads((report_dir / "hak5_smoke.json").read_text(encoding="utf-8"))
+            smoke["source_sha256"] = "0" * 64
+            smoke["preprocess_version"] = "different-preprocess"
+            smoke["seed"] = 999
+            (report_dir / "hak5_smoke.json").write_text(json.dumps(smoke), encoding="utf-8")
+            with self.assertRaises(ValueError) as caught:
+                build_matrix(report_dir)
+        message = str(caught.exception)
+        self.assertIn("hak5_smoke.json", message)
+        self.assertTrue("source_sha256" in message or "preprocess_version" in message or "seed" in message)
+
+    def test_matrix_rejects_a_budget_100_list_labeled_as_1000(self):
+        source = Path(__file__).resolve().parents[1] / "reports" / "research19"
+        with tempfile.TemporaryDirectory() as temporary:
+            report_dir = Path(temporary)
+            for name in (
+                "hak5_smoke.json", "neural_eval.json", "frequency_matrix.json",
+                "transfer_hak5_hotmail.json", "quota_hak5.json", "preprocess_identity.json",
+            ):
+                shutil.copy(source / name, report_dir / name)
+            frequency = json.loads((report_dir / "frequency_matrix.json").read_text(encoding="utf-8"))
+            for row in frequency["rows"]:
+                if row.get("points"):
+                    row["points"] = [point for point in row["points"] if point["budget"] == 100]
+            (report_dir / "frequency_matrix.json").write_text(json.dumps(frequency), encoding="utf-8")
+            with self.assertRaises(ValueError) as caught:
+                build_matrix(report_dir)
+        self.assertIn("budget=1000", str(caught.exception))
+        self.assertIn("myspace", str(caught.exception))
 
     def test_feature_summary_does_not_treat_correlation_as_a_fix(self):
         report = summarize_features()

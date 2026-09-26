@@ -220,6 +220,7 @@ def main() -> int:
         "split": "occurrence_60_20_20",
         "seed": 19,
         "source_sha256": meta["source_sha256"],
+        "preprocess_version": meta["preprocess_version"],
         "test_rows": len(split["test"]),
         "targets_seen_by_generator": False,
         "plaintext_retained": False,

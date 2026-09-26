@@ -11,7 +11,7 @@
 | 运行方式 | `python -m experiments.research19_rerun --flow report`。神经实验不在此流程中，命令是 `python -m experiments.research19_neural_eval`。 |
 | 验证结果 | `tests.test_research19_pipeline` 与 `tests.test_research19_identity`。临时目录只放入专项 JSON 后，主表仍是生成 900、唯一 821、命中 93。缺少身份文件时分布摘要入口退出。 |
 | 核心产物 | `reports/research19/attack_matrix.json`，`distribution_diagnostics.json`，`figures/repeat_ratio.svg`，`configs/research19/model_checksums.json`，`requirements-research19.lock.txt`。 |
-| 四状态 | C01–C05：implemented 是，tested 是，experiment_completed 是（只限当前小实验报告），claim_supported 否。C06：脚本和锁文件已纳入提交；权重仍不进 Git。 |
+| 四状态 | C02、C04、C06 的脚本和锁文件已有提交 `35b7031`。C01、C03、C05 在该提交里还没有拦住身份不匹配和预算误标；随后的工作区修改用 `build_matrix` 拒绝这两种输入。claim_supported 仍为否。 |
 | 对照与结论 | 生成预算 900，`reached_budget`。唯一验证 821，预算 900 的 cracked 为 null。821 条上命中 93/598。这不是方法优势。 |
 | 缺失与失败 | 12 个大站未重读。PassLLM DivideSearch、1e5 以上预算、修改前后确认都没有做。 |
 | 下游更新 | 主表、分布摘要、两张 research19 图已按当前 JSON 重建。 |

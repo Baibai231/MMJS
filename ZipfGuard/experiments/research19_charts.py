@@ -4,6 +4,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from experiments.research19_attack_matrix import select_budget_point
+
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "reports" / "research19" / "figures"
@@ -60,9 +62,12 @@ def main(root: Path | None = None) -> int:
     for row in frequency_rows:
         if row["status"] != "completed":
             continue
-        point = row["points"][-1]
+        axis = row.get("points_axis")
+        if not axis:
+            raise ValueError(f"{frequency_path}:{row['site']} 缺少 points_axis")
+        point = select_budget_point(row.get("points"), budget=1000, axis=axis, label=f"{row['site']}")
         if point.get("incomplete") is True or point.get("cracked") is None or not point.get("total"):
-            continue
+            raise ValueError(f"{row['site']} 的 budget=1000 未完成，不能画成命中率")
         rows.append((row["site"], point["cracked"] / point["total"], "completed_small_site"))
     if not rows:
         raise ValueError(f"{frequency_path} 没有可画的完成预算，拒绝生成空图。")
