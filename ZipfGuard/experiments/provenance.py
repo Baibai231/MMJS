@@ -20,7 +20,7 @@ def git_output(*args):
 
 def manifest(config, dataset, attackers):
     sources = {str(p.relative_to(ROOT)).replace("\\", "/"): hashlib.sha256(p.read_bytes()).hexdigest()
-               for directory in ("core", "ai", "policy", "experiments", "web")
+               for directory in ("core", "ai", "policy", "experiments", "web", "tools")
                for p in sorted((ROOT / directory).glob("*.py"))}
     sources["run_demo.py"] = hashlib.sha256((ROOT / "run_demo.py").read_bytes()).hexdigest()
     return {

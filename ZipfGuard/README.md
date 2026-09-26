@@ -1,86 +1,85 @@
 # ZipfGuard / DP-HTPG
 
-本地、可复现的合成口令策略实验。Python 是唯一权威实验核心，命令行、Streamlit 和无额外 Web 依赖的网页共享同一流水线与结果展示。历史 JavaScript 原型明确不参与当前实验。
+本地口令策略研究项目。默认流程已迁移为：**真实带频次数据 → 用户响应 → 独立开放猜测 → 逐口令 Min_auto → 风险与用户成本推荐**。命令行、轻量网页与 Streamlit 共用 Python 核心及报告。
 
-## 启动网页
+2026-09-26 实施状态、验证证据与研究边界见 [项目状态](docs/PROJECT_STATUS.md) 和 [开放协议说明](docs/OPEN_PROTOCOL.md)。论文定义见 [主方案](DP_HTPG_AI_竞赛详细方案.md)。
 
-在项目目录运行，推荐使用已验收的项目虚拟环境 Python 3.13.9：
+## 启动演示
 
-```powershell
-.\.venv\Scripts\python.exe web/server.py --port 8765
-```
+在本目录运行：
 
-打开 <http://127.0.0.1:8765/>。选择“快速演示”（1000 用户、20 次 Bootstrap、3 类内置攻击器）或“完整实验”（20000 用户、120 次 Bootstrap、附加可选 PCFG），点击运行。
+~~~powershell
+.venv/Scripts/python.exe web/server.py --port 8765
+~~~
 
-Streamlit 使用相同实验与图表：
+打开 <http://127.0.0.1:8765/>。默认读取本地 ../rockyou-withcount.txt；缺少文件会明确报错。首次运行会扫描完整文件并从全部有效出现记录中抽样，不会截取文件头部或自动换成合成数据。
 
-```powershell
-.\.venv\Scripts\python.exe -m streamlit run web/app.py
-```
+~~~powershell
+.venv/Scripts/python.exe -m streamlit run web/app.py
+~~~
 
-两个网页均可调整种子、样本规模、Zipf 指数、预算、攻击器的必选/可选状态、PCFG 上限与超时、用户响应顺序、成本权重、比较策略和完整 JSON 配置。运行失败会清除旧结果；修改参数后须重新运行。
+两个界面均支持真实语料路径、格式、编码、抽样量、预算、响应情景、模型集合、资源上限、安全需求与完整配置。页面展示推荐证据、验证前沿、单模型/Min_auto 曲线、F/A0/A1、用户成本与完成率、分布特征和复现信息。下载包含 JSON、SHA-256、HTML 与配置；运行失败清除旧结果。
 
-展示内容包括 M2 攻击表与逐点 95% Wilson 区间、覆盖率、PCFG 原始生成数/匹配数/上限、预算曲线、三模型拟合与经验 CDF、残差、对数与线性坐标、冻结/自适应对照和 validation Pareto 散点。
+## 命令行与复现
 
-## 配置与命令行复现
+~~~powershell
+.venv/Scripts/python.exe run_demo.py --preset open_quick
+.venv/Scripts/python.exe run_demo.py --preset open_full
+.venv/Scripts/python.exe run_demo.py --config configs/open_quick.json --seed 7
+.venv/Scripts/python.exe run_demo.py --corpus ../rockyou-withcount.txt --sample-size 2000 --budgets 10,100 --risk-budget 100 --response R2 --pcfg required --pcfg-limit 5000
+~~~
 
-统一配置位于 `configs/quick.json` 和 `configs/full.json`。网页可下载本次完整配置，命令行可直接重放：
+- open_quick：2,000 次真实出现抽样、三个内置攻击器、R0、预算 10/100/1000。
+- open_full：20,000 次真实出现抽样、可选 PCFG、R0/R1/R2、预算 100/1000/10000。
+- 两者是开发与研究起始预设，参数未经真实用户行为校准，也不保证所有策略在资源限制内完成预算。
+- reports/open_demo.json、同名校验文件、Markdown 和 HTML 记录实际结果。结果目录不进入版本控制，也不导出口令清单。
 
-```powershell
-.\.venv\Scripts\python.exe run_demo.py --preset quick
-.\.venv\Scripts\python.exe run_demo.py --preset full
-.\.venv\Scripts\python.exe run_demo.py --config configs/quick.json --seed 7 --budgets 50,100,500
-.\.venv\Scripts\python.exe run_demo.py --preset quick --pcfg --pcfg-limit 2000
-```
+每个报告保存配置、源文件/划分/候选流哈希、策略及模型参数、停止原因、源码哈希和实际运行环境。修改预算时，推荐预算必须仍包含在预算列表中。
 
-每份 JSON 包含完整配置及其 SHA-256、数据内容哈希与版本、候选词表、随机种子、实际参与模型及版本、Git 提交与脏状态、源码文件哈希、实际 Python 路径/版本、依赖版本。JSON 的精确文件 SHA-256 写入同名 `.json.sha256` 文件，避免把文件哈希嵌入自身产生循环。网页同时提供结果、校验和及配置下载。
+## 多种子、敏感性与消融
 
-所有生成结果位于 `reports/`，不进入版本控制。当前验收见 [第一大点验收报告](docs/SECTION1_ACCEPTANCE.md)。
+先生成冻结计划，再用相同命令去掉 --dry-run 执行：
 
-## 攻击器与失败处理
+~~~powershell
+.venv/Scripts/python.exe tools/run_open_study.py --preset open_full --seeds 11,23,42,67,101 --responses R0,R1,R2 --ablations distribution,none --dry-run
+~~~
 
-频次、合成字典、字符 n-gram、PCFG 以及本地命令适配器统一为 `fit_select_rank(train, validation, candidates) -> RankingResult`。本地命令桥接协议见 [适配器说明](ai/README.md)。
+可用 --risk-budgets 100,1000,10000 逐预算重新选择策略，--out 指定新的结果目录。脚本在接触数据前保存计划；同一种子的响应、预算及消融共用相同划分。无分布引导消融保留同等候选数量和资源上限；汇总显式检查模型集合是否一致。它不自动把重复划分合并成统计显著性结论。
 
-必选攻击器失败会终止并报错。可选模型失败会记录原因，从整次最坏攻击者比较中排除，并重新运行搜索与评价以保证各策略使用相同模型集合；不会静默替换成 n-gram。
+## 数据与攻击协议
 
-PCFG 仅使用合成 train，固定上游提交 `b04bbdadfe8928fd1287fa73ad1aa46a297ff83a`，强制纯 PCFG 模式。流水线和测试各自使用临时 runtime，结束时清理，不再依赖工作区旧的共享 runtime，也不修改第三方源码。
+支持“频次 + 一个分隔符 + 口令”和每行一次出现。严格解码并保留有效空格；样本中的同字符串合并权重。train/tuning/validation/test 为 60%/10%/10%/20%，每次出现只分配一次。全文件唯一字符串数和来源真实性不会被程序臆测。
 
-PassLLM 只提供环境能力检测，尚未接入主评估，当前实验未使用。环境可用不等于实际参与；没有“假回退”结果。
+频次、训练派生字典变形、长度条件化字符 n-gram、PCFG 各自生成候选，不接收测试目标清单。Min_auto 在每个口令上取最早猜测位置，等价于预算内命中集合的并集；K 是每模型预算。策略过滤及模型内去重后，每个不同候选都计费，包括语料之外的猜测。
 
-## 聚合数据与 RockYou
+必选模型失败终止；可选模型失败后从整次比较排除并重算。资源截断不记为零风险。PCFG 使用隔离临时目录、固定上游提交与纯 PCFG 模式；[接口说明](ai/README.md)。PassLLM/RFGuess 与 A2 尚未接入。
 
-```powershell
-.\.venv\Scripts\python.exe run_demo.py --input demo_data/synthetic_counts.json
-.\.venv\Scripts\python.exe run_demo.py --rockyou ..\lab_basic_50_dicts\Rockyou.txt --max-lines 10000 --top-k 50 --source-semantics unknown
-```
+## 聚合分析与历史复现
 
-聚合 JSON 最小示例：
+~~~powershell
+.venv/Scripts/python.exe run_demo.py --input demo_data/synthetic_counts.json
+.venv/Scripts/python.exe tools/legacy_demo.py --preset quick
+~~~
 
-```json
-{
-  "dataset_id": "example_counts",
-  "total_count": 100,
-  "items": [{"rank": 1, "count": 60}, {"rank": 2, "count": 40}],
-  "metadata": {"source_type": "aggregate counts"}
-}
-```
+只有排名和次数的聚合 JSON 只能做分布分析，不运行攻击、响应和推荐。去重字典不能作为真实用户频次主数据。
 
-聚合模式只运行分布分析，明确说明 M2/M3/M4 未运行及原因。RockYou 页面显示来源类型、是否去重、实际读取行数、保留类别、top-k 和截断质量；来源默认为未确认，重复行只代表文件内重复次数。去重字典或全唯一条目不能用来推断真实用户频率。分析仅描述读取范围内 top-k 条件分布。
+旧闭集流程保留在网页 /legacy、web/legacy_app.py、tools/legacy_demo.py；run_demo.py 的 quick/full 也明确指向历史协议。历史结果不能与 open-minauto-v1 混合比较。
 
-## 验证与环境
+## 验证
 
-```powershell
-.\.venv\Scripts\python.exe -m unittest discover -s tests -v
-python -m unittest discover -s tests -v
-```
+~~~powershell
+.venv/Scripts/python.exe -m unittest discover -s tests -v
+.venv/Scripts/python.exe tools/verify_open_real.py
+.venv/Scripts/python.exe tools/verify_open_ui.py --url http://127.0.0.1:8765
+~~~
 
-2026-09-22：Python 3.13.9 项目环境 43 项全部通过；系统 Python 3.14.6 运行 43 项，42 项通过，1 项 Streamlit 测试因缺少可选依赖跳过。项目环境的 NumPy/Streamlit 版本见 `requirements-demo.txt`，每份报告另记录实际完整环境。
-
-真实浏览器验收脚本 `tools/verify_ui.py` 需要本机 Edge、Playwright 和已启动的 8765 网页；它覆盖预设切换、真实实验、图表、聚合上传和坏文件处理。
+运行依赖见 requirements-demo.txt。浏览器验收另需 requirements-ui-test.txt 中的 Playwright 与本机 Edge；先启动网页。新增测试覆盖计费、并集、数据隔离、R0 成本、响应失败分母、精确枚举顺序、预算未完成、需求不达标、消融及界面错误处理。
 
 ## 结论边界
 
-本轮在工程闭环之外增加了论文 HTPG 基线。默认 `run_demo` 仍是 576 项空间，高预算会饱和。PCFG 的开放评价保留原始生成序号。另有一个同预算协议，支持集大于 576，马尔可夫替代按原始生成序号计预算，并标明它不是论文里的 OMEN：
+代码迁移与运行验收完成不等于证明推荐优于常见规则。当前为同源真实初始数据与显式模拟响应；小样本、有限攻击预算及模型覆盖限制都保留在报告中。正式论文仍需冻结规模与需求，执行多种子、消融和响应敏感性实验，按实际效应量与不确定性写结论；没有改善或没有可行策略也属于有效结果。
+
+工程中还保留论文 HTPG 基线与同预算合成对照。历史 576 项演示在高预算会饱和；PCFG 和马尔可夫替代的开放评价保留原始生成序号，并明确后者不是论文里的 OMEN：
 
 ```powershell
 python -m experiments.robustness_protocol --output reports\robustness_protocol.json
