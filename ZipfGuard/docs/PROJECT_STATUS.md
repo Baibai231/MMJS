@@ -1,58 +1,66 @@
 # ZipfGuard 项目状态
 
-更新日期：2026-09-25。
+更新日期：2026-09-26。
 
-## 论文基线入口（路线图第 11 节）
+## 当前默认主线
 
-正式实验目录仍是本层 `ZipfGuard/`。带频次解析已并入 `core/rockyou.py` 与 `core/counted_corpus.py`；Git LFS 指针会直接报错。论文 PDF-Zipf 回归和曲率切分在 `core/htpg_fit.py`，与 `core/distributions.py` 的三模型竞争分开。九类特征、等权为主的 IGR、以及只对 HeadSet 输出的逐口令建议分别在 `core/htpg_features.py`、`core/htpg_igr.py`、`policy/htpg_generator.py`。
+已按 [论文主方案](../DP_HTPG_AI_竞赛详细方案.md) 完成默认代码、命令行、轻量网页、Streamlit、报告和配置的联合迁移。主线为真实带频次数据、开放候选、逐口令 Min_auto、显式用户响应及风险—成本推荐。模块映射和协议细节见 [OPEN_PROTOCOL.md](OPEN_PROTOCOL.md)。
 
-PCFG 仍可与公共候选求交，但保留原始生成序号。开放评价使用 `evaluate_open_generation()`：空间外两次猜测之后，目标的名次是 3，不会滤掉后重编成 1。合成演示里的封闭排序不带 `open_positions`，行为不变。
+- 全文件严格解析与出现抽样；train/tuning/validation/test 隔离，权重守恒。
+- 四类开放攻击器：训练频次、字典变形、字符 n-gram、PCFG；策略过滤与去重后计费，目标外猜测也计费。
+- R0 解析重新选择、有限重试、R1 修补、R2 混合与放弃；成本保留全体初始用户分母。
+- F/A0/A1 评价，主终点为 A1 Min_auto；验证选策略并冻结后才评价测试集。
+- 常见规则系列、训练频次特征发现、Pareto、按需求约束推荐、配对区间以及无可行/无改善证据状态。
+- 两种界面共用核心与展示；参数、图表、下载、预算缺失及失败状态均已切换。
+- 多种子、响应、预算与等候选规模消融的批量入口；计划在读取数据前保存。
 
-```powershell
+## 论文 HTPG 基线与并行研究模块
+
+带频次解析也保留在 core/rockyou.py 与 core/counted_corpus.py；Git LFS 指针会直接报错。论文 PDF-Zipf 回归和曲率切分在 core/htpg_fit.py，九类特征、等权 IGR 及只对 HeadSet 输出的逐口令建议分别位于 core/htpg_features.py、core/htpg_igr.py、policy/htpg_generator.py。这些是论文复现与对照模块，不替代 open-minauto-v1 默认推荐流程。
+
+~~~powershell
 python -m experiments.reproduce_htpg_baseline --input ..\rockyou-withcount.txt --output reports\htpg_rockyou_fit.json
-```
+python -m experiments.reproduce_htpg_baseline --input ..\rockyou-withcount.txt --output reports\htpg_rockyou_features.json --with-features
+~~~
 
-该命令只写频次、拟合参数和与论文总量、前 1171 名质量的对照，不写口令。`--with-features` 才计算 IGR。`x0` 用曲率公式的 floor，不硬编码 1171。本地总量与论文 32,510,281 的差额若不能由空口令或非 UTF-8 质量解释，就标成未解差异。
+experiments/suggestion_compare.py 比较论文等权 IGR、验证集预算/修改率排序和“训练集头部黑名单或长度小于 8”的现代基线。已有合成结果中现代基线不低于新方法，部分种子的配对区间不支持改善；这些结果不是真实口令上的防御结论。
 
-`experiments/suggestion_compare.py` 比较三条臂：论文等权 IGR、验证集上的预算/修改率排序，以及「训练集头部字符串黑名单或长度小于 8」的现代基线。头尾和 IGR 只用训练集，测试集只评一次。候选按哈希排序。每个种子内部对同一批测试用户做配对 bootstrap 区间；五个种子只报告均值和极差。种子 1–5、900 用户、预算 40 时，封闭目录上自适应最坏命中率的平均下降分别约为 7.2、9.3 和 10.6 个百分点。现代基线不低于新方法。论文臂有一个种子的配对下界不高于 0。目录外口令场景的平均下降更小。这仍不是 OMEN，也不是真实口令上的结论。
-
-## 当前交付
-
-已完成《目前项目需要提升的地方》第 1 大点（1.1—1.10）的工程与网页整改，逐项证据见 [验收报告](SECTION1_ACCEPTANCE.md)。第 2、3 大点的科学实验与评估协议问题不在本次完成范围。
-
-- 唯一权威核心为 Python；两个网页共享实验与 HTML/SVG 展示。
-- 命令行与网页读取统一配置；结果携带配置/数据/源码哈希和真实运行环境。
-- 统一四类攻击器与命令桥接的评价接口；PassLLM 明确未接入。
-- PCFG 流水线与测试使用临时隔离 runtime，第三方源码保持不变。
-- 可选攻击器失败有记录、无替代，并从整次最坏攻击者比较中排除；必选模型失败报错。
-- M2 对比、覆盖率、Wilson 区间与 PCFG 生成统计可见；拟合、残差、预算曲线、冻结/自适应和 Pareto 图齐全。
-- 网页提供快速/完整预设及参数配置；上传对象正确读取，坏文件显示错误并清除旧结果。
-- 聚合/RockYou 只运行分布模块，并明确截断、来源属性和未运行模块。
-
-## 实际验收环境
-
-| 环境 | 结果 |
-|---|---|
-| 项目 `.venv`：Python 3.13.9 | 43 项全部通过 |
-| 系统 Python 3.14.6 | 42 项通过，1 项因未安装 Streamlit 跳过 |
-| Edge 153.0.4234.48 | 网页真实计算、预设切换、图表和文件上传通过；JavaScript 错误为 0 |
-
-新增 9 项回归覆盖超时、目录权限异常、后期可选失败重跑、必选失败、配置哈希、文件校验、响应配置、上传与图表/模块显示。原报告中 3 项 PCFG 隔离目录错误已在本次环境通过，不能以旧的“34 项全通过”文字代替当前验证。
+独立 MAYA 站点仅用于聚合拟合和特征迁移，明文不进入报告，也不回写已冻结的策略权重。它尚未进入 open-minauto-v1 的推荐证据链。
 
 ## 同预算合成对照
 
-`python -m experiments.robustness_protocol`。生成器、哈希序公开候选和排名字段分开。支持集 652 项。分母是测试用户。攻击器是训练集频次、固定阶字符 n-gram，以及标明不是 OMEN 的固定阶马尔可夫；马尔可夫保留原始生成序号。
+python -m experiments.robustness_protocol 运行支持集 652 项的历史对照。生成器、公开候选和排名字段分开；马尔可夫替代保留原始生成序号，并明确不是论文 OMEN。
 
-较早文字里的“论文 IGR 约 7.7、新方法约 7.8”，以及 `reports/directed_size900.json` 的 0，都不是当前结论。`robustness-v3` 里 LSD 重建漏出候选集，频次攻击没数到这些训练口令，Zipf 和长尾确定性场景曾出现 5.00 和 11.11 个百分点的假下降。`robustness-v4` 用同一个执行器枚举一步和两步改写；漏收的特征不能入选，主指标也不发布。种子 1、900 用户、预算 40、只看频次时，这两个确定性场景的预算/成本臂没有选出特征，发布的下降是 0，修改造成的空间外数量是 0。这不是已经成立的创新，完整多种子主表还没有重跑。576 项的 `run_demo` 仍是会饱和的历史对照。论文 OMEN 没有接入。
+较早报告中的正收益受闭集候选泄漏影响，不能作为结论。robustness-v4 使用同一个执行器枚举改写，漏收特征不允许发布；当前保留零收益和负结果。历史 576 项流程仍会在高预算饱和，只能作为旧基线，通过 tools/legacy_demo.py 或网页 /legacy 运行。
 
-## 仍未完成、且不能在本机冒充完成的条目
+## 本轮实际验收证据
 
-- 比赛名称、截止日期和提交格式还没有外部文本，见 `docs/COMPETITION_SCOPE.md`。
-- 论文 OMEN 本体、PassLLM、RFGuess 未接入。固定阶马尔可夫已标明不是 OMEN。
-- 网页上的“运行历史 576 项演示”仍会在高预算饱和，按钮文字已经标明它是旧基线。“同预算对照（300 用户）”走支持集 652 的协议，含逐口令只改一项的 `per_password`。
-- 分布偏移和头部更换的五种子结果在 `reports/shift_head_grid.json`。测试头部被换掉后，论文 IGR 和预算/成本排序的平均变化是负的，约 -0.7 到 -0.4 个百分点。长度加黑名单仍略正。负结果保留。
-- 没有用户研究。采用率只有事先设定的 1、0.5、0.2 三档情景。
-- 没有在第二台干净机器上复跑。操作卡在 `docs/FIELD_CARD.md`。
-- 里程碑 Git 提交要等明确要求。变更记录在 `CHANGELOG.md`。
+| 检查 | 结果 |
+|---|---|
+| 合并后开放主线定向回归 | open protocol、open delivery、delivery、PCFG adapter 共 49 项全部通过，10.335 秒 |
+| 合并后全量回归预检 | 118 项通过；2 项 research19 摘要测试因缺少未跟踪生成产物 `reports/maya_external_validation.json` 与 `reports/research19/data_audit.json` 报 `FileNotFoundError`；末项计算密集型稳健性测试长时间未完成，未计为通过 |
+| 真实文件读取 | 14,344,391 行；有效出现 32,603,039；排除 10 行、349 次出现 |
+| 快速三模型，真实 2,000 次出现抽样 | 19 个验证策略中 18 个可完整评价；complex-12 因接受质量为零不可行 |
+| 快速运行的主要预算 | 每模型 1,000 次；实验计算约 14.852 秒，不含外置数据加载时间 |
+| 四模型含必选 PCFG，三种响应 | R0/R1/R2 共 18 项验证评价完整，模型失败 0；约 32.932 秒，不含复用数据加载 |
+| Edge 153.0.4234.48 | 400 次真实出现、三个模型、完整运行及下载通过；JavaScript 错误 0 |
+| 批量入口 | 种子 11/23 × 分布引导/等规模消融，共 4 次真实数据运行完成，模型集合一致 |
+| 命令行重放 | 划分哈希、选择哈希、验证风险及候选流哈希与对应批量运行一致 |
 
-当前图表的完整性、可复现性和工程稳定性提升，不等于真实防御效果已得到验证。
+机器可读证据保存在 reports/open_real_checks.json、reports/open_browser_checks.json、reports/open_tests.log、reports/open_replay_checks.json、reports/study_acceptance/summary.json 和同目录报告中；生成结果不进入版本控制。
+
+本次 2,000 次出现的快速运行按三项需求分别选出 deny-keyboard_walk、block-8、baseline，三项均为 no_supported_improvement。小样本工程验收没有证明推荐策略优于常见规则，也没有为了展示改动需求阈值。
+
+## 当前实现的明确边界
+
+M1 已使用训练频次头部与特征评分影响候选搜索；交叉拟合攻击标签尚未启用。R1 是固定简单修补序列，不是全局最小编辑距离求解器。默认风险主目标只优化指定主要响应和 A1；A0 与其它响应单列，尚未提供跨情景最坏风险优化或 A2。
+
+全文件源哈希和严格读取已核验；来源真实性、全局重复字符串审计和独立用户语义尚未验证。样本内相同字符串已合并。模型范围有限，n-gram 的字符/长度边界与所有资源截断明确记录。
+
+Bootstrap 固定训练和选中策略，区间为逐点探索性比较；正式规模、多种子与多重比较设计仍需按冻结计划执行。响应概率、需求阈值与成本代理没有真实用户研究校准。
+
+尚未完成论文 OMEN 本体、PassLLM、RFGuess、A2、真实用户研究、第二台干净机器复跑和比赛提交格式核验。固定阶马尔可夫必须继续标为非 OMEN。MAYA 等外部聚合证据不能直接推出跨站猜中率或防御收益。
+
+## 历史记录
+
+2026-09-22 的 43 项工程测试与旧闭集实验见 [第一大点验收报告](SECTION1_ACCEPTANCE.md)。历史入口保留 /legacy、web/legacy_app.py、tools/legacy_demo.py；它们不能代表新的开放协议结果。

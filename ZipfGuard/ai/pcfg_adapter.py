@@ -366,6 +366,7 @@ class PCFGAttacker(BaselineAttacker):
     ) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        environment["PYTHONIOENCODING"] = "utf-8"
         try:
             process = subprocess.Popen(
                 [str(value) for value in command],
@@ -379,7 +380,7 @@ class PCFGAttacker(BaselineAttacker):
                 stderr=subprocess.PIPE,
                 text=True,
                 encoding="utf-8",
-                errors="replace",
+                errors="strict",
                 creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
             )
         except OSError as error:
@@ -387,8 +388,15 @@ class PCFGAttacker(BaselineAttacker):
 
         output: dict[str, str] = {"stdout": "", "stderr": ""}
 
+        decode_failures = []
+
         def drain(name: str, stream) -> None:
-            output[name] = stream.read()
+            try:
+                output[name] = stream.read()
+            except UnicodeError:
+                decode_failures.append(name)
+                # Drain remaining bytes so the child can exit without pipe blockage.
+                stream.buffer.read()
 
         stdout_thread = threading.Thread(
             target=drain, args=("stdout", process.stdout), daemon=True,
@@ -415,6 +423,8 @@ class PCFGAttacker(BaselineAttacker):
                 process.stdout.close()
             if process.stderr is not None:
                 process.stderr.close()
+        if decode_failures:
+            raise error_type("PCFG 输出不是有效 UTF-8；拒绝替换字符后继续评价")
         return subprocess.CompletedProcess(
             [str(value) for value in command], returncode,
             output["stdout"], output["stderr"],
@@ -447,7 +457,7 @@ class PCFGAttacker(BaselineAttacker):
                 self.config.python_executable, str(backend / "trainer.py"),
                 "--rule", ruleset_name, "--training", str(training_path),
                 "--encoding", "utf-8", "--coverage", "1.0",
-                "--comments", "ZipfGuard synthetic train split only",
+                "--comments", "ZipfGuard declared train split only",
             ]
             completed = self._run(
                 backend, command, error_type=PCFGTrainingError, operation="训练",
@@ -623,3 +633,41 @@ class PCFGAttacker(BaselineAttacker):
             training_size=len(train), validation_size=len(validation),
             open_positions=open_positions,
         )
+
+
+    def generate_open(self, train: Sequence[str]):
+        """Return raw upstream candidates, without a target/candidate allowlist.
+
+        The common open executor owns filtering, deduplication and billing.
+        This method has no validation or test argument.
+        """
+        self._ensure_available()
+        if not train:
+            raise ValueError('PCFG needs nonempty train')
+        key = self._training_key(train)
+        ruleset = self._ruleset_name(key)
+        if not hasattr(self, '_open_cache'):
+            self._open_cache = {}
+        if key in self._open_cache:
+            return self._open_cache[key]
+        backend = self._prepare_backend()
+        self._train(backend, train, ruleset, key)
+        session = f'zipfguard_open_{os.getpid()}_{key[:12]}'
+        command = [self.config.python_executable, str(backend / 'pcfg_guesser.py'),
+                   '--rule', ruleset, '--session', session,
+                   '--limit', str(self.config.generation_limit)]
+        try:
+            result = self._run(backend, command, error_type=PCFGGenerationError, operation='开放生成')
+            if result.returncode != 0 or 'Starting to generate password guesses' not in result.stderr:
+                raise PCFGGenerationError('PCFG open generation failed; no fallback applied')
+            stream = tuple(line.removesuffix('\r') for line in result.stdout.split('\n') if line.removesuffix('\r'))
+            if len(stream) > self.config.generation_limit:
+                raise PCFGGenerationError('PCFG emitted more than the configured limit')
+            stop = 'raw_limit' if len(stream) >= self.config.generation_limit else 'exhausted'
+            value = (stream, {'source_stop': stop, 'upstream_commit': EXPECTED_COMMIT,
+                             'training_key': key, 'upstream_raw_count': len(stream),
+                             'input_role': 'train', 'candidate_allowlist': False})
+            self._open_cache[key] = value
+            return value
+        finally:
+            (backend / f'{session}.sav').unlink(missing_ok=True)

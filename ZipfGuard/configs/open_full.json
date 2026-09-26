@@ -1,0 +1,110 @@
+{
+  "schema_version": "zipfguard-open-v2",
+  "seed": 42,
+  "data": {
+    "path": "../rockyou-withcount.txt",
+    "format": "password_with_count",
+    "encoding": "latin-1",
+    "sample_size": 20000,
+    "split_fractions": [
+      0.6,
+      0.1,
+      0.1,
+      0.2
+    ]
+  },
+  "budgets": [
+    100,
+    1000,
+    10000
+  ],
+  "bootstrap_repetitions": 200,
+  "attackers": {
+    "frequency": "required",
+    "dictionary-rules": "required",
+    "character-ngram": "required",
+    "pcfg": "optional"
+  },
+  "generation": {
+    "raw_limit": 200000,
+    "timeout_seconds": 120,
+    "max_frontier": 500000,
+    "max_expansions": 2000000
+  },
+  "ngram": {
+    "orders": [
+      2,
+      3
+    ],
+    "smoothing": [
+      0.1
+    ],
+    "min_length": 1,
+    "max_length": 32
+  },
+  "pcfg": {
+    "timeout_seconds": 120,
+    "raw_limit": 200000,
+    "training_limit": 20000
+  },
+  "response": {
+    "scenarios": [
+      "R0",
+      "R1",
+      "R2"
+    ],
+    "primary": "R0",
+    "max_attempts": 5,
+    "r0_max_total_attempts": 0,
+    "reselect_probability": 0.4,
+    "abandon_probability": 0.05
+  },
+  "search": {
+    "risk_budget": 1000,
+    "blocklist_size": 100,
+    "lengths": [
+      8,
+      10,
+      12
+    ],
+    "max_rules": 3,
+    "min_gain": 0.005,
+    "requirements": [
+      {
+        "name": "低摩擦",
+        "mode": "cost_cap",
+        "max_cost": 0.2,
+        "max_risk": 1,
+        "min_completion": 0.98,
+        "max_extra_attempts": 2
+      },
+      {
+        "name": "均衡",
+        "mode": "cost_cap",
+        "max_cost": 0.5,
+        "max_risk": 1,
+        "min_completion": 0.98,
+        "max_extra_attempts": 3
+      },
+      {
+        "name": "高防护",
+        "mode": "risk_target",
+        "max_cost": 0.9,
+        "max_risk": 0.05,
+        "min_completion": 0.98,
+        "max_extra_attempts": 8
+      }
+    ]
+  },
+  "knowledge": [
+    "F",
+    "A0",
+    "A1"
+  ],
+  "discovery": {
+    "mode": "distribution",
+    "max_features": 3,
+    "head_mass": 0.2,
+    "min_support": 0.01
+  }
+}

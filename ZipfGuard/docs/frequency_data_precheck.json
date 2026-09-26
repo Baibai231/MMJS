@@ -1,0 +1,31 @@
+{
+  "date": "2026-09-24",
+  "source": "rockyou-withcount.txt",
+  "bytes": 254676625,
+  "rows": 14344391,
+  "parsed_rows": 14344391,
+  "invalid_rows": 0,
+  "total_frequency": 32603388,
+  "count_gt_one_rows": 2459759,
+  "descending_violations": 0,
+  "top_mass_sums": {
+    "10": 669126,
+    "100": 1483668,
+    "1000": 3683317,
+    "10000": 7270359
+  },
+  "sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+  "top_mass": {
+    "10": 0.020523204520953468,
+    "100": 0.0455065590115972,
+    "1000": 0.11297344312805774,
+    "10000": 0.22299397228288054
+  },
+  "scope": "完整文件频次字段扫描；未验证来源真实性、口令去重或运行攻击实验",
+  "limitations": [
+    "Only leading positive integer count fields were scanned.",
+    "Password uniqueness, provenance and decoding validity were not verified.",
+    "Top-row frequency mass is a file statistic, not an attacker result.",
+    "No full attack evaluation or sample-size experiment was executed."
+  ]
+}

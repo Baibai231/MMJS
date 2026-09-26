@@ -172,6 +172,16 @@ def run_pipeline(payload=None, *, config=None, seed=None, budgets=None,
     validation selection. This prevents policies being compared using different
     worst-attacker sets after a late adaptive or final-test failure.
     """
+    if config is not None and config.get("schema_version") == "zipfguard-open-v2":
+        from experiments.open_pipeline import run_open_pipeline
+        if payload is not None or synthetic_dataset is not None:
+            raise ValueError("开放主实验使用配置中的真实字符串语料；聚合/合成输入请使用旧协议")
+        import copy
+        current = copy.deepcopy(config)
+        if seed is not None: current["seed"] = seed
+        if budgets is not None: current["budgets"] = list(budgets)
+        if bootstrap_repetitions is not None: current["bootstrap_repetitions"] = bootstrap_repetitions
+        return run_open_pipeline(current)
     cfg = load_config(preset="quick") if config is None else validate_config(config)
     if config is None:
         cfg["synthetic"]["size"] = 20_000
@@ -262,6 +272,9 @@ def write_json(result: Mapping[str, Any], path: str | Path) -> Path:
 
 
 def render_markdown(result: Mapping[str, Any]) -> str:
+    if result.get("protocol_id") == "open-minauto-v1":
+        from web.open_presentation import render_open_markdown
+        return render_open_markdown(result)
     analysis = result["analysis"]
     lines = ["# ZipfGuard 离线风险评估报告", "", "## 数据与复现", "",
              f"- 数据集：`{result['dataset']['dataset_id']}`",

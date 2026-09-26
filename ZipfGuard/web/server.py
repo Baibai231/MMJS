@@ -111,6 +111,12 @@ preset();
 
 
 
+from web.open_interface import OPEN_INDEX, execute_open_request, start_job, job_snapshot
+from experiments.open_config import load_open_config
+LEGACY_INDEX = INDEX
+INDEX = OPEN_INDEX
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, body, content_type="application/json; charset=utf-8", status=200):
         self.send_response(status); self.send_header("Content-Type", content_type); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
@@ -119,11 +125,16 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             if path == "/": return self._send(INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path == "/legacy": return self._send(LEGACY_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path.startswith("/api/jobs/"):
+                return self._send(_json_safe(job_snapshot(path.rsplit("/", 1)[-1])))
             if path == "/api/status":
                 config = PassLLMConfig.workspace_default(ROOT.parent)
                 return self._send(_json_safe({"rockyou_present": DEFAULT_ROCKYOU.is_file(), "rockyou_bytes": DEFAULT_ROCKYOU.stat().st_size if DEFAULT_ROCKYOU.exists() else 0, "passllm": runtime_status(config)}))
             if path.startswith("/api/config/"):
                 preset = path.rsplit("/", 1)[-1]
+                if preset in ("open_quick", "open_full"):
+                    return self._send(_json_safe(load_open_config(preset)))
                 if preset not in ("quick", "full"): raise ValueError("未知预设")
                 return self._send(_json_safe(load_config(preset=preset)))
             if path == "/api/demo": return self._send(_json_safe(run_pipeline(bootstrap_repetitions=40)))
@@ -134,7 +145,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in ("/api/run", "/api/open-compare"):
+        if path not in ("/api/run", "/api/open-compare", "/api/jobs"):
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -144,6 +155,8 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 8_000_000:
                 raise ValueError("请求大小无效")
             request = json.loads(self.rfile.read(length))
+            if path == "/api/jobs":
+                return self._send(_json_safe(start_job(request)), status=202)
             with _cache_lock:
                 if path == "/api/open-compare":
                     result = execute_open_compare(request)
@@ -201,6 +214,8 @@ def execute_open_compare(request):
 
 
 def execute_request(request):
+    if request.get("config", {}).get("schema_version") == "zipfguard-open-v2":
+        return execute_open_request(request)
     config = validate_config(request["config"])
     source = request.get("source", "synthetic")
     payload = None

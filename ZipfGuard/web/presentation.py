@@ -35,7 +35,7 @@ def interval(value, bounds):
 
 
 def plot(series, *, xlabel, ylabel, log=False, scatter=False):
-    points = [(x, y) for _, values in series for x, y, *_ in values]
+    points = [(x, y) for _, values in series for x, y, *_ in values if y is not None]
     if not points:
         return "<p>没有可用数据。</p>"
     tx = (lambda x: math.log10(max(x, 1))) if log else (lambda x: x)
@@ -59,10 +59,18 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False):
         svg.append(f'<text x="{px}" y="345" text-anchor="middle" font-size="11" fill="#607087">{label:.3g}</text>')
     for i, (name, values) in enumerate(series):
         color = COLORS[i % len(COLORS)]
-        coords = [xy(row[0], row[1]) for row in values]
+        segments = [[]]
+        for row in values:
+            if row[1] is None:
+                if segments[-1]: segments.append([])
+            else: segments[-1].append(row)
         if not scatter:
-            svg.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.5" points="' + ' '.join(f'{x:.2f},{y:.2f}' for x, y in coords) + '"/>')
-        for row, (px, py) in zip(values, coords):
+            for segment in segments:
+                if not segment: continue
+                coords = [xy(row[0], row[1]) for row in segment]
+                svg.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.5" points="' + ' '.join(f'{x:.2f},{y:.2f}' for x, y in coords) + '"/>')
+        for row in (row for row in values if row[1] is not None):
+            px, py = xy(row[0], row[1])
             tooltip = row[2] if len(row) > 2 else f"{name}: {row[0]:.5g}, {row[1]:.5g}"
             svg.append(f'<circle cx="{px:.2f}" cy="{py:.2f}" r="{5 if scatter else 2}" fill="{color}"><title>{escape(tooltip)}</title></circle>')
     svg.append(f'<text x="460" y="375" text-anchor="middle" font-size="13">{escape(xlabel)}{"（对数刻度）" if log else ""}</text><text x="75" y="25" font-size="13">{escape(ylabel)}</text></svg>')
@@ -75,6 +83,9 @@ def budget_plot(series, *, ylabel="攻击成功率"):
 
 
 def report_html(result, *, document=True):
+    if result.get("protocol_id") == "open-minauto-v1":
+        from web.open_presentation import render_open_html
+        return render_open_html(result, document=document)
     a, metadata = result['analysis'], result['metadata']
     parts = ['<main><section><h1>ZipfGuard · 实验结果</h1><div class="metrics">']
     for label, value in (("数据集", result['dataset']['dataset_id']), ("样本数", result['dataset']['total_count']), ("选择模型", a['selected_model']), (f"q={a['risk_threshold']['q']:.1%} 风险排名", a['risk_threshold']['model_rank'])):
