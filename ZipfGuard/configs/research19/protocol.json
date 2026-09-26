@@ -4,13 +4,13 @@
   "priority_document": "docs/PIPELINE_NEXT_PHASE_2026-09-25.md",
   "research_question": "Under the HTPG setting, can distribution estimates and head-tail analysis more stably reflect limited-budget password risk across several attack models?",
   "reference_ids": ["P1", "P2", "P3", "P11"],
-  "baseline_ids": ["htpg-ols-frequency-gt-3", "empirical-frequency", "pcfg", "omen-not-yet-integrated", "passllm-not-participating"],
+  "baseline_ids": ["htpg-ols-frequency-gt-3", "empirical-frequency", "pcfg-raw-stream-hak5-budget-1000", "omen-stdout-hak5-budget-1000", "passgpt-sampling-not-1e8", "passllm-random-sample-not-divide-search"],
   "dataset_ids": [
     "rockyou", "myspace", "phpbb", "linkedin", "hotmail", "mailru", "yandex", "yahoo",
     "faithwriters", "hak5", "000webhost", "singles", "gmail", "zomato", "taobao",
     "mate1", "twitter", "ashleymadison", "libero"
   ],
-  "primary_metric": "Not chosen yet. Cracked@B on real data is not available, so no method gain is published.",
+  "primary_metric": "Cracked@B on held-out occurrence rows. Small-budget counts exist for hak5. No method gain is published.",
   "failure_rule": "A missing model, a skipped large-site feature run, or a frequency semantics of unknown does not become a zero or a security gain.",
   "historical_reports": {
     "reports/directed_size900.json": "robustness-v2 synthetic table. Not a research19 result."

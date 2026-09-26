@@ -21,6 +21,14 @@ MODEL_LABELS = {
 }
 
 
+def models_within_bic(models: Sequence[dict], gap: float = 10) -> list[dict]:
+    """Keep models whose BIC is within ``gap`` of the best. The list must be BIC-sorted."""
+    if not models:
+        raise ValueError("没有候选模型")
+    best = float(models[0]["bic"])
+    return [item for item in models if float(item["bic"]) - best < gap]
+
+
 def _validate_counts(counts: Sequence[int]) -> np.ndarray:
     array = np.asarray(counts, dtype=float)
     if array.ndim != 1 or len(array) < 2 or len(array) > 100_000:
@@ -236,8 +244,12 @@ def analyze_counts(
     best = models[0]
     if len(models) > 1 and models[1]["bic"] - models[0]["bic"] < 10:
         validation_cdf_at_budget = float(np.cumsum(validation_probabilities)[min(int(budget), size) - 1]) if budget else 0.0
-        best = min(models, key=lambda item: abs(item["cdf"][min(int(budget), size) - 1] - validation_cdf_at_budget) if budget else item["validation_ks"])
-        selection_method = "BIC 初筛后按预算点 CDF 误差"
+        close = models_within_bic(models)
+        best = min(
+            close,
+            key=lambda item: abs(item["cdf"][min(int(budget), size) - 1] - validation_cdf_at_budget) if budget else item["validation_ks"],
+        )
+        selection_method = "BIC 差小于 10 的子集内按预算点 CDF 误差"
     bootstrap_counts = rng.multinomial(validation_n, validation_probabilities, size=bootstrap_repetitions)
     baseline = next(model for model in models if model["id"] == "cdf_zipf")
     baseline_log = np.log(baseline["pmf"])

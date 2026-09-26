@@ -1,0 +1,11 @@
+{
+  "pair_id": "hak5_to_hotmail",
+  "train_site": "hak5",
+  "target_site": "hotmail",
+  "seed": 19,
+  "budgets": [100, 1000],
+  "split": "occurrence_60_20_20",
+  "selection_reason": "两个站点的不同字符串都低于 20 万，元数据为英语。配对在看到目标站跨站命中率之前写定。",
+  "generator_sees_target": false,
+  "success_feedback": false
+}

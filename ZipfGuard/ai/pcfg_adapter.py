@@ -538,6 +538,44 @@ class PCFGAttacker(BaselineAttacker):
         finally:
             session_file.unlink(missing_ok=True)
 
+    def generate_raw_stream(self, train: Sequence[str], *, limit: int | None = None) -> dict:
+        """Return the raw PCFG stdout order. No candidate list is applied.
+
+        Positions stay 1-based in that stream. This is the open-generation
+        contract; ``fit_select_rank`` still intersects a pre-registered set.
+        """
+        status = self._ensure_available()
+        usable = [str(value) for value in train if str(value) and all(ord(char) >= 32 for char in str(value))]
+        if not usable:
+            raise ValueError("PCFG 需要至少一条可训练的单行样本")
+        key = self._training_key(usable)
+        ruleset_name = self._ruleset_name(key)
+        backend = self._prepare_backend()
+        self._train(backend, usable, ruleset_name, key)
+        session_name = f"zipfguard_raw_{os.getpid()}_{ruleset_name[-8:]}"
+        session_file = backend / f"{session_name}.sav"
+        command = [
+            self.config.python_executable, str(backend / "pcfg_guesser.py"),
+            "--rule", ruleset_name, "--session", session_name,
+            "--limit", str(limit or self.config.generation_limit),
+        ]
+        try:
+            completed = self._run(backend, command, error_type=PCFGGenerationError, operation="原始生成")
+            if completed.returncode != 0 and "Limit reached" not in (completed.stderr or ""):
+                detail = (completed.stderr or completed.stdout)[-500:].strip()
+                raise PCFGGenerationError(f"PCFG 原始生成失败：{detail}")
+            stream = [line for line in completed.stdout.splitlines() if line]
+        finally:
+            session_file.unlink(missing_ok=True)
+        return {
+            "stream": stream,
+            "raw_emissions": len(stream),
+            "candidate_filter_applied": False,
+            "renumbered": False,
+            "upstream_commit": status["detected_commit"],
+            "test_feedback_used": False,
+        }
+
     def fit_select_rank(
         self, train: Sequence[str], validation: Sequence[str], candidates: Sequence[str],
     ) -> RankingResult:

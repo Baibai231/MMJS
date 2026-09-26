@@ -23,9 +23,23 @@
 
 | 任务 | implemented | tested | experiment_completed | claim_supported |
 | --- | --- | --- | --- | --- |
-| A00 指纹与旧结果隔离 | 是 | `tests/test_research19_identity.py` | 否 | 否 |
-| A01 19 站数据卡 | 是 | 由现有聚合报告生成，未重跑拟合 | 否 | 否 |
-| A02–A12 | 否 | 否 | 否 | 否 |
+| A00 指纹与旧结果隔离 | 是 | `tests/test_research19_identity.py` | 否。没有把旧表重标成新结果 | 否 |
+| A01 19 站数据卡 | 是 | 由现有聚合报告生成 | 数据卡在，全量重拟合没有做 | 否 |
+| A02 开放流与划分 | 是 | `tests/test_research19_pipeline.py` | hak5 的 occurrence 与 unique-disjoint 清单已写。19 站划分清单没有写 | 否 |
+| A03 分布诊断 | 是 | 同上 | 摘要和两张 SVG 来自 JSON。不是新的逐站重拟合曲线 | 否 |
+| A04 拟合比较 | 是 | `models_within_bic` 测试 | 7 个小站有 OLS。只有 hak5 做了三模型，而且是同一样本上的误差。12 站 incomplete | 否 |
+| A05 切分尺度 | 是 | 同上 | hak5 子样本稳定性已写。没有 19 站，也没有攻击风险标签 | 否 |
+| A06 特征 | 是 | 同上 | 19 站相关表仍是旧聚合。hak5 上有频次命中与特征的描述统计，不是因果 | 否 |
+| A07 PCFG 与 OMEN | 是 | `reports/research19/hak5_smoke.json`，`transfer_hak5_hotmail.json` | hak5 预算 1000，以及 hak5→hotmail。不是 1e5，也不是 19 站 | 否 |
+| A08 PassGPT / PassLLM | 是 | `reports/research19/neural_eval.json` | hak5 上各抽样 1000 条原始输出。PassLLM 唯一候选 968，预算 1000 为 incomplete。不是 DivideSearch，也不是 1e8 | 否 |
+| A09 多模型主表 | 主表文件在 | 数字来自上面的 JSON | 否。FLA、PassGAN、PassFlow 没有进入已完成模型 | 否 |
+| A10 两个假设 | 已写明，可被否定 | `docs/RESEARCH_HYPOTHESES.md` | 只有 hak5 探索。H1 这一站质量阈值并不更稳定。H2 等额并集没有超过验证集选出的单模型 | 否 |
+| A11 确认实验 | 缺失单元已列出 | `reports/research19/confirmation.json` | 否。没有修改前/修改后对照 | 否 |
+| A12 报告与复跑 | 是 | `docs/RESEARCH19_REPORT.md`，`python -m experiments.research19_rerun` | 否。比赛名称、截止日期和提交格式仍是待确认 | 否 |
+
+`ai/omen_adapter.py` 的 `omen_status()` 仍表示这个函数本身不发猜测。hak5 的 OMEN 结果在 `reports/research19/hak5_smoke.json`，模式是 stdout、无成功反馈。不要把固定阶 Markov 叫成 OMEN。
+
+A08 的 0 次猜中是 PassGPT 在 hak5 测试集 598 条上实际跑完预算 100 和 1000 的结果。PassLLM 预算 1000 没有写成 0，因为唯一候选只有 968。
 
 A00 交付：`configs/research19/protocol.json`、`experiments/research19_manifest.py`。缓存键包含数据、分析源码、词表和拟合配置。`robustness-v2` 不能显示为当前方法结果。
 

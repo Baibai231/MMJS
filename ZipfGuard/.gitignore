@@ -17,6 +17,7 @@ demo_data/*.json
 # Local datasets and model weights must never enter version control
 lab_basic_50_dicts/
 local_datasets/
+local_attack_models/
 *.ckpt
 *.safetensors
 *.pt
