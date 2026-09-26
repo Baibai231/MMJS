@@ -45,6 +45,8 @@ A08 的 0 次猜中是 PassGPT 在 hak5 测试集 598 条上实际跑完预算 1
 
 2026-09-26 第三次核验之后，MAYA pickle 只去掉一条记录末尾的 LF 或 CR LF，并单独计数。值内部的控制字符整条排除，不删字符后继续计数。原始位置包含无效输出；有效输出位置另记。运行若被中断，终态是 interrupted，中断前已经发出的预算仍可计分。旧 schema 的图会拒绝生成，而不是画成空图。
 
+2026-09-26 第四次核验之后，7 个小站按当前预处理重算，twitter 的分布和频次攻击使用同一身份。另外 12 个大站记为未重读。配额实验把总生成预算和唯一验证预算分开；跨模型重复不是 resource_truncated。纯中断通知不消耗生成次数。PassLLM 排序后保留候选的逐点 axis 是 sorted_retained_position。
+
 A00 交付：`configs/research19/protocol.json`、`experiments/research19_manifest.py`。缓存键包含数据、分析源码、词表和拟合配置。`robustness-v2` 不能显示为当前方法结果。
 
 A01 交付：`docs/DATASET_CARDS_19.md`、`reports/research19/data_audit.json`。LinkedIn 与 Ashley Madison 的频次语义待确认。上游去重仍是 unknown。没有把出现次数写成账户人数。

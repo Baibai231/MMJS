@@ -58,7 +58,7 @@ def frequency_attack(train: list[str], test: list[str], budgets: tuple[int, ...]
         "points": ledger["axes"]["unique_position"]["points"],
         "raw_position_points": ledger["axes"]["raw_position"]["points"],
         "valid_position_points": ledger["axes"]["valid_position"]["points"],
-        **({"ordered_unique": ordered} if return_stream else {}),
+        **({"ordered_unique": ordered, "ordered_raw": ordered} if return_stream else {}),
     }
 
 
@@ -95,7 +95,10 @@ def omen_attack(train: list[str], test: list[str], limit: int, *, return_stream:
             "points": ledger["axes"]["raw_position"]["points"],
             "valid_position_points": ledger["axes"]["valid_position"]["points"],
             "unique_position_points": ledger["axes"]["unique_position"]["points"],
-            **({"ordered_unique": ledger["ordered_unique"]} if return_stream else {}),
+            **({
+                "ordered_unique": ledger["ordered_unique"],
+                "ordered_raw": lines,
+            } if return_stream else {}),
         }
     finally:
         train_path.unlink(missing_ok=True)
@@ -122,7 +125,10 @@ def pcfg_attack(train: list[str], test: list[str], limit: int, *, return_stream:
         "points": ledger["axes"]["raw_position"]["points"],
         "valid_position_points": ledger["axes"]["valid_position"]["points"],
         "unique_position_points": ledger["axes"]["unique_position"]["points"],
-        **({"ordered_unique": ledger["ordered_unique"]} if return_stream else {}),
+        **({
+            "ordered_unique": ledger["ordered_unique"],
+            "ordered_raw": stream,
+        } if return_stream else {}),
     }
 
 

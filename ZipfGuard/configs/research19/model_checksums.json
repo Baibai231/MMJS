@@ -1,0 +1,20 @@
+{
+  "models": [
+    {
+      "path": "local_attack_models/passgpt/weights/passgpt-10characters/model.safetensors",
+      "bytes": 238668240,
+      "sha256": "bce5f8be7b0866744729e54652cbc68f0d980ad9b2ecf5dd0d3b0dad3ca2b9aa"
+    },
+    {
+      "path": "local_attack_models/passllm/base/Qwen2.5-0.5B-Instruct/model.safetensors",
+      "bytes": 988097824,
+      "sha256": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe"
+    },
+    {
+      "path": "local_attack_models/passllm/Available artifacts for USENIX Security 2025 #772-v1/checkpoints/rockyou_100w_disQwen0.5B/adapter_model.safetensors",
+      "bytes": 35237104,
+      "sha256": "3226fd9a87fab91c9a0e2db0c4ac6c9bfe97ba97622d3bcc5ca6928842053cab"
+    }
+  ],
+  "weights_not_in_git": true
+}

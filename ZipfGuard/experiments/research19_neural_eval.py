@@ -36,6 +36,12 @@ def _file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def label_axis(points: list[dict] | None, axis: str) -> list[dict] | None:
+    if points is None:
+        return None
+    return [{**point, "axis": axis} for point in points]
+
+
 def scheduled_passllm_trajectories(sample_size: int, batch_size: int) -> int:
     """Match the artifact: it plans sample_size * 1.1 trajectories, then keeps sample_size."""
     times = math.ceil((sample_size * 1.1) / batch_size)
@@ -233,8 +239,12 @@ def main() -> int:
         scored = _score(lines, split["test"], max_chars=max_chars, completion=completion)
         scored["points_are_generation_order"] = name != "passllm"
         if name == "passllm":
-            scored["points_sorted_retained_position"] = scored.pop("points_raw_position")
-            scored["points_sorted_retained_within_length"] = scored.pop("points_raw_position_within_length")
+            scored["points_sorted_retained_position"] = label_axis(
+                scored.pop("points_raw_position"), "sorted_retained_position",
+            )
+            scored["points_sorted_retained_within_length"] = label_axis(
+                scored.pop("points_raw_position_within_length"), "sorted_retained_position",
+            )
             scored["points_raw_position"] = None
             scored["points_raw_position_within_length"] = None
             scored["generation_budget_cracked"] = None

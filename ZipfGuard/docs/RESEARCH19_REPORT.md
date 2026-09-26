@@ -8,13 +8,13 @@
 
 ## 复跑
 
-小预算入口：
+只根据已有 JSON 重建分布摘要、主表和图：
 
 ```text
-python -m experiments.research19_rerun
+python -m experiments.research19_rerun --flow report
 ```
 
-它会重跑 hak5 的频次、OMEN、PCFG，较小站点的频次词典，hak5→hotmail，配额探索，切分稳定性和 SVG。PassGPT / PassLLM 的 1000 条抽样单独跑：
+缺少 `preprocess_identity.json` 或其他专项结果时会失败，不会把缺文件写成 0。完整小预算生成另跑 `--flow full`。PassGPT / PassLLM 不在这两条流程里：
 
 ```text
 python -m experiments.research19_neural_eval
@@ -38,7 +38,7 @@ PassGPT 和 PassLLM 的权重都在 RockYou 上训练过。这次 hak5 划分不
 
 ## 频次词典，预算 1000
 
-完成的站点：myspace 428/8309，phpbb 6184/51084，hotmail 83/1964，faithwriters 172/1943，hak5 134/598，singles 518/3251，twitter 307/7898。twitter 有 31 条记录在去掉末尾 LF 后仍含制表符，整条排除，所以分母和上次不同。其余 12 个站点因为不同字符串超过 20 万，记为 incomplete，没有填 0。
+完成的站点：myspace 428/8309，phpbb 6184/51084，hotmail 83/1964，faithwriters 172/1943，hak5 134/598，singles 518/3251，twitter 307/7898。twitter 在当前预处理下是 39487 条、35106 类，排除 31 条内部制表符；旧数据卡的 39518/35137 只作为历史快照。其余 12 个大站这次没有重读，不能推断它们没有内部控制字符。频次矩阵里超过 20 万不同字符串的站点仍然是 incomplete，没有填 0。
 
 ## 预先写定的跨站
 
@@ -46,7 +46,7 @@ hak5 训练，hotmail 测试 1964 条。预算 1000：频次 17，OMEN 18，PCFG
 
 ## 探索性配额
 
-总预算 900，验证集选中频次词典。测试集单模型 127/598。三个模型各 300 条的并集只有 821 个唯一候选，所以预算 900 记为 incomplete；在这 821 条上猜中 93/598。并集没有更高。这不能写成 H2 成立。
+总生成预算 900 已经花完：三个模型各发出 300 条，完成状态是 reached_budget。其中跨模型重复 79 条，唯一验证对象 821。唯一验证预算 900 因此是 incomplete，不能写成资源截断。这 821 条上猜中 93/598。验证集选出的单模型在测试集是 127/598。这不是 H2 的确认结论。
 
 ## 拟合与切分
 

@@ -25,6 +25,8 @@ def account_emissions(records: Iterable[dict]) -> dict:
 
     Each record has ``text`` and ``valid``. ``in_domain`` defaults to true.
     An empty or invalid record still consumes one raw emission.
+    A record with ``interrupted`` and without ``failed_emission`` is only a
+    stop notice and does not consume a generation.
     """
     raw = 0
     valid_count = 0
@@ -34,6 +36,9 @@ def account_emissions(records: Iterable[dict]) -> dict:
     unique: list[str] = []
     interrupted = False
     for record in records:
+        if record.get("interrupted") and not record.get("failed_emission"):
+            interrupted = True
+            break
         raw += 1
         if record.get("interrupted"):
             interrupted = True
@@ -142,7 +147,8 @@ def score_axes(
     for record in records:
         if record.get("interrupted"):
             interrupted = True
-            raw_slots.append(None)
+            if record.get("failed_emission"):
+                raw_slots.append(None)
             break
         text = record.get("text")
         valid = bool(record.get("valid")) and isinstance(text, str) and text != ""

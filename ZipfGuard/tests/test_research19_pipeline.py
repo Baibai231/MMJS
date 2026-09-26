@@ -1,4 +1,5 @@
 import json
+import shutil
 import tempfile
 import unittest
 from pathlib import Path
@@ -7,10 +8,13 @@ from collections import Counter
 
 from core.attack_stream import account_emissions, checkpoint_raw, evaluate_ordered_stream, prepare_generator, score_axes
 from experiments.build_figures import _destination, _polyline, main as build_figures_main
-from experiments.research19_neural_eval import scheduled_passllm_trajectories
+from experiments.research19_neural_eval import label_axis, scheduled_passllm_trajectories
+from experiments.research19_quota import combine_raw_prefixes
 from experiments.research19_splits import digest_multiset, unique_disjoint_rows
 from core.distributions import models_within_bic
+from experiments.distribution_diagnostics import main as diagnostics_main
 from experiments.distribution_diagnostics import summarize_audit
+from experiments.research19_attack_matrix import build_matrix
 from experiments.feature_stability import summarize_features
 from experiments.fit_benchmark import benchmark_status
 from experiments.split_stability import mass_cutoff, scale_factor, scaled_curvature_peak
@@ -32,7 +36,7 @@ class Research19PipelineTests(unittest.TestCase):
             {"text": "beta", "valid": True, "in_domain": False},
             {"text": "later", "valid": True, "interrupted": True},
         ])
-        self.assertEqual(counted["raw_emissions"], 5)
+        self.assertEqual(counted["raw_emissions"], 4)
         self.assertEqual(counted["valid_candidates"], 3)
         self.assertEqual(counted["unique_candidates"], 2)
         self.assertEqual(counted["duplicate_count"], 1)
@@ -43,7 +47,7 @@ class Research19PipelineTests(unittest.TestCase):
         self.assertEqual(scored["points"][0]["cracked"], 0)
         self.assertEqual(scored["points"][1]["cracked"], 1)
         checkpoint = checkpoint_raw(counted)
-        self.assertEqual(checkpoint["resume_from_raw_index"], 5)
+        self.assertEqual(checkpoint["resume_from_raw_index"], 4)
         self.assertTrue(checkpoint["interrupted"])
         self.assertFalse(checkpoint["plaintext_retained"])
 
@@ -97,6 +101,24 @@ class Research19PipelineTests(unittest.TestCase):
         self.assertIsNone(raw[100]["cracked"])
         self.assertTrue(raw[100]["incomplete"])
         self.assertEqual(raw[100]["completion"], "interrupted")
+        self.assertEqual(ledger["raw_emissions"], 11)
+
+    def test_interrupt_notice_does_not_consume_a_generation(self):
+        notice = score_axes(
+            [{"text": "target", "valid": True}, {"interrupted": True}],
+            ["target"], (1, 2), completion="reached_budget",
+        )
+        self.assertEqual(notice["raw_emissions"], 1)
+        self.assertEqual(notice["completion"], "interrupted")
+        raw = {point["budget"]: point for point in notice["axes"]["raw_position"]["points"]}
+        self.assertEqual(raw[1]["cracked"], 1)
+        self.assertTrue(raw[2]["incomplete"])
+        self.assertNotEqual(raw[2]["completion"], "reached_before_interrupt")
+        failed = score_axes(
+            [{"text": "target", "valid": True}, {"interrupted": True, "failed_emission": True}],
+            ["target"], (2,), completion="reached_budget",
+        )
+        self.assertEqual(failed["raw_emissions"], 2)
 
     def test_short_stream_is_not_a_finished_budget(self):
         ledger = score_axes([{"text": "only", "valid": True}], ["only"], (1000,), completion="unspecified")
@@ -154,6 +176,17 @@ class Research19PipelineTests(unittest.TestCase):
 
     def test_passllm_requested_thousand_schedules_more_trajectories(self):
         self.assertEqual(scheduled_passllm_trajectories(1000, 8), 1104)
+        labeled = label_axis([{"budget": 100, "axis": "raw_position", "cracked": 1}], "sorted_retained_position")
+        self.assertEqual(labeled[0]["axis"], "sorted_retained_position")
+
+    def test_cross_model_overlap_is_not_resource_truncation(self):
+        same = ["same"] * 300
+        combined = combine_raw_prefixes({"frequency": same, "omen": same, "pcfg": same}, 300)
+        self.assertEqual(combined["generation_raw_emitted"], 900)
+        self.assertEqual(combined["generation_completion"], "reached_budget")
+        self.assertEqual(combined["unique_verification_candidates"], 1)
+        self.assertEqual(combined["cross_model_duplicate_slots"], 2)
+        self.assertNotEqual(combined["generation_completion"], "resource_truncated")
 
     def test_bic_screen_drops_a_distant_model(self):
         models = [
@@ -180,8 +213,60 @@ class Research19PipelineTests(unittest.TestCase):
         self.assertIn("ashleymadison", report["account_risk_not_claimed_sites"])
         hak5 = next(row for row in report["rows"] if row["name"] == "hak5")
         self.assertTrue(hak5["occurrence_weighted_metric_available"])
+        self.assertIsInstance(report["sites_not_rescanned"], list)
+        self.assertGreater(len(report["sites_not_rescanned"]), 0)
+        self.assertEqual(report["repeat_ratio_mean_current_count"], 7)
+        self.assertEqual(report["repeat_ratio_mean_historical_count"], 10)
+        self.assertIsNone(report["macro_mean_repeat_ratio"])
         self.assertTrue(report["not_an_attack_result"])
         self.assertFalse(report["plaintext_retained"])
+
+    def test_missing_identity_is_not_zero_sites_left_to_reread(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            audit = root / "audit.json"
+            source = Path(__file__).resolve().parents[1] / "reports" / "research19" / "data_audit.json"
+            audit.write_text(source.read_text(encoding="utf-8"), encoding="utf-8")
+            report = summarize_audit(audit, root / "missing.json")
+            self.assertEqual(report["identity_status"], "missing")
+            self.assertIsNone(report["sites_not_rescanned"])
+            with self.assertRaises(SystemExit):
+                diagnostics_main(root)
+
+    def test_matrix_reads_current_quota_instead_of_copying_numbers(self):
+        matrix = build_matrix(Path(__file__).resolve().parents[1] / "reports" / "research19")
+        quota = matrix["quota"]
+        self.assertEqual(quota["generation_completion"], "reached_budget")
+        self.assertEqual(quota["generation_raw_emitted"], 900)
+        self.assertEqual(quota["unique_verification_candidates"], 821)
+        self.assertEqual(quota["emitted_cracked"], 93)
+        self.assertTrue(quota["unique_budget_900_incomplete"])
+        self.assertIsNone(quota["unique_budget_900_cracked"])
+        points = matrix["hak5"]["passllm"]["points_sorted_retained_position"]
+        self.assertTrue(all(point["axis"] == "sorted_retained_position" for point in points))
+        self.assertIsNone(matrix["hak5"]["passllm"]["points_raw_position"])
+
+    def test_report_flow_reads_only_the_given_directory(self):
+        from experiments.research19_rerun import _report
+        source = Path(__file__).resolve().parents[1] / "reports" / "research19"
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            destination = root / "reports" / "research19"
+            destination.mkdir(parents=True)
+            for name in (
+                "data_audit.json", "preprocess_identity.json", "hak5_smoke.json",
+                "neural_eval.json", "frequency_matrix.json", "transfer_hak5_hotmail.json",
+                "quota_hak5.json",
+            ):
+                shutil.copy(source / name, destination / name)
+            self.assertEqual(_report(root), 0)
+            built = json.loads((destination / "attack_matrix.json").read_text(encoding="utf-8"))
+            figure = (destination / "figures" / "repeat_ratio.svg").read_text(encoding="utf-8")
+        self.assertEqual(built["quota"]["generation_raw_emitted"], 900)
+        self.assertEqual(built["quota"]["unique_verification_candidates"], 821)
+        self.assertEqual(built["quota"]["emitted_cracked"], 93)
+        self.assertIn("Gray: 10", figure)
+        self.assertIn("Blue/orange: 7", figure)
 
     def test_feature_summary_does_not_treat_correlation_as_a_fix(self):
         report = summarize_features()
