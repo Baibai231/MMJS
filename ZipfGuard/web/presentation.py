@@ -34,7 +34,29 @@ def interval(value, bounds):
     return f"{rate(value)} [{rate(bounds['lower'])}, {rate(bounds['upper'])}]"
 
 
-def plot(series, *, xlabel, ylabel, log=False, scatter=False):
+def _curve_marker(px, py, color, shape, tooltip="", size=4):
+    title = f"<title>{escape(tooltip)}</title>" if tooltip else ""
+    attrs = f'fill="white" stroke="{color}" stroke-width="1.8"'
+    if shape == "square":
+        return f'<rect x="{px-size:.2f}" y="{py-size:.2f}" width="{2*size}" height="{2*size}" {attrs}>{title}</rect>'
+    if shape in ("triangle", "diamond"):
+        vertices = ([(px,py-size),(px+size,py+size),(px-size,py+size)] if shape == "triangle"
+                    else [(px,py-size),(px+size,py),(px,py+size),(px-size,py)])
+        points = " ".join(f"{x:.2f},{y:.2f}" for x,y in vertices)
+        return f'<polygon points="{points}" {attrs}>{title}</polygon>'
+    return f'<circle cx="{px:.2f}" cy="{py:.2f}" r="{size}" {attrs}>{title}</circle>'
+
+
+def _axis_value(value, style=None):
+    if style == "percent":
+        return f"{100 * value:.2f}%"
+    if style == "count":
+        return f"{value:,.0f}"
+    return f"{value:.3g}"
+
+
+def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
+         x_ticks=None, x_format=None, y_format=None):
     points = [(x, y) for _, values in series for x, y, *_ in values if y is not None]
     if not points:
         return "<p>没有可用数据。</p>"
@@ -48,17 +70,47 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False):
     ymax *= 1.08
     def xy(x, y):
         return 75 + 765 * (tx(x) - xmin) / (xmax - xmin), 325 - 275 * (y - ymin) / (ymax - ymin)
+    palette = COLORS + ["#374151", "#db2777", "#ca8a04", "#4338ca", "#059669", "#dc2626",
+                        "#0369a1", "#7c3aed", "#9f1239", "#57534e", "#4d7c0f", "#0e7490"]
+    colors = [(palette[i] if i < len(palette) else f"hsl({(i*137.508)%360:.3f},65%,38%)")
+              if distinguish else COLORS[i % len(COLORS)] for i in range(len(series))]
+    dashes, shapes = [""] * len(series), ["circle"] * len(series)
+    if distinguish and not scatter:
+        # Shared segments (including near-overlaps at screen resolution) need more than color.
+        shared, segments_by_x = set(), {}
+        for i, (_, values) in enumerate(series):
+            for left, right in zip(values, values[1:]):
+                if left[1] is None or right[1] is None:
+                    continue
+                y1, y2 = xy(left[0], left[1])[1], xy(right[0], right[1])[1]
+                key = (left[0], right[0])
+                for other, a, b in segments_by_x.get(key, []):
+                    if abs(y1-a) <= .6 and abs(y2-b) <= .6:
+                        shared.update((i, other))
+                segments_by_x.setdefault(key, []).append((i, y1, y2))
+        patterns = ["", "9 5", "3 4", "11 4 2 4", "5 3", "12 4 3 4 3 4", "2 3", "16 5"]
+        for order, i in enumerate(sorted(shared)):
+            dashes[i] = patterns[order] if order < len(patterns) else f"{12+order*2} 4 2 4"
+            shapes[i] = ("circle", "square", "triangle", "diamond")[order % 4]
     svg = ['<svg viewBox="0 0 890 385" role="img" aria-label="' + escape(ylabel + ' / ' + xlabel) + '">']
     for i in range(6):
         value = ymin + (ymax - ymin) * i / 5
         py = 325 - 275 * i / 5
-        svg.append(f'<path d="M75 {py}H840" stroke="#e5ebf3"/><text x="65" y="{py+4}" text-anchor="end" font-size="11" fill="#607087">{value:.3f}</text>')
-        vx = xmin + (xmax - xmin) * i / 5
-        label = 10**vx if log else vx
-        px = 75 + 765 * i / 5
-        svg.append(f'<text x="{px}" y="345" text-anchor="middle" font-size="11" fill="#607087">{label:.3g}</text>')
+        label = _axis_value(value, y_format) if y_format else f"{value:.3f}"
+        svg.append(f'<path d="M75 {py}H840" stroke="#e5ebf3"/><text x="65" y="{py+4}" text-anchor="end" font-size="11" fill="#607087">{label}</text>')
+    if x_ticks is None:
+        x_ticks = ([10 ** i for i in range(math.ceil(xmin), math.floor(xmax) + 1)]
+                   if log else [xmin + (xmax - xmin) * i / 5 for i in range(6)])
+    for value in x_ticks:
+        if not xmin <= tx(value) <= xmax:
+            continue
+        px, _ = xy(value, ymin)
+        svg.append(f'<text class="x-tick" x="{px:.2f}" y="345" text-anchor="middle" font-size="11" fill="#607087">{_axis_value(value, x_format)}</text>')
     for i, (name, values) in enumerate(series):
-        color = COLORS[i % len(COLORS)]
+        color = colors[i]
+        dash = f' stroke-dasharray="{dashes[i]}"' if dashes[i] else ""
+        if distinguish:
+            svg.append(f'<g class="plot-series series-{i}" data-series="{escape(name)}">')
         segments = [[]]
         for row in values:
             if row[1] is None:
@@ -68,13 +120,38 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False):
             for segment in segments:
                 if not segment: continue
                 coords = [xy(row[0], row[1]) for row in segment]
-                svg.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.5" points="' + ' '.join(f'{x:.2f},{y:.2f}' for x, y in coords) + '"/>')
+                svg.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.5"{dash} points="' + ' '.join(f'{x:.2f},{y:.2f}' for x, y in coords) + '"/>')
         for row in (row for row in values if row[1] is not None):
             px, py = xy(row[0], row[1])
-            tooltip = row[2] if len(row) > 2 else f"{name}: {row[0]:.5g}, {row[1]:.5g}"
-            svg.append(f'<circle cx="{px:.2f}" cy="{py:.2f}" r="{5 if scatter else 2}" fill="{color}"><title>{escape(tooltip)}</title></circle>')
+            tooltip = (f"{name}；{xlabel}：{_axis_value(row[0], x_format)}；"
+                       f"{ylabel}：{_axis_value(row[1], y_format)}")
+            if len(row) > 2:
+                tooltip += f"；{row[2]}"
+            if distinguish:
+                svg.append(_curve_marker(px, py, color, shapes[i], tooltip))
+            else:
+                svg.append(f'<circle cx="{px:.2f}" cy="{py:.2f}" r="{5 if scatter else 2}" fill="{color}"><title>{escape(tooltip)}</title></circle>')
+        if distinguish:
+            svg.append("</g>")
     svg.append(f'<text x="460" y="375" text-anchor="middle" font-size="13">{escape(xlabel)}{"（对数刻度）" if log else ""}</text><text x="75" y="25" font-size="13">{escape(ylabel)}</text></svg>')
-    svg.append('<div class="legend">' + ''.join(f'<span style="color:{COLORS[i % len(COLORS)]}">● {escape(name)}</span>' for i, (name, _) in enumerate(series)) + '</div>')
+    if distinguish:
+        css = [".plot-distinct > .legend > label{flex-direction:row;align-items:center;gap:6px;margin:0;cursor:pointer}",
+               ".plot-distinct > .legend > label:has(input:not(:checked)){opacity:.45}"]
+        legend = []
+        for i, (name, _) in enumerate(series):
+            scope = ".plot-distinct"
+            css.append(f"{scope}:has(> .legend > .series-key-{i} input:not(:checked)) > svg > .series-{i}" + "{display:none}")
+            # Hover wins over keyboard focus; mouse clicks must not leave a sticky highlight.
+            css.append(f"{scope}:has(> .legend > .series-key-{i}:hover > input:checked) > svg > .plot-series:not(.series-{i})" + "{opacity:.08}")
+            css.append(f"{scope}:not(:has(> .legend > label:hover)):has(> .legend > .series-key-{i} > input:checked:focus-visible) > svg > .plot-series:not(.series-{i})" + "{opacity:.08}")
+            dash = f' stroke-dasharray="{dashes[i]}"' if dashes[i] else ""
+            sample = (f'<svg viewBox="0 0 44 16" aria-hidden="true" style="width:44px;min-width:44px;height:16px">'
+                      f'<path d="M1 8H43" stroke="{colors[i]}" stroke-width="2.5"{dash}/>'
+                      + _curve_marker(22, 8, colors[i], shapes[i], size=3) + "</svg>")
+            legend.append(f'<label class="series-key-{i}"><input type="checkbox" checked aria-label="显示 {escape(name)}">{sample}<span>{escape(name)}</span></label>')
+        svg.append('<div class="legend">' + "".join(legend) + "</div>")
+        return '<div class="plot-distinct"><style>' + "".join(css) + "</style>" + "".join(svg) + "</div>"
+    svg.append('<div class="legend">' + ''.join(f'<span style="color:{colors[i]}">● {escape(name)}</span>' for i, (name, _) in enumerate(series)) + '</div>')
     return ''.join(svg)
 
 

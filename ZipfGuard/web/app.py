@@ -7,8 +7,11 @@ from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:sys.path.insert(0,str(ROOT))
 from experiments.open_config import load_open_config
+from experiments.dynamic_config import load_dynamic_config, validate_dynamic_config
+from experiments.dynamic_pipeline import run_dynamic_pipeline
 from web.open_interface import execute_open_request
 from web.presentation import report_html
+from web.dynamic_presentation import render_dynamic_html
 from core.data import load_count_json
 
 
@@ -16,6 +19,10 @@ def main():
     import streamlit as st
     import streamlit.components.v1 as components
     st.set_page_config(page_title='ZipfGuard · 策略实验室',layout='wide')
+    mode=st.sidebar.radio('实验模式',['静态策略','分批注册动态策略'])
+    if mode=='分批注册动态策略':
+        dynamic_main(st,components)
+        return
     st.title('ZipfGuard · 真实数据与 Min_auto')
     st.caption('真实频次 → 用户响应 → 开放候选 → 自适应风险与用户成本。全部计算在本地完成。')
     preset=st.sidebar.selectbox('预设',['open_quick','open_full'],format_func=lambda v:'快速验证 · 2,000 次出现' if v=='open_quick' else '研究预设 · 20,000 次出现 + 可选 PCFG')
@@ -72,5 +79,45 @@ def main():
         st.download_button('下载本次配置',json.dumps(result['reproducibility']['config'],ensure_ascii=False,indent=2),'experiment.json','application/json')
     else:
         st.info('选择数据、预算和响应条件，再运行实验。候选生成不受共同口令清单限制；Min_auto 的预算按每个模型分别计数。')
+
+
+def dynamic_main(st,components):
+    st.title('ZipfGuard · 分批注册动态策略')
+    st.caption('按模拟注册顺序，使用已完成批次的累计分布选择下一批规则。')
+    preset=st.sidebar.selectbox('动态实验预设',['dynamic_smoke','dynamic_full'],
+        format_func=lambda p:'快速验证 · 300 人' if p=='dynamic_smoke' else '完整研究 · 10 万人')
+    cfg=load_dynamic_config(preset)
+    with st.sidebar.form('dynamic_'+preset):
+        cfg['seed']=st.number_input('随机种子',min_value=0,max_value=2**32-1,value=cfg['seed'])
+        cfg['data']['path']=st.text_input('本地语料路径',cfg['data']['path'])
+        cfg['data']['users']=st.number_input('注册用户数',min_value=1,max_value=2000000,value=cfg['data']['users'])
+        cfg['data']['development']=st.number_input('开发参考样本数',min_value=3,max_value=2000000,value=cfg['data']['development'])
+        cfg['data']['cohort_size']=st.number_input('每批人数',min_value=1,max_value=2000000,value=cfg['data']['cohort_size'])
+        budgets=st.text_input('每模型猜测预算',','.join(map(str,cfg['budgets'])))
+        advanced=st.text_area('完整配置覆盖（可选）','')
+        submitted=st.form_submit_button('运行分批实验')
+    if submitted:
+        st.session_state.pop('dynamic_result',None)
+        try:
+            cfg['budgets']=[int(value.strip()) for value in budgets.split(',')]
+            if advanced.strip():cfg=json.loads(advanced)
+            cfg=validate_dynamic_config(cfg)
+            progress=st.empty()
+            with st.spinner('正在运行本地分批实验…'):
+                st.session_state['dynamic_result']=run_dynamic_pipeline(
+                    cfg,progress=lambda message:progress.info(message))
+            progress.empty()
+        except (ValueError,TypeError,KeyError,OSError,RuntimeError) as exc:
+            st.error('实验未完成：'+str(exc))
+    result=st.session_state.get('dynamic_result')
+    if result:
+        page=render_dynamic_html(result)
+        components.html(page,height=1500,scrolling=True)
+        content=json.dumps(result,ensure_ascii=False,indent=2,allow_nan=False)+'\n'
+        st.download_button('下载公开 JSON 报告',content,'zipfguard_dynamic.json','application/json')
+        st.download_button('下载结果页面',page,'zipfguard_dynamic.html','text/html')
+        st.info('逐用户原口令、修改后口令和提升率保存在本机：'+result['user_strength']['local_private_file'])
+    else:
+        st.info('可先运行快速预设核对图表，再运行 10 万人、百万预算的完整实验。')
 
 if __name__=='__main__':main()

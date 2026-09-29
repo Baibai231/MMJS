@@ -3,9 +3,10 @@ import json
 from web.presentation import escape, table, plot, STYLE
 
 LABELS={'frequency':'训练频次','dictionary-rules':'字典变形','character-ngram':'字符 n-gram','pcfg':'PCFG'}
-STATUS={'test_constraints_not_met':'测试未达到所设需求','selected':'已按验证集选择','no_feasible_policy':'没有满足约束的策略',
-        'no_supported_improvement':'未证实优于常见规则','supported_improvement':'本次配对比较支持改进',
-        'incomplete_test_budget':'测试预算未完成','no_feasible_common_comparator':'同约束下无常见规则可比较'}
+def recommendation_decision(rec):
+    if not rec.get('policy_name'):return '验证集无可行策略'
+    if not rec.get('test',{}).get('complete'):return '测试预算未完成'
+    return '测试满足需求' if rec.get('test_requirements_met') else '测试未满足需求'
 KNOWLEDGE={'F':'冻结','A0':'仅知策略','A1':'自适应'}
 FEATURE_LABELS={'year_suffix':'年份后缀','keyboard_walk':'键盘相邻模式','repeated':'重复模式','sequential_digits':'连续数字','word_plus_digits':'单词加数字'}
 
@@ -32,15 +33,15 @@ def render_open_html(result,document=True):
                         ('主要预算',f'{k:,} / 模型'),('响应情景',primary),('运行时间',str(m['runtime_seconds'])+' s')]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong></div>')
     parts.append('</div><p>真实初始口令 + 显式用户响应。各攻击器独立生成，逐口令取最早命中；公开结果不包含口令内容。</p></section>')
-    parts.append('<section><h2>需求对应的推荐</h2><p class="muted">先在验证集选择，再报告测试表现。已有规则也可能是合适选择；未证实改进时如实保留该结论。</p>')
+    parts.append('<section><h2>需求对应的推荐</h2><p class="muted">先按验证集约束选择规则，再用测试集核查是否达标。对照比较不参与推荐选择。</p>')
     rows=[]
     for rec in result['recommendations']:
         req=rec['requirement'];test=rec.get('test',{});response=test.get('response',{})
         rows.append([req['name'],'成本上限' if req['mode']=='cost_cap' else '风险要求',
                      pct(req['max_cost']),pct(req['max_risk']),rec.get('policy_name') or '—',
                      pct(rec.get('validation_risk')),pct(test.get('risk')),pct(response.get('cost')),
-                     STATUS[rec['status']]])
-    parts.append(table(['需求','选择方式','成本上限','风险上限','选中策略','验证风险','测试风险','测试成本','证据状态'],rows))
+                     recommendation_decision(rec)])
+    parts.append(table(['需求','选择方式','成本上限','风险上限','选中策略','验证风险','测试风险','测试成本','测试判定'],rows))
     selected_names={r['policy_name'] for r in result['recommendations'] if r['policy_name']}
     policies={r['policy']['name']:r['policy'] for r in result['validation_candidates']}
     if selected_names:
@@ -55,13 +56,6 @@ def render_open_html(result,document=True):
         parts.append(table(['选中策略','具体规则'],rows))
     parts.append('<details><summary>完成率和额外尝试约束</summary>'+table(['需求','最低完成率','每用户额外尝试上限'],
         [(r['name'],pct(r['min_completion']),num(r['max_extra_attempts'])) for r in cfg['search']['requirements']])+'</details>')
-    for rec in result['recommendations']:
-        if 'comparison' not in rec:continue
-        rows=[]
-        for key,label in [('risk','风险下降'),('cost','拒绝比例下降'),('completion','对照完成率 − 推荐完成率'),('attempts','额外尝试减少')]:
-            diff=rec['comparison']['differences'][key];fmt=num if key=='attempts' else pct
-            rows.append([label,fmt(diff['estimate']),f"[{fmt(diff['lower'])}, {fmt(diff['upper'])}]",diff['valid_repetitions']])
-        parts.append('<details><summary>'+escape(rec['requirement']['name']+'：与 '+rec['comparator_name']+' 的配对比较')+'</summary>'+table(['指标','对照 − 推荐','95% 逐点区间','有效重采样次数'],rows)+'<p class="muted">固定攻击器和选择结果下的初始队列配对重采样；区间未作多重比较校正。</p></details>')
     parts.append('</section><section><h2>验证集风险—成本前沿</h2>')
     valid=[r for r in result['validation_candidates'] if r['scenario']==primary]
     groups=[]
@@ -75,8 +69,8 @@ def render_open_html(result,document=True):
         [(r['policy']['name'],r['policy']['origin'],pct(r['risk']),pct(r['cost']),pct(r['completion']),num(r['attempts']),'是' if r['evaluable'] else '否') for r in valid])+'</details></section>')
     parts.append('<section><h2>自适应风险与预算</h2>')
     finals=[r for r in result['test_policies'] if r['scenario']==primary]
-    parts.append(plot([(r['policy']['name'],curve(r['evaluations']['A1'])) for r in finals],xlabel='每模型校验预算 K',ylabel='测试 Min_auto 命中率',log=True))
-    parts.append('<p class="muted">不完整预算点不连线；K 不表示跨模型总猜测次数。未命中仅表示本次预算内未命中。</p>')
+    parts.append(plot([(r['policy']['name'],curve(r['evaluations']['A1'])) for r in finals],xlabel='每模型校验预算 K',ylabel='测试 Min_auto 命中率',log=True,distinguish=True))
+    parts.append('<p class="muted">每条策略使用独立颜色；重合线增加线型与点标记。悬停图例可突出该策略，取消勾选可隐藏。<br>不完整预算点不连线；K 不表示跨模型总猜测次数。未命中仅表示本次预算内未命中。</p>')
     for row in finals:
         parts.append('<details'+(' open' if row['policy']['name']=='baseline' else '')+'><summary>'+escape(row['policy']['name'])+' · 单模型与 Min_auto</summary>')
         ev=row['evaluations']['A1'];models=ev['models']
@@ -102,17 +96,29 @@ def render_open_html(result,document=True):
     parts.append(table(['特征','训练覆盖','信息增益比','出现时头部比例','未出现时头部比例','候选依据'],
         [(FEATURE_LABELS.get(s['feature'],s['feature']),pct(s['support']),num(s['information_gain_ratio']),pct(s['head_rate_present']),pct(s['head_rate_absent']),
           '入选' if s['feature'] in disc['selected_features'] else '未选') for s in disc['features']]))
+    parts.append('</section>')
     a=result.get('analysis')
     if a:
-        parts.append('<details><summary>训练频次分布拟合与残差</summary>')
-        parts.append(table(['模型','内部留出 KS','BIC'],[(m['id'],num(m['validation_ks']),num(m['bic'])) for m in a['models']]))
-        parts.append(plot([('训练经验 CDF',[(r['rank'],r['empirical_cdf']) for r in a['curves']])]+
-                          [(m['id'],[(r['rank'],r[m['id']+'_cdf']) for r in a['curves']]) for m in a['models']],
-                          xlabel='频次排名',ylabel='累计出现质量',log=True))
-        parts.append(plot([(m['id'],[(r['rank'],r[m['id']+'_cdf']-r['empirical_cdf']) for r in a['curves']]) for m in a['models']],
-                          xlabel='频次排名',ylabel='拟合残差',log=True))
-        parts.append('</details>')
-    parts.append('</section><section><h2>数据、预算与复现记录</h2>')
+        parts.append('<section><h2>口令频次分布拟合与残差</h2>')
+        parts.append('<p class="muted">训练集内部分割后拟合有限支持的频次排名分布。'
+                     '验证对数似然越大（负值越接近零）越好；验证 KS 与 BIC 越小越好。'
+                     '拟合仅作分布诊断，不代替上面的开放攻击命中率。</p>')
+        selected_name=next((m['name'] for m in a['models'] if m['id']==a['selected_model']),a['selected_model'])
+        parts.append('<p>分布诊断选择：'+escape(selected_name)+'；选择依据：'+escape(a['selection_method'])+'</p>')
+        parts.append(table(['模型','拟合参数','验证对数似然','验证 KS','BIC','诊断选择'],
+            [(m['name'],'、'.join(f'{key}={value:.4g}' for key,value in m['parameters'].items()),
+              f"{m['validation_log_likelihood']:.3f}",f"{m['validation_ks']:.4f}",
+              f"{m['bic']:.3f}",'是' if m['id']==a['selected_model'] else '否') for m in a['models']]))
+        curves=a['curves']
+        series=[('训练经验 CDF',[(r['rank'],r['empirical_cdf']) for r in curves])]+[
+            (m['name'],[(r['rank'],r[m['id']+'_cdf']) for r in curves]) for m in a['models']]
+        parts.append(plot(series,xlabel='频次排名',ylabel='累计出现质量',log=True))
+        parts.append('<details><summary>查看线性坐标</summary>'+
+                     plot(series,xlabel='频次排名',ylabel='累计出现质量')+'</details>')
+        parts.append(plot([(m['name'],[(r['rank'],r[m['id']+'_cdf']-r['empirical_cdf']) for r in curves])
+                           for m in a['models']],xlabel='频次排名',ylabel='残差：模型 CDF − 经验 CDF',log=True))
+        parts.append('</section>')
+    parts.append('<section><h2>数据、预算与复现记录</h2>')
     parts.append(table(['属性','记录'],[('输入格式',d.get('source_format','fixture')),('源文件出现次数',d.get('source_occurrences','—')),
         ('排除出现质量',d.get('excluded_frequency','—')),('计数未知的排除行',d.get('unknown_frequency_rows',0)),
         ('抽样方式',d.get('sampling','fixture')),('抽样不同口令数',d['sample_unique']),('无效行',d.get('invalid_rows',0)),
@@ -131,15 +137,15 @@ def render_open_markdown(result):
     lines=['# ZipfGuard 开放候选与 Min_auto 实验报告','',
            f"数据：{d.get('dataset_id','local')}；抽样出现次数：{d['sample_occurrences']}；协议：{result['protocol_id']}。",'',
            f'主要终点：{c["response"]["primary"]} 响应下，自适应 Min_auto@{k}。K 为每模型不同校验候选数。','',
-           '| 需求 | 策略 | 测试风险 | 测试成本 | 状态 |','|---|---|---:|---:|---|']
+           '| 需求 | 策略 | 测试风险 | 测试成本 | 测试判定 |','|---|---|---:|---:|---|']
     for r in result['recommendations']:
-        t=r.get('test',{});lines.append(f"| {mdcell(r['requirement']['name'])} | {r.get('policy_name') or '—'} | {pct(t.get('risk'))} | {pct(t.get('response',{}).get('cost'))} | {STATUS[r['status']]} |")
+        t=r.get('test',{});lines.append(f"| {mdcell(r['requirement']['name'])} | {r.get('policy_name') or '—'} | {pct(t.get('risk'))} | {pct(t.get('response',{}).get('cost'))} | {recommendation_decision(r)} |")
     lines+=['','## 测试风险与响应','', '| 策略 | 情景 | Min_auto 风险 | 完成率 | 拒绝率 | 额外尝试 |','|---|---|---:|---:|---:|---:|']
     for r in result['test_policies']:
         ev=r['evaluations']['A1'];s=ev['response']
         lines.append(f"| {r['policy']['name']} | {r['scenario']} | {pvalue(selected_point(ev,k))} | {pct(s['completion_rate'])} | {pct(s['cost'])} | {num(s['mean_extra_attempts'])} |")
     lines+=['','## 解释边界','']+[f'- {x}' for x in result['metadata']['limitations']]
-    lines+=['','- 完整候选预算状态、配对区间、模型参数和哈希见同名 JSON / HTML。',
+    lines+=['','- 推荐只按验证集约束选择；测试判定只看所设需求是否达标。候选预算状态、模型参数和哈希见同名 JSON / HTML。',
             '- 不完整预算不能视为零风险；无可行策略时不自动放松约束。',
             '- 本报告的成本来自指定响应模型，不能直接解释为真实用户体验。','']
     return '\n'.join(lines)

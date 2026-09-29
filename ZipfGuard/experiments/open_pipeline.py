@@ -226,7 +226,10 @@ def _run(cfg,dataset,engine,progress):
         if not name:continue
         row=bykey[name,primary];ev=row['evaluations']['A1'];p=point(ev,cfg['search']['risk_budget'])
         selection['test']={'risk':p['rate'],'response':ev['response'],'complete':p['complete']}
-        if common:
+        if row['policy']['origin']=='common':
+            selection['comparator_name']=None
+            selection['status']='selected_common_rule'
+        elif common:
             ref=bykey[common,primary]['evaluations']['A1'];rp=point(ref,cfg['search']['risk_budget'])
             if p['complete'] and rp['complete']:
                 a,ar=internal[(common,primary,'test','A1')];b,br=internal[(name,primary,'test','A1')]

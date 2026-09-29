@@ -4,6 +4,28 @@
 
 2026-09-26 实施状态、验证证据与研究边界见 [项目状态](docs/PROJECT_STATUS.md) 和 [开放协议说明](docs/OPEN_PROTOCOL.md)。论文定义见 [主方案](DP_HTPG_AI_竞赛详细方案.md)。
 
+## 分批注册动态策略实验
+
+新实验按模拟注册顺序执行规则，每一批完成后读取历史累计口令分布，选择下一批是否增加一项兼容规则。页面入口是 <http://127.0.0.1:8765/dynamic>；Streamlit 侧边栏选择“分批注册动态策略”。已实现的模块、评价口径与当前验证状态见[动态实验实施状态](docs/DYNAMIC_IMPLEMENTATION_STATUS.md)，完整设计见[改造计划](docs/分布驱动_分批注册动态策略改造计划.md)。
+
+~~~powershell
+.venv/Scripts/python.exe tools/run_dynamic_study.py --preset dynamic_smoke
+.venv/Scripts/python.exe tools/run_dynamic_study.py --preset dynamic_full
+.venv/Scripts/python.exe tools/run_dynamic_study.py --config configs/dynamic_primary_full.json --seeds 11,23,42,67,101 --output-dir reports/dynamic/multiseed_primary
+.venv/Scripts/python.exe tools/summarize_dynamic_study.py --input-dir reports/dynamic/multiseed_primary
+.venv/Scripts/python.exe tools/run_dynamic_study.py --preset dynamic_full --seeds 11,23,67,101 --output-dir reports/dynamic/multiseed_controls
+.venv/Scripts/python.exe tools/summarize_dynamic_controls.py --input-dir reports/dynamic/multiseed_controls --seed42-report reports/dynamic/million_paired_seed42/report.json --output-dir reports/dynamic/multiseed_controls
+.venv/Scripts/python.exe tools/run_dynamic_sensitivity.py --config configs/dynamic_sensitivity_5k.json --output-dir reports/dynamic/sensitivity_5k
+~~~
+
+完整预设抽取互不重叠的 100,000 名模拟注册用户和 100,000 条开发参考出现记录，分 10 批，最高预算为每模型 1,000,000 次有效猜测。每次运行在忽略版本控制的 `reports/dynamic/` 下输出公开 JSON、HTML、SVG 和仅保存在本机的逐用户明文对照文件。百万预算是否实际完成取决于各攻击器的停止状态；未完成点显示上下界。
+
+快速预设虽然只抽样 300 人，仍从完整语料中均匀抽样。首次运行须扫描源文件两遍；程序显示每百万行进度，并把经 SHA-256 核验的语料总频次与行数缓存到本机 `reports/dynamic/scan_cache/`。源文件未变化时，后续运行复用统计并只扫描一遍；扫描时仍逐字节核验文件哈希。当前机器上的实测为首次 48–133 秒、缓存命中约 26–59 秒，耗时随磁盘与系统负载变化。
+
+五种子正式主实验与四类固定策略的百万预算对照均已完成，汇总页分别保存在 `reports/dynamic/multiseed_primary/cross_seed_report.html` 和 `reports/dynamic/multiseed_controls/cross_seed_controls_report.html`。每条轨迹的完成率、修改率、分布、猜测次数和攻击命中率及其适用范围见[动态实验实施状态](docs/DYNAMIC_IMPLEMENTATION_STATUS.md)。汇总脚本会拒绝人数不守恒、模型缺失或字符模型未跑满百万有效猜测的结果。五个种子中，动态方案比开发集预选固定规则的分布更分散且修改率更低，但自适应攻击命中率更高，不能宣称它同时胜出。
+
+另有同样本的 5,000 人顺序与响应压力测试，报告位于 `reports/dynamic/sensitivity_5k/sensitivity_report.html`。它表明偏向从常见口令池重新选择时，分布改善并不保证攻击命中率下降；该较小规模实验不能代替主实验。
+
 ## 启动演示
 
 在本目录运行：

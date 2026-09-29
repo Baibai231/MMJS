@@ -113,6 +113,8 @@ preset();
 
 from web.open_interface import OPEN_INDEX, execute_open_request, start_job, job_snapshot
 from experiments.open_config import load_open_config
+from web.dynamic_interface import DYNAMIC_INDEX, start_dynamic_job, dynamic_job_snapshot, latest_dynamic_result
+from experiments.dynamic_config import load_dynamic_config
 LEGACY_INDEX = INDEX
 INDEX = OPEN_INDEX
 
@@ -125,7 +127,14 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             if path == "/": return self._send(INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path == "/dynamic": return self._send(DYNAMIC_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path == "/api/dynamic/latest":
+                return self._send(_json_safe(latest_dynamic_result()))
             if path == "/legacy": return self._send(LEGACY_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path.startswith("/api/dynamic/jobs/"):
+                return self._send(_json_safe(dynamic_job_snapshot(path.rsplit("/", 1)[-1])))
+            if path.startswith("/api/dynamic/config/"):
+                return self._send(_json_safe(load_dynamic_config(path.rsplit("/", 1)[-1])))
             if path.startswith("/api/jobs/"):
                 return self._send(_json_safe(job_snapshot(path.rsplit("/", 1)[-1])))
             if path == "/api/status":
@@ -145,7 +154,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in ("/api/run", "/api/open-compare", "/api/jobs"):
+        if path not in ("/api/run", "/api/open-compare", "/api/jobs", "/api/dynamic/jobs"):
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -155,6 +164,8 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 8_000_000:
                 raise ValueError("请求大小无效")
             request = json.loads(self.rfile.read(length))
+            if path == "/api/dynamic/jobs":
+                return self._send(_json_safe(start_dynamic_job(request)), status=202)
             if path == "/api/jobs":
                 return self._send(_json_safe(start_job(request)), status=202)
             with _cache_lock:

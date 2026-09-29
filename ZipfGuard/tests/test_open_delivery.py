@@ -64,6 +64,25 @@ class OpenDeliveryTests(unittest.TestCase):
         self.assertEqual(result['recommendations'][0]['status'],'test_constraints_not_met')
         self.assertFalse(result['recommendations'][0]['test_requirements_met'])
 
+    def test_common_recommendation_skips_self_comparison(self):
+        cfg=small_config()
+        req=copy.deepcopy(cfg['search']['requirements'][0])
+        req.update(name='已达标基线',mode='risk_target',max_risk=1,max_cost=1,
+                   min_completion=0,max_extra_attempts=30)
+        forced=[{'requirement':req,'status':'selected','policy_name':'baseline',
+                 'comparator_name':'baseline','validation_risk':0,'validation_cost':0}]
+        with patch('experiments.open_pipeline.choose',return_value=forced):
+            result=run_open_pipeline(cfg,dataset=dataset_from_counts(fixture()))
+        row=result['recommendations'][0]
+        self.assertEqual(row['status'],'selected_common_rule')
+        self.assertIsNone(row['comparator_name'])
+        self.assertNotIn('comparison',row)
+        self.assertTrue(row['test_requirements_met'])
+        page=report_html(result)
+        self.assertIn('测试判定',page)
+        self.assertIn('测试满足需求',page)
+        self.assertNotIn('与 baseline 的配对比较',page)
+
     def test_shared_rendering_escapes_labels_and_preserves_protocol(self):
         cfg=small_config();cfg['search']['requirements'][0]['name']='<script>alert(1)</script>|x'
         result=run_open_pipeline(cfg,dataset=dataset_from_counts(fixture()))
@@ -77,6 +96,22 @@ class OpenDeliveryTests(unittest.TestCase):
         page=plot([('run',[(1,.1),(2,None),(3,.5)])],xlabel='K',ylabel='risk')
         self.assertEqual(page.count('<polyline'),2);self.assertEqual(page.count('<circle'),2)
         self.assertNotIn('None',page)
+
+    def test_distinct_strategy_curves_keep_unique_colors_styles_and_missing_points(self):
+        from xml.etree import ElementTree
+        series=[(f'policy-{i}',[(10,0),(100,0),(1000,.02)]) for i in range(12)]
+        series.append(('<policy>',[(10,.1),(100,None),(1000,.2)]))
+        page=plot(series,xlabel='K',ylabel='risk',log=True,distinguish=True)
+        chart=ElementTree.fromstring(page[page.index('<svg '):page.index('</svg>')+6])
+        groups=chart.findall('g')
+        self.assertEqual(len(groups),len(series))
+        self.assertEqual(len({g.find('polyline').get('stroke') for g in groups}),len(series))
+        self.assertEqual(len({g.find('polyline').get('stroke-dasharray','') for g in groups[:12]}),12)
+        self.assertEqual(len(groups[-1].findall('polyline')),2)
+        self.assertIsNone(groups[-1].find('polyline').get('stroke-dasharray'))
+        self.assertEqual(page.count('type="checkbox"'),len(series))
+        self.assertNotIn('<policy>',page)
+        self.assertIn('&lt;policy&gt;',page)
 
     def test_study_freezes_requested_conditions_and_does_not_mutate_input(self):
         cfg=small_config();original=copy.deepcopy(cfg)
