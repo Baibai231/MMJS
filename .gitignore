@@ -18,6 +18,10 @@ Desktop.ini
 # Leak corpora stay local. Reports may contain only aggregates.
 local_datasets/
 
+# Internal collaboration notes stay local.
+/ZipfGuard_项目详细讲解_给师兄.md
+/目前项目需要提升的地方.md
+
 # Temporary files
 *.tmp
 *.log
