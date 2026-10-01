@@ -1,0 +1,93 @@
+{
+  "schema_version": "zipfguard-dynamic-v1",
+  "seed": 42,
+  "data": {
+    "path": "../rockyou-withcount.txt",
+    "format": "password_with_count",
+    "encoding": "latin-1",
+    "users": 100000,
+    "development": 100000,
+    "cohort_size": 10000
+  },
+  "budgets": [
+    100,
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "attackers": {
+    "omen": "required",
+    "pcfg": "required",
+    "passgpt": "required",
+    "passllm": "required"
+  },
+  "generation": {
+    "raw_limit": 5000000,
+    "timeout_seconds": 3600,
+    "max_frontier": 2000000,
+    "max_expansions": 10000000
+  },
+  "pcfg": {
+    "raw_limit": 1000000,
+    "timeout_seconds": 3600,
+    "training_limit": 100000
+  },
+  "controller": {
+    "retry_report_after": 8,
+    "candidate_limit": 1000,
+    "response_weights": [
+      0.6,
+      0.25,
+      0.15
+    ],
+    "max_modification_rate": 0.6,
+    "max_incremental_modification": 0.15,
+    "max_late_cost_increase": 0.15,
+    "max_head_risk_regression": 0.01,
+    "min_relative_collision_gain": 0.005,
+    "preview_size": 3000,
+    "include_pattern_rules": false
+  },
+  "controls": {
+    "run": true,
+    "attack": true,
+    "comparison_protocol": "fixed-preset-three-attacks-v2",
+    "preset": "length8"
+  },
+  "research_models": {
+    "python": "local_attack_models/venv/Scripts/python.exe",
+    "wsl_distribution": "Ubuntu-20.04",
+    "training_timeout_seconds": 86400,
+    "omen": {
+      "order": 3
+    },
+    "passllm": {
+      "python": "local_attack_models/passllm_venv/Scripts/python.exe",
+      "threads": 4,
+      "max_length": 30,
+      "epochs": 3,
+      "train_batch_size": 4,
+      "generation_batch_size": 4,
+      "learning_rate": 0.0005,
+      "lora_r": 16,
+      "lora_alpha": 64,
+      "lora_dropout": 0.2
+    },
+    "passgpt": {
+      "device": "cpu",
+      "threads": 4,
+      "max_length": 32,
+      "layers": 8,
+      "heads": 12,
+      "embedding": 768,
+      "epochs": 3,
+      "train_batch_size": 16,
+      "generation_batch_size": 64,
+      "learning_rate": 0.00005,
+      "temperature": 1,
+      "top_p": 1,
+      "top_k": 0
+    }
+  }
+}

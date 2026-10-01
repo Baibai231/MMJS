@@ -21,7 +21,7 @@ def validate_open_config(value):
     c = copy.deepcopy(value)
     required = {'schema_version','seed','data','budgets','bootstrap_repetitions','attackers',
                 'generation','ngram','pcfg','response','search','knowledge','discovery'}
-    if not isinstance(c, dict) or set(c) != required or c.get('schema_version') != SCHEMA:
+    if not isinstance(c, dict) or set(c) - {'research_models'} != required or c.get('schema_version') != SCHEMA:
         raise ValueError('开放实验配置字段或版本不匹配')
     sections = {
         'data': {'path','format','encoding','sample_size','split_fractions'},
@@ -66,8 +66,13 @@ def validate_open_config(value):
     if not c['budgets']: raise ValueError('至少一个预算')
     for k in c['budgets']: integer(k,1,1000000,'budget')
     c['budgets']=sorted(set(c['budgets']))
-    if not c['attackers'] or not set(c['attackers']) <= {'frequency','dictionary-rules','character-ngram','pcfg'}:
+    if not c['attackers'] or not set(c['attackers']) <= {'frequency','dictionary-rules','character-ngram','pcfg','omen','passgpt','passllm'}:
         raise ValueError('请选择已接入的开放攻击器')
+    if 'research_models' in c:
+        from ai.research_models import validate_settings
+        c['research_models'] = validate_settings(c['research_models'])
+    elif set(c['attackers']) & {'omen','passgpt','passllm'}:
+        raise ValueError('新增研究模型需要显式的 research_models 设置')
     if any(v not in ('required','optional') for v in c['attackers'].values()) or 'required' not in c['attackers'].values():
         raise ValueError('攻击器须为 required/optional，且至少一个必选')
     g=c['generation']

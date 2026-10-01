@@ -33,9 +33,21 @@ def _point(evaluation, budget):
 def summarize(source, seeds, budget):
     rows = []
     source_hash = None
+    response_protocol = None
+    comparison_protocol = None
     for seed in seeds:
         path = source / f'seed_{seed}' / 'report.json'
         result = json.loads(path.read_text(encoding='utf-8'))
+        comparison = result.get('metadata', {}).get('comparison_protocol', 'legacy-unmatched')
+        if comparison_protocol is None:
+            comparison_protocol = comparison
+        elif comparison != comparison_protocol:
+            raise ValueError('不同起点、成本或预测协议的结果不能混合汇总')
+        protocol = result.get('metadata', {}).get('response_protocol', 'legacy-abandonment-v1')
+        if response_protocol is None:
+            response_protocol = protocol
+        elif protocol != response_protocol:
+            raise ValueError('不同口令修改协议的结果不能混合汇总')
         data = result['dataset']
         if data['seed'] != seed or data['registration_occurrences'] != 100_000:
             raise ValueError(f'种子 {seed} 的数据身份或注册人数不匹配')
@@ -110,6 +122,8 @@ def summarize(source, seeds, budget):
     return {
         'schema_version': 'zipfguard-dynamic-cross-seed-v1',
         'source_sha256': source_hash,
+        'response_protocol': response_protocol,
+        'comparison_protocol': comparison_protocol,
         'budget_per_model': budget,
         'interpretation': '五条独立模拟注册顺序的描述性结果；不合并用户构造置信区间',
         'runs': rows,

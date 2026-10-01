@@ -17,6 +17,8 @@ from web.presentation import STYLE, table
 
 ARM_NAMES = ('fixed_length8', 'fixed_complexity', 'static_selected',
              'fixed_schedule')
+LABELS = {**CONTROL_LABELS, 'fixed_complexity': '历史固定长度与字符类别',
+          'static_selected': '历史开发集固定规则', 'fixed_schedule': '历史固定加严日程'}
 BUDGET = 1_000_000
 
 
@@ -39,8 +41,20 @@ def _point(evaluation):
 def summarize(paths):
     rows = []
     reference_config = source_hash = None
+    response_protocol = comparison_protocol = arm_names = None
     for seed, path in sorted(paths.items()):
         result = json.loads(path.read_text(encoding='utf-8'))
+        protocol = result.get('metadata', {}).get('response_protocol', 'legacy-abandonment-v1')
+        if response_protocol is None:
+            response_protocol = protocol
+        elif protocol != response_protocol:
+            raise ValueError('不同口令修改协议的结果不能混合汇总')
+        comparison = result.get('metadata', {}).get('comparison_protocol', 'legacy-controls')
+        current_arms = ('fixed_preset',) if 'fixed_preset' in result['controls'] else ARM_NAMES
+        if comparison_protocol is None:
+            comparison_protocol, arm_names = comparison, current_arms
+        elif comparison != comparison_protocol or current_arms != arm_names:
+            raise ValueError('不同固定对照协议的结果不能混合汇总')
         if result['dataset']['seed'] != seed:
             raise ValueError(f'报告种子不匹配：{seed}')
         if result['dataset']['registration_occurrences'] != 100_000:
@@ -60,7 +74,7 @@ def summarize(paths):
                'dynamic_collision_per_million_pairs':
                    1_000_000 * result['final_distribution']['collision_probability'],
                'controls': {}, 'report': str(path)}
-        for name in ARM_NAMES:
+        for name in arm_names:
             control = result['controls'][name]
             risk = _point(result['attacks']['controls'][name])
             paired = next((p for p in result['attacks']
@@ -81,6 +95,8 @@ def summarize(paths):
             }
         rows.append(row)
     return {'schema_version': 'zipfguard-dynamic-controls-cross-seed-v1',
+            'response_protocol': response_protocol,
+            'comparison_protocol': comparison_protocol, 'control_names': list(arm_names or ()),
             'source_sha256': source_hash, 'budget_per_model': BUDGET,
             'comparison_scope': 'seed-level paired differences; conditional per-seed intervals are not pooled',
             'runs': rows}
@@ -92,8 +108,9 @@ def export(summary, destination):
         json.dumps(summary, ensure_ascii=False, indent=2, allow_nan=False) + '\n',
         encoding='utf-8')
     rows = summary['runs']
-    names = [('动态历史反馈', 'dynamic')] + [(CONTROL_LABELS[n], n)
-                                               for n in ARM_NAMES]
+    arm_names = summary.get('control_names', list(rows[0]['controls']))
+    names = [('动态历史反馈', 'dynamic')] + [(LABELS[n], n)
+                                               for n in arm_names]
     risk = []
     tradeoff = []
     for label, name in names:
@@ -115,10 +132,10 @@ def export(summary, destination):
             svg_only(series, xlabel=xlabel, ylabel=ylabel, scatter=True),
             encoding='utf-8')
     overview = []
-    for name in ARM_NAMES:
+    for name in arm_names:
         values = [r['controls'][name]['dynamic_minus_control_percentage_points']
                   for r in rows]
-        overview.append([CONTROL_LABELS[name],
+        overview.append([LABELS[name],
                          f'{statistics.mean(values):+.2f}',
                          f'{min(values):+.2f} 至 {max(values):+.2f}',
                          sum(v < 0 for v in values), len(values)])
@@ -128,7 +145,7 @@ def export(summary, destination):
                        f"{100*r['dynamic_A1_cracked']:.2f}%",
                        f"{r['dynamic_collision_per_million_pairs']:.2f}"] + [
                            f"{r['controls'][name]['dynamic_minus_control_percentage_points']:+.2f}"
-                           for name in ARM_NAMES])
+                           for name in arm_names])
     body = '<main><section><h1>五种子固定策略对照</h1>'
     body += '<p>同一注册顺序内只比较双方都完成注册的用户。正值表示动态策略的自适应攻击命中率更高；每个模型的预算均为 1,000,000 次有效猜测。</p>'
     body += table(['固定对照', '动态减固定：平均百分点', '五种子范围',
@@ -137,8 +154,8 @@ def export(summary, destination):
     body += '<section><h2>修改成本与攻击风险</h2><img src="cross_seed_control_tradeoff.svg" alt="成本与攻击风险" style="width:100%;max-width:900px"></section>'
     body += '<section><h2>逐种子配对差</h2>'
     body += table(['种子', '动态修改率', '动态 A1 命中率', '动态碰撞数/百万对'] +
-                  [CONTROL_LABELS[name] for name in ARM_NAMES], detail)
-    body += '<p>表内末四列为动态减固定的同用户命中率差，单位为百分点。各方案的分布与修改率使用各自完成用户，不能直接当作同一用户配对估计；完整的每种子配对人数和条件区间保存在 JSON。</p>'
+                  [LABELS[name] for name in arm_names], detail)
+    body += '<p>表内固定对照列为动态减固定的同用户命中率差，单位为百分点。各方案的分布与修改率使用各自完成用户，不能直接当作同一用户配对估计；完整的每种子配对人数和条件区间保存在 JSON。</p>'
     body += '<p>五个种子是模拟注册顺序与显式模拟修改行为；这些范围不代表真实用户行为的不确定性。每种子的条件 95% 区间没有合并为跨种子区间。</p></section></main>'
     (destination / 'cross_seed_controls_report.html').write_text(
         '<!doctype html><html lang="zh-CN"><meta charset="utf-8">'

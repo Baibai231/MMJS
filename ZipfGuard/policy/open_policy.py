@@ -19,6 +19,12 @@ class Rule:
     deny: tuple = ()
     blocklist: frozenset = frozenset()
     origin: str = 'common'
+    max_length: int | None = None
+    require_lower: bool = False
+    require_upper: bool = False
+    require_digit: bool = False
+    require_special: bool = False
+    long_password_bypass: int | None = None
 
     @property
     def complexity(self):
@@ -26,6 +32,14 @@ class Rule:
 
     def accepts(self, word):
         if len(word)<self.min_length or word in self.blocklist: return False
+        if self.max_length is not None and len(word) > self.max_length: return False
+        bypass = self.long_password_bypass is not None and len(word) >= self.long_password_bypass
+        if not bypass:
+            checks = ((self.require_lower, any(c.islower() for c in word)),
+                      (self.require_upper, any(c.isupper() for c in word)),
+                      (self.require_digit, any(c.isdigit() for c in word)),
+                      (self.require_special, any(not c.isalnum() for c in word)))
+            if any(required and not found for required, found in checks): return False
         if self.classes or self.deny:
             f=extract_features(word)
             if f['class_count']<self.classes: return False
@@ -36,7 +50,11 @@ class Rule:
         return {'name':self.name,'min_length':self.min_length,'required_classes':self.classes,
                 'deny_features':list(self.deny),'blocklist_size':len(self.blocklist),
                 'blocklist_sha256':counts_hash(dict.fromkeys(self.blocklist,1)),
-                'origin':self.origin,'rule_count':self.complexity}
+                'origin':self.origin,'rule_count':self.complexity,
+                'max_length': self.max_length, 'require_lower': self.require_lower,
+                'require_upper': self.require_upper, 'require_digit': self.require_digit,
+                'require_special': self.require_special,
+                'long_password_bypass': self.long_password_bypass}
 
 
 def entropy(p):

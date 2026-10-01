@@ -1,0 +1,5 @@
+# Separate from PassGPT: author search code needs the pre-4.48 legacy cache API.
+torch==2.6.0
+transformers==4.47.0
+peft==0.14.0
+tqdm==4.66.5

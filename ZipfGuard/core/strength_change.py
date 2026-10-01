@@ -6,6 +6,10 @@ from collections import Counter
 
 
 def observed_rank(word, runs, budget):
+    if runs and getattr(runs[0], 'estimated', False):
+        detail = runs[0].ranks.detail(word)
+        return {'status': detail['status'], 'rank': detail['guess_count'],
+                'standard_error': detail['standard_error']}
     positions = [run.ranks[word] for run in runs
                  if word in run.ranks and run.ranks[word] <= budget]
     if positions:
@@ -20,6 +24,10 @@ def rank_change(before, after, *, same_password=False, budget):
         return {'status': 'unchanged', 'percent': 0.0,
                 'log2_gain': 0.0, 'bound_percent': None}
     a, b = before['status'], after['status']
+    if a in ('estimated', 'low_sample_support') and b in ('estimated', 'low_sample_support'):
+        ratio = after['rank'] / before['rank']
+        return {'status': 'estimated' if a == b == 'estimated' else 'low_sample_support',
+                'percent': 100 * (ratio - 1), 'log2_gain': math.log2(ratio), 'bound_percent': None}
     if a == b == 'hit':
         ratio = after['rank'] / before['rank']
         return {'status': 'exact', 'percent': 100 * (ratio - 1),
@@ -40,7 +48,8 @@ def evaluate_users(records, runs, budget):
     summary = Counter()
     for record in records:
         if record['final'] is None:
-            detail = {'status': 'not_applicable', 'percent': None,
+            detail = {'status': ('registration_pending' if record.get('registration_status') == 'pending'
+                                 else 'not_applicable'), 'percent': None,
                       'log2_gain': None, 'bound_percent': None}
             before = after = None
         else:

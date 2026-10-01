@@ -248,5 +248,17 @@ def points_for_runs(runs, targets, budgets):
 
 
 def evaluate_runs(runs, targets, budgets):
-    return {'minauto':points_for_runs(runs,targets,budgets),
-            'models':[{'run':r.summary(),'points':points_for_runs([r],targets,budgets)} for r in runs]}
+    models = []
+    for run in runs:
+        row = {'run': run.summary(), 'points': points_for_runs([run], targets, budgets)}
+        support = run.parameters.get('support')
+        if support:
+            # Coverage is measured by the evaluator, never supplied to training.
+            outside = sum(weight for word, weight in targets.items() if not (
+                support['min_length'] <= len(word) <= support['max_length'] and
+                all(33 <= ord(c) <= 126 for c in word)))
+            row['support_coverage'] = {'target_weight': sum(targets.values()),
+                                      'outside_declared_support_weight': outside,
+                                      'denominator_reduced': False}
+        models.append(row)
+    return {'minauto': points_for_runs(runs, targets, budgets), 'models': models}

@@ -5,6 +5,9 @@ import math
 
 
 def guess_difficulty(runs, targets, budget, fractions=(.10, .25, .50)):
+    if runs and getattr(runs[0], 'estimated', False):
+        from core.monte_carlo_attack import mc_difficulty
+        return mc_difficulty(runs, targets, budget, fractions)
     total = sum(targets.values())
     if not runs or not total:
         return {'status': 'unavailable', 'quantiles': {},

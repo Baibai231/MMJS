@@ -45,7 +45,7 @@ def next_actions(current, development_train, history, *,
             choices.append(('history-hotspots', dataclasses.replace(
                 current, name=f'{current.name}+history-hotspots', blocklist=block)))
     if include_pattern_rules:
-        for feature in ('repeated', 'sequential_digits'):
+        for feature in ('repeated', 'sequential_digits', 'keyboard_walk'):
             if feature not in current.deny:
                 choices.append((f'deny-{feature}', dataclasses.replace(
                     current, name=f'{current.name}+deny-{feature}',

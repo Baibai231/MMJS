@@ -2,7 +2,8 @@
 import json
 from web.presentation import escape, table, plot, STYLE
 
-LABELS={'frequency':'训练频次','dictionary-rules':'字典变形','character-ngram':'字符 n-gram','pcfg':'PCFG'}
+LABELS={'frequency':'训练频次','dictionary-rules':'字典变形','character-ngram':'字符 n-gram','pcfg':'PCFG',
+        'omen':'OMEN','passgpt':'PassGPT','passllm':'PassLLM'}
 def recommendation_decision(rec):
     if not rec.get('policy_name'):return '验证集无可行策略'
     if not rec.get('test',{}).get('complete'):return '测试预算未完成'

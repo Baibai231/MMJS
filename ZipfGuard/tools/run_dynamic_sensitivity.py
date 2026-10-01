@@ -54,10 +54,6 @@ def scenarios(base):
     reselect = copy.deepcopy(base)
     reselect['controller']['response_weights'] = [0.2, 0.1, 0.7]
     yield 'reselect_heavy', 'random', reselect
-    abandon = copy.deepcopy(base)
-    abandon['controller']['abandon_probability'] = 0.1
-    abandon['controller']['min_completion'] = 0.85
-    yield 'high_abandonment', 'random', abandon
 
 
 def run(config, output, *, progress=None):
@@ -87,7 +83,8 @@ def run(config, output, *, progress=None):
         rows.append({
             'scenario': name, 'order': order,
             'response_weights': scenario_cfg['controller']['response_weights'],
-            'abandon_probability': scenario_cfg['controller']['abandon_probability'],
+            'response_protocol': result['metadata']['response_protocol'],
+            'pending_users': result['registration_summary']['pending_users'],
             'registration_order_sha256': dataset['metadata']['registration_order_sha256'],
             'development_hashes': dataset['metadata']['development_hashes'],
             'completed_users': result['final_distribution']['users'],
@@ -117,7 +114,7 @@ def run(config, output, *, progress=None):
         json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + '\n',
         encoding='utf-8')
     body = '<main><section><h1>注册顺序与用户响应敏感性</h1>'
-    body += '<p>六个情景使用同一批抽取的注册出现记录及同一份开发数据。弱口令先到/后到按开发训练频次排序，作为模拟压力测试，不代表真实注册时间。响应参数也是模型假设。</p>'
+    body += '<p>五个情景使用同一批抽取的注册出现记录及同一份开发数据。弱口令先到/后到按开发训练频次排序；修改算法的权重用于隐藏阻断后的候选生成，不模拟用户放弃。</p>'
     body += table(['情景', '完成用户', '修改率', '同口令数/百万对',
                    'A1 最高预算命中率', '新增规则批次'], [
         [r['scenario'], r['completed_users'],

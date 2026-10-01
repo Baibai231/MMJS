@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -114,9 +115,10 @@ preset();
 from web.open_interface import OPEN_INDEX, execute_open_request, start_job, job_snapshot
 from experiments.open_config import load_open_config
 from web.dynamic_interface import DYNAMIC_INDEX, start_dynamic_job, dynamic_job_snapshot, latest_dynamic_result
+from web.candidate_pool import candidate_pool_snapshot, candidate_pool_asset
 from experiments.dynamic_config import load_dynamic_config
 LEGACY_INDEX = INDEX
-INDEX = OPEN_INDEX
+INDEX = DYNAMIC_INDEX
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -127,9 +129,49 @@ class Handler(BaseHTTPRequestHandler):
         path = urlparse(self.path).path
         try:
             if path == "/": return self._send(INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path == "/open": return self._send(OPEN_INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path == "/dynamic": return self._send(DYNAMIC_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            report_match = re.fullmatch(r'/api/dynamic/report/([a-f0-9]{16})\.json', path)
+            if report_match:
+                from web.dynamic_interface import dynamic_report_directory
+                try:
+                    filename = dynamic_report_directory(report_match.group(1)) / 'report.json'
+                except FileNotFoundError:
+                    return self._send(b"not found", "text/plain", 404)
+                if not filename.is_file():
+                    return self._send(b"not found", "text/plain", 404)
+                return self._send(filename.read_bytes(), "application/json; charset=utf-8")
+            if path.startswith("/api/dynamic/figure/"):
+                match = re.fullmatch(
+                    r'/api/dynamic/figure/([a-f0-9]{16})/'
+                    r'(attack_(?:F|A0|A1)\.svg|attack_budget\.svg|'
+                    r'final_rank_distribution\.svg|cumulative_collision\.svg|cohort_cost\.svg|'
+                    r'top10_(?:distribution|guessing|modification)\.svg|'
+                    r'sequence_top10_(?:distribution|guessing|modification)\.svg)', path)
+                if match is None:
+                    return self._send(b"not found", "text/plain", 404)
+                from web.dynamic_interface import dynamic_report_directory
+                try:
+                    filename = dynamic_report_directory(match.group(1)) / match.group(2)
+                except FileNotFoundError:
+                    return self._send(b"not found", "text/plain", 404)
+                if not filename.is_file():
+                    return self._send(b"not found", "text/plain", 404)
+                return self._send(filename.read_bytes(), "image/svg+xml; charset=utf-8")
+            if path == "/api/dynamic/candidate-pool":
+                return self._send(_json_safe(candidate_pool_snapshot()))
+            if path.startswith("/dynamic/candidate-pool/"):
+                name = path.removeprefix("/dynamic/candidate-pool/") or 'top10_report.html'
+                try:
+                    body, content_type = candidate_pool_asset(name)
+                except FileNotFoundError:
+                    return self._send(b"not found", "text/plain", 404)
+                return self._send(body, content_type)
             if path == "/api/dynamic/latest":
                 return self._send(_json_safe(latest_dynamic_result()))
+            if path == "/api/dynamic/sequence-search":
+                from web.dynamic_interface import sequence_search_snapshot
+                return self._send(_json_safe(sequence_search_snapshot()))
             if path == "/legacy": return self._send(LEGACY_INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path.startswith("/api/dynamic/jobs/"):
                 return self._send(_json_safe(dynamic_job_snapshot(path.rsplit("/", 1)[-1])))
@@ -154,7 +196,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in ("/api/run", "/api/open-compare", "/api/jobs", "/api/dynamic/jobs"):
+        if path not in ("/api/run", "/api/open-compare", "/api/jobs", "/api/dynamic/jobs", "/api/dynamic/query"):
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -164,6 +206,9 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 8_000_000:
                 raise ValueError("请求大小无效")
             request = json.loads(self.rfile.read(length))
+            if path == "/api/dynamic/query":
+                from web.pcfg_query import query_saved
+                return self._send(_json_safe(query_saved(request)))
             if path == "/api/dynamic/jobs":
                 return self._send(_json_safe(start_dynamic_job(request)), status=202)
             if path == "/api/jobs":

@@ -10,6 +10,8 @@ from experiments.open_config import load_open_config, validate_open_config
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA = 'zipfguard-dynamic-v1'
+COMPARISON_PROTOCOL = 'fixed-preset-three-attacks-v2'
+MC_COMPARISON_PROTOCOL = 'top15-pcfg-monte-carlo-v1'
 
 
 def load_dynamic_config(preset='dynamic_smoke', path=None):
@@ -21,7 +23,7 @@ def load_dynamic_config(preset='dynamic_smoke', path=None):
 
 def validate_dynamic_config(value):
     cfg = copy.deepcopy(value)
-    if not isinstance(cfg, dict) or set(cfg) != {'schema_version', 'seed', 'data',
+    if not isinstance(cfg, dict) or set(cfg) - {'research_models', 'monte_carlo'} != {'schema_version', 'seed', 'data',
                                                  'budgets', 'attackers', 'generation',
                                                  'pcfg', 'controller', 'controls'}:
         raise ValueError('动态实验配置字段不匹配')
@@ -42,13 +44,20 @@ def validate_dynamic_config(value):
     for key, low in [('users', 1), ('development', 3), ('cohort_size', 1)]:
         if type(d[key]) is not int or d[key] < low or d[key] > 2_000_000:
             raise ValueError(f'data.{key}')
+    mc = cfg.get('monte_carlo')
+    if mc is not None:
+        if set(mc) != {'samples', 'seed'} or type(mc['samples']) is not int or not 100 <= mc['samples'] <= 2_000_000 or type(mc['seed']) is not int or not 0 <= mc['seed'] < 2**32:
+            raise ValueError('蒙特卡洛样本数或种子无效')
+        if cfg['attackers'] != {'pcfg': 'required'}:
+            raise ValueError('蒙特卡洛主实验只使用 PCFG')
+    budget_limit = 10**18 if mc else 1_000_000
     if (not isinstance(cfg['budgets'], list) or not cfg['budgets']
-            or any(type(k) is not int or not 1 <= k <= 1_000_000 for k in cfg['budgets'])):
+            or any(type(k) is not int or not 1 <= k <= budget_limit for k in cfg['budgets'])):
         raise ValueError('budgets 须为 1..1,000,000 的数组')
     cfg['budgets'] = sorted(set(cfg['budgets']))
     if (not isinstance(cfg['attackers'], dict) or not cfg['attackers']
             or not set(cfg['attackers']) <= {'frequency', 'dictionary-rules',
-                                            'character-ngram', 'pcfg'}
+                                            'character-ngram', 'pcfg', 'omen', 'passgpt', 'passllm'}
             or any(mode not in ('required', 'optional')
                    for mode in cfg['attackers'].values())
             or 'required' not in cfg['attackers'].values()):
@@ -58,8 +67,22 @@ def validate_dynamic_config(value):
         raise ValueError('生成资源配置字段不匹配')
     if set(cfg['pcfg']) != {'raw_limit', 'timeout_seconds', 'training_limit'}:
         raise ValueError('PCFG 资源配置字段不匹配')
-    if set(cfg['controller']) != {'max_attempts', 'abandon_probability',
-                                  'response_weights', 'min_completion',
+    # Migrate saved v1 settings to the informed-generation protocol. Old reports
+    # retain their original metadata and are never relabeled as new results.
+    c = cfg['controller']
+    if not isinstance(c, dict):
+        raise ValueError('控制器配置无效')
+    legacy_attempts = c.pop('max_attempts', 8)
+    c.pop('abandon_probability', None)
+    c.pop('min_completion', None)
+    c.setdefault('retry_report_after', legacy_attempts)
+    c.setdefault('candidate_limit', 1000)
+    c.setdefault('candidate_source', 'legacy')
+    c.setdefault('include_recommendations', False)
+    c.setdefault('sequence', None)
+    if c['candidate_source'] not in ('legacy', 'top15') or type(c['include_recommendations']) is not bool:
+        raise ValueError('网站策略配置无效')
+    if set(c) != {'candidate_source', 'include_recommendations', 'sequence', 'retry_report_after', 'candidate_limit', 'response_weights',
                                   'max_modification_rate',
                                   'max_incremental_modification',
                                   'max_late_cost_increase',
@@ -67,17 +90,34 @@ def validate_dynamic_config(value):
                                   'min_relative_collision_gain',
                                   'preview_size', 'include_pattern_rules'}:
         raise ValueError('控制器配置字段不匹配')
-    if set(cfg['controls']) != {'run', 'attack'} or any(
-            type(v) is not bool for v in cfg['controls'].values()):
+    comparison_protocol = MC_COMPARISON_PROTOCOL if mc else COMPARISON_PROTOCOL
+    if mc and cfg['controls'].get('comparison_protocol') == COMPARISON_PROTOCOL:
+        cfg['controls']['comparison_protocol'] = comparison_protocol
+    cfg['controls'].setdefault('comparison_protocol', comparison_protocol)
+    if cfg['controls']['comparison_protocol'] == 'common-first-cost-batch-forecast-v1':
+        cfg['controls']['comparison_protocol'] = COMPARISON_PROTOCOL
+    cfg['controls'].setdefault('preset', 'length8')
+    if (set(cfg['controls']) != {'run', 'attack', 'comparison_protocol', 'preset'} or any(
+            type(cfg['controls'][key]) is not bool for key in ('run', 'attack'))
+            or cfg['controls']['comparison_protocol'] != comparison_protocol
+            or cfg['controls']['preset'] not in ('length8', 'top15')):
         raise ValueError('对照配置无效')
-    c = cfg['controller']
-    if type(c['max_attempts']) is not int or not 1 <= c['max_attempts'] <= 30:
-        raise ValueError('max_attempts')
+    if c['sequence'] is not None:
+        from policy.site_catalog import site_rules
+        expected = (d['users'] + d['cohort_size'] - 1) // d['cohort_size']
+        allowed = site_rules(c['include_recommendations'])
+        if (c['candidate_source'] != 'top15' or cfg['controls']['preset'] != 'top15'
+                or not isinstance(c['sequence'], list) or len(c['sequence']) != expected
+                or any(type(name) is not str or name not in allowed for name in c['sequence'])):
+            raise ValueError('十批策略序列无效或含未证实网站规则')
+    if (type(c['retry_report_after']) is not int or type(c['candidate_limit']) is not int
+            or not 1 <= c['retry_report_after'] <= c['candidate_limit'] <= 10_000):
+        raise ValueError('重试报告阈值或候选计算上限无效')
     if type(c['preview_size']) is not int or not 10 <= c['preview_size'] <= 100_000:
         raise ValueError('preview_size')
     if type(c['include_pattern_rules']) is not bool:
         raise ValueError('include_pattern_rules')
-    for key in ('abandon_probability', 'min_completion', 'max_modification_rate',
+    for key in ('max_modification_rate',
                 'max_incremental_modification', 'max_late_cost_increase',
                 'max_head_risk_regression',
                 'min_relative_collision_gain'):
@@ -92,11 +132,13 @@ def validate_dynamic_config(value):
         raise ValueError('response_weights')
     attack = load_open_config('open_full')
     attack['seed'] = cfg['seed']
-    attack['budgets'] = cfg['budgets']
+    attack['budgets'] = [1] if mc else cfg['budgets']
     attack['attackers'] = cfg['attackers']
     attack['generation'] = cfg['generation']
     attack['pcfg'] = cfg['pcfg']
-    attack['search']['risk_budget'] = cfg['budgets'][-1]
+    if 'research_models' in cfg:
+        attack['research_models'] = cfg['research_models']
+    attack['search']['risk_budget'] = attack['budgets'][-1]
     # PCFG's current upstream adapter has a one-million raw-output ceiling.
     validate_open_config(attack)
     return cfg
@@ -108,4 +150,6 @@ def open_attack_config(cfg):
                   attackers=cfg['attackers'], generation=cfg['generation'],
                   pcfg=cfg['pcfg'])
     attack['search']['risk_budget'] = cfg['budgets'][-1]
+    if 'research_models' in cfg:
+        attack['research_models'] = cfg['research_models']
     return validate_open_config(attack)

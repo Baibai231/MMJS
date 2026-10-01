@@ -75,6 +75,20 @@ class AttackEngine:
                                                    'training_resampled':total>limit})
                     raw,meta=self.raw_cache[rawkey];params.update(meta)
                     source_stop=meta['source_stop'];stream=iter(raw)
+                elif model in ('omen', 'passgpt', 'passllm'):
+                    from ai.research_models import generate, candidate_stream
+                    rawkey = ('research', model, key[0], key[1])
+                    if rawkey in self.raw_cache:
+                        filename, meta = self.raw_cache[rawkey]
+                        stream = candidate_stream(filename)
+                    else:
+                        stream, meta = generate(model, train, tuning,
+                                                self.cfg['research_models'], g, self.cfg['seed'])
+                        filename = meta.pop('_candidate_file', None)
+                        if filename:
+                            self.raw_cache[rawkey] = (filename, meta)
+                    params.update(meta)
+                    source_stop = meta['source_stop']
                 else:raise ValueError('unsupported model')
                 prep=time.perf_counter()-prep_start
                 result=consume(model,stream,budget=budget,

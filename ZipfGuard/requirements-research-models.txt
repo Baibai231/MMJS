@@ -1,0 +1,7 @@
+# Install into local_attack_models/venv (Python 3.11), separate from the web app.
+torch==2.6.0
+transformers==4.51.3
+peft==0.15.2
+datasets==3.5.1
+accelerate==1.6.0
+PyYAML==6.0.2

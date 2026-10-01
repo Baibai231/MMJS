@@ -6,11 +6,11 @@ report environment availability separately from experiment participation.
 """
 from __future__ import annotations
 
-import importlib.util
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping, Sequence
+
+from ai.research_models import source_status
 
 
 @dataclass(frozen=True)
@@ -23,15 +23,22 @@ class PassLLMConfig:
     @classmethod
     def workspace_default(cls, workspace: str | Path) -> "PassLLMConfig":
         root = Path(workspace)
-        project = root / "PassLLM原版" / "Available artifacts for USENIX Security 2025 #772-v1"
-        return cls(project, root / "PolyPass" / "model" / "Qwen0.5B-Instruct", project / "checkpoints" / "rockyou_100w_disQwen0.5B")
+        if root.name == 'ZipfGuard':
+            root = root.parent
+        project = (root / 'Available artifacts for USENIX Security 2025 #772-v1'
+                   / 'Available artifacts for USENIX Security 2025 #772-v1')
+        return cls(project, root / 'ZipfGuard' / 'local_attack_models' / 'base'
+                   / 'Qwen2.5-0.5B-Instruct',
+                   project / 'checkpoints' / 'rockyou_100w_disQwen0.5B')
 
 
 def runtime_status(config: PassLLMConfig) -> dict[str, Any]:
-    missing = [name for name in ("torch", "transformers", "peft") if importlib.util.find_spec(name) is None]
+    research = source_status('passllm')
+    interpreter = config.base_model.parent.parent / 'passllm_venv' / 'Scripts' / 'python.exe'
+    missing = [] if interpreter.is_file() else ['passllm_venv']
     return {
         "model": "PassLLM 0.5B + Rockyou LoRA",
-        "available": not missing and config.base_model.is_dir() and config.lora_path.is_dir(),
+        "available": not missing and research['available'],
         "base_model": str(config.base_model),
         "lora_path": str(config.lora_path),
         "base_model_present": config.base_model.is_dir(),
@@ -39,8 +46,9 @@ def runtime_status(config: PassLLMConfig) -> dict[str, Any]:
         "missing_packages": missing,
         "fallback": None,
         "integrated": False,
+        "research_integrated": research['pipeline_integrated'],
         "participated": False,
-        "evaluation_status": "环境可检测；尚未接入主评估；当前实验未使用 PassLLM",
+        "evaluation_status": "动态研究接口已接入；此旧版页面的评估未使用 PassLLM",
     }
 
 

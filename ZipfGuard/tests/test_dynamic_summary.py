@@ -49,6 +49,33 @@ def _report(seed, ngram_count=1_000_000):
 
 
 class DynamicSummaryTests(unittest.TestCase):
+    def test_comparison_protocols_cannot_be_pooled(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder)
+            for seed in (11, 23):
+                location = source / f'seed_{seed}'
+                location.mkdir()
+                report = _report(seed)
+                report['metadata'] = {'response_protocol': 'visible-first-hidden-retry-v2'}
+                if seed == 23:
+                    report['metadata']['comparison_protocol'] = 'common-first-cost-batch-forecast-v1'
+                (location / 'report.json').write_text(json.dumps(report), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, '协议'):
+                summarize(source, [11, 23], 1_000_000)
+
+    def test_old_and_new_response_protocols_cannot_be_pooled(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder)
+            for seed in (11, 23):
+                location = source / f'seed_{seed}'
+                location.mkdir()
+                report = _report(seed)
+                if seed == 23:
+                    report['metadata'] = {'response_protocol': 'visible-first-hidden-retry-v2'}
+                (location / 'report.json').write_text(json.dumps(report), encoding='utf-8')
+            with self.assertRaisesRegex(ValueError, '协议'):
+                summarize(source, [11, 23], 1_000_000)
+
     def test_complete_runs_are_described_by_seed(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder)

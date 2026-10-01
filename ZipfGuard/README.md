@@ -1,5 +1,8 @@
 # ZipfGuard / DP-HTPG
 
+> 当前主实验已切换为 **PCFG + 前置蒙特卡洛 + 队友 Top15 网站资料**。本地首页提供单条口令的猜测次数估计与热门排名查询，保留 F/A0/A1。当前可编码六个强制规则子集（Instagram 为后补证、尚未参加旧全量报告）；建议、缺失和不适用条目分开标注。十批路径的全局搜索尚未完成，不再使用 960 模板池。详见 [新实验说明](docs/PCFG_MONTE_CARLO_TOP15.md)。下文多模型与候选池内容属于历史研究路线。
+
+
 本地口令策略研究项目。默认流程已迁移为：**真实带频次数据 → 用户响应 → 独立开放猜测 → 逐口令 Min_auto → 风险与用户成本推荐**。命令行、轻量网页与 Streamlit 共用 Python 核心及报告。
 
 2026-09-26 实施状态、验证证据与研究边界见 [项目状态](docs/PROJECT_STATUS.md) 和 [开放协议说明](docs/OPEN_PROTOCOL.md)。论文定义见 [主方案](DP_HTPG_AI_竞赛详细方案.md)。
@@ -7,6 +10,8 @@
 ## 分批注册动态策略实验
 
 新实验按模拟注册顺序执行规则，每一批完成后读取历史累计口令分布，选择下一批是否增加一项兼容规则。页面入口是 <http://127.0.0.1:8765/dynamic>；Streamlit 侧边栏选择“分批注册动态策略”。已实现的模块、评价口径与当前验证状态见[动态实验实施状态](docs/DYNAMIC_IMPLEMENTATION_STATUS.md)，完整设计见[改造计划](docs/分布驱动_分批注册动态策略改造计划.md)。
+
+当前动态实验使用 `visible-first-hidden-retry-v2`：长度和字符类别等显式要求在候选提交前一次满足；黑名单和启用的模式限制在提交后检查，阻断后继续换候选。不再模拟放弃。连续 8 次新候选未通过只触发报告，继续尝试；达到 1,000 次计算上限仍未通过时保留为待处理。最终分布图使用同一批用户的完整频数—排名双对数曲线。历史报告保留旧协议标记，必须重新运行才能获得新逻辑的结果。
 
 ~~~powershell
 .venv/Scripts/python.exe tools/run_dynamic_study.py --preset dynamic_smoke
@@ -22,9 +27,11 @@
 
 快速预设虽然只抽样 300 人，仍从完整语料中均匀抽样。首次运行须扫描源文件两遍；程序显示每百万行进度，并把经 SHA-256 核验的语料总频次与行数缓存到本机 `reports/dynamic/scan_cache/`。源文件未变化时，后续运行复用统计并只扫描一遍；扫描时仍逐字节核验文件哈希。当前机器上的实测为首次 48–133 秒、缓存命中约 26–59 秒，耗时随磁盘与系统负载变化。
 
-五种子正式主实验与四类固定策略的百万预算对照均已完成，汇总页分别保存在 `reports/dynamic/multiseed_primary/cross_seed_report.html` 和 `reports/dynamic/multiseed_controls/cross_seed_controls_report.html`。每条轨迹的完成率、修改率、分布、猜测次数和攻击命中率及其适用范围见[动态实验实施状态](docs/DYNAMIC_IMPLEMENTATION_STATUS.md)。汇总脚本会拒绝人数不守恒、模型缺失或字符模型未跑满百万有效猜测的结果。五个种子中，动态方案比开发集预选固定规则的分布更分散且修改率更低，但自适应攻击命中率更高，不能宣称它同时胜出。
+旧协议的五种子主实验与四类固定策略的百万预算对照已完成，历史汇总页分别保存在 `reports/dynamic/multiseed_primary/cross_seed_report.html` 和 `reports/dynamic/multiseed_controls/cross_seed_controls_report.html`。这些数字包含旧版放弃与重试终止设定，不代表当前协议。每条历史轨迹的完成率、修改率、分布、猜测次数和攻击命中率及其适用范围见[动态实验实施状态](docs/DYNAMIC_IMPLEMENTATION_STATUS.md)。汇总脚本会拒绝人数不守恒、模型缺失或字符模型未跑满百万有效猜测的结果。旧协议五个种子中，动态方案比开发集预选固定规则的分布更分散且修改率更低，但自适应攻击命中率更高，不能宣称它同时胜出。
 
-另有同样本的 5,000 人顺序与响应压力测试，报告位于 `reports/dynamic/sensitivity_5k/sensitivity_report.html`。它表明偏向从常见口令池重新选择时，分布改善并不保证攻击命中率下降；该较小规模实验不能代替主实验。
+另有旧协议同样本的 5,000 人顺序与响应压力测试，历史报告位于 `reports/dynamic/sensitivity_5k/sensitivity_report.html`。它表明偏向从常见口令池重新选择时，分布改善并不保证攻击命中率下降；该较小规模实验不能代替主实验。当前敏感性脚本已移除高放弃率情景。
+
+当前对照只保留“无策略、固定预设策略、动态策略”。固定预设全程要求长度至少 8；动态首批使用同一规则，之后按历史分布调整。分布、碰撞概率和成本图使用这三个方案；预算攻击图展示每组的 F、A0、A1，共九条曲线。无策略的三个攻击层次因训练与过滤条件相同而重合。旧的四类固定对照属于历史协议，详见[动态实验状态](docs/DYNAMIC_IMPLEMENTATION_STATUS.md)。[候选池说明与完整组合](docs/PASSWORD_POLICY_CANDIDATES.md)只作讨论，未扩展运行时策略池。
 
 ## 启动演示
 

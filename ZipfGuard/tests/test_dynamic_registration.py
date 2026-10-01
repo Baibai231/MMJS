@@ -89,6 +89,13 @@ class DynamicRegistrationTests(unittest.TestCase):
                              [r['policy'] for r in b['cohorts'][:2]])
             self.assertEqual(a['baseline_completed_distribution']['users'],
                              a['final_distribution']['users'])
+            for cohort in a['cohorts']:
+                self.assertEqual(cohort['cumulative']['full_rank_frequency'][-1][0],
+                                 cohort['cumulative']['unique'])
+            for arm in a['controls'].values():
+                for cohort in arm['timeline']:
+                    self.assertEqual(cohort['cumulative']['full_rank_frequency'][-1][0],
+                                     cohort['cumulative']['unique'])
             self.assertEqual(a['attacks']['baseline_completed_F']['minauto'][-1]['target_weight'],
                              a['final_distribution']['users'])
             self.assertNotIn('firstSecret123', Path(first, 'report.json').read_text('utf-8'))

@@ -48,28 +48,41 @@ def _curve_marker(px, py, color, shape, tooltip="", size=4):
 
 
 def _axis_value(value, style=None):
+    if style == "power10":
+        return "10" + str(int(round(math.log10(value)))).translate(str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹"))
     if style == "percent":
         return f"{100 * value:.2f}%"
+    if style == "probability":
+        return f"{100 * value:.4g}%"
     if style == "count":
         return f"{value:,.0f}"
     return f"{value:.3g}"
 
 
 def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
-         x_ticks=None, x_format=None, y_format=None):
+         x_ticks=None, x_format=None, y_format=None, log_y=False, markers=True,
+         x_domain=None, y_domain=None):
     points = [(x, y) for _, values in series for x, y, *_ in values if y is not None]
     if not points:
         return "<p>没有可用数据。</p>"
-    tx = (lambda x: math.log10(max(x, 1))) if log else (lambda x: x)
-    xs, ys = [tx(x) for x, _ in points], [y for _, y in points]
+    tx = (lambda x: math.log10(x) if x > 0 else 0) if log else (lambda x: x)
+    if log_y and any(y <= 0 for _, y in points):
+        raise ValueError('纵轴使用对数刻度时，频数必须大于零')
+    ty = math.log10 if log_y else (lambda y: y)
+    xs, ys = [tx(x) for x, _ in points], [ty(y) for _, y in points]
     xmin, xmax = min(xs), max(xs)
-    ymin, ymax = min(0, min(ys)), max(ys)
+    ymin, ymax = (math.floor(min(ys)), math.ceil(max(ys))) if log_y else (min(0, min(ys)), max(ys))
+    if x_domain is not None:
+        xmin, xmax = map(tx, x_domain)
+    if y_domain is not None:
+        ymin, ymax = map(ty, y_domain)
     if xmax == xmin: xmax = xmin + 1
     if ymax == ymin: ymax = ymin + 1
-    if ymin < 0: ymin *= 1.1
-    ymax *= 1.08
+    if not log_y and y_domain is None:
+        if ymin < 0: ymin *= 1.1
+        ymax *= 1.08
     def xy(x, y):
-        return 75 + 765 * (tx(x) - xmin) / (xmax - xmin), 325 - 275 * (y - ymin) / (ymax - ymin)
+        return 75 + 765 * (tx(x) - xmin) / (xmax - xmin), 325 - 275 * (ty(y) - ymin) / (ymax - ymin)
     palette = COLORS + ["#374151", "#db2777", "#ca8a04", "#4338ca", "#059669", "#dc2626",
                         "#0369a1", "#7c3aed", "#9f1239", "#57534e", "#4d7c0f", "#0e7490"]
     colors = [(palette[i] if i < len(palette) else f"hsl({(i*137.508)%360:.3f},65%,38%)")
@@ -93,9 +106,11 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
             dashes[i] = patterns[order] if order < len(patterns) else f"{12+order*2} 4 2 4"
             shapes[i] = ("circle", "square", "triangle", "diamond")[order % 4]
     svg = ['<svg viewBox="0 0 890 385" role="img" aria-label="' + escape(ylabel + ' / ' + xlabel) + '">']
-    for i in range(6):
-        value = ymin + (ymax - ymin) * i / 5
-        py = 325 - 275 * i / 5
+    y_positions = (list(range(math.ceil(ymin), math.floor(ymax) + 1)) if log_y else
+                   [ymin + (ymax - ymin) * i / 5 for i in range(6)])
+    for i, position in enumerate(y_positions):
+        value = 10 ** position if log_y else position
+        py = 325 - 275 * (position - ymin) / (ymax - ymin) if log_y else 325 - 275 * i / 5
         label = _axis_value(value, y_format) if y_format else f"{value:.3f}"
         svg.append(f'<path d="M75 {py}H840" stroke="#e5ebf3"/><text x="65" y="{py+4}" text-anchor="end" font-size="11" fill="#607087">{label}</text>')
     if x_ticks is None:
@@ -104,7 +119,7 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
     for value in x_ticks:
         if not xmin <= tx(value) <= xmax:
             continue
-        px, _ = xy(value, ymin)
+        px, _ = xy(value, 10 ** ymin if log_y else ymin)
         svg.append(f'<text class="x-tick" x="{px:.2f}" y="345" text-anchor="middle" font-size="11" fill="#607087">{_axis_value(value, x_format)}</text>')
     for i, (name, values) in enumerate(series):
         color = colors[i]
@@ -122,6 +137,8 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
                 coords = [xy(row[0], row[1]) for row in segment]
                 svg.append(f'<polyline fill="none" stroke="{color}" stroke-width="2.5"{dash} points="' + ' '.join(f'{x:.2f},{y:.2f}' for x, y in coords) + '"/>')
         for row in (row for row in values if row[1] is not None):
+            if not markers:
+                continue
             px, py = xy(row[0], row[1])
             tooltip = (f"{name}；{xlabel}：{_axis_value(row[0], x_format)}；"
                        f"{ylabel}：{_axis_value(row[1], y_format)}")
@@ -133,7 +150,7 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
                 svg.append(f'<circle cx="{px:.2f}" cy="{py:.2f}" r="{5 if scatter else 2}" fill="{color}"><title>{escape(tooltip)}</title></circle>')
         if distinguish:
             svg.append("</g>")
-    svg.append(f'<text x="460" y="375" text-anchor="middle" font-size="13">{escape(xlabel)}{"（对数刻度）" if log else ""}</text><text x="75" y="25" font-size="13">{escape(ylabel)}</text></svg>')
+    svg.append(f'<text x="460" y="375" text-anchor="middle" font-size="13">{escape(xlabel)}{"（对数刻度）" if log else ""}</text><text x="75" y="25" font-size="13">{escape(ylabel)}{"（对数刻度）" if log_y else ""}</text></svg>')
     if distinguish:
         css = [".plot-distinct > .legend > label{flex-direction:row;align-items:center;gap:6px;margin:0;cursor:pointer}",
                ".plot-distinct > .legend > label:has(input:not(:checked)){opacity:.45}"]

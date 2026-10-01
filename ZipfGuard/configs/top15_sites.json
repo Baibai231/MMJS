@@ -1,0 +1,195 @@
+{
+  "schema_version": "top15-teammate-v1",
+  "source": "docs/top15_teammate_source.md",
+  "source_status": "team-provided; original URLs, ranking source and observation date not supplied",
+  "sites": [
+    {
+      "id": "google",
+      "site": "Google",
+      "list_position": 1,
+      "basis": "partial_hard",
+      "rule": {
+        "min_length": 8
+      },
+      "limitations": "弱口令、泄露检测和口令历史规则未公开，未模拟",
+      "source_section": 1,
+      "source_url": null
+    },
+    {
+      "id": "youtube",
+      "site": "YouTube",
+      "list_position": 2,
+      "basis": "alias",
+      "rule": {},
+      "limitations": "继承 Google，同一认证系统，不作为独立策略证据",
+      "source_section": 2,
+      "source_url": null
+    },
+    {
+      "id": "facebook",
+      "site": "Facebook",
+      "list_position": 3,
+      "basis": "unknown",
+      "rule": {},
+      "limitations": "官方个人账户帮助页给出强口令建议，但未给普通账户可编码的最低长度；组织管理账户的另一套强制规则不可套用",
+      "source_section": 3,
+      "source_url": "https://www.facebook.com/help/124904560921566"
+    },
+    {
+      "id": "instagram",
+      "site": "Instagram",
+      "list_position": 4,
+      "basis": "partial_hard",
+      "rule": {
+        "min_length": 6
+      },
+      "limitations": "Instagram 帮助中心明确口令至少 6 字符；至少 8 字符及混合字符为建议，弱口令或泄露检测未复刻",
+      "source_section": 4,
+      "source_url": "https://help.instagram.com/273359857992105/"
+    },
+    {
+      "id": "openai",
+      "site": "ChatGPT / OpenAI",
+      "list_position": 5,
+      "basis": "unknown",
+      "rule": {},
+      "limitations": "官方帮助说明邮箱口令及第三方登录的区别，但未公开可编码的普通账户口令长度/类别门槛",
+      "source_section": 5,
+      "source_url": "https://help.openai.com/en/articles/4936828-resetting-or-changing-your-chatgpt-password"
+    },
+    {
+      "id": "reddit",
+      "site": "Reddit",
+      "list_position": 6,
+      "basis": "recommended_scenario",
+      "rule": {
+        "min_length": 8
+      },
+      "limitations": "8 位为建议；仅模拟采纳建议后的规则，非网站硬规则",
+      "source_section": 6,
+      "source_url": null
+    },
+    {
+      "id": "wikipedia",
+      "site": "Wikipedia / Wikimedia",
+      "list_position": 7,
+      "basis": "partial_hard",
+      "rule": {
+        "min_length": 8
+      },
+      "limitations": "普通账户；无用户名及官方弱口令表，不能复刻这些检测",
+      "source_section": 7,
+      "source_url": null
+    },
+    {
+      "id": "x",
+      "site": "X / Twitter",
+      "list_position": 8,
+      "basis": "recommended_scenario",
+      "rule": {
+        "min_length": 10,
+        "require_lower": true,
+        "require_upper": true,
+        "require_digit": true,
+        "require_special": true
+      },
+      "limitations": "长度与四类字符为建议场景，不代表注册硬规则；个人信息和复用不可测",
+      "source_section": 8,
+      "source_url": null
+    },
+    {
+      "id": "whatsapp",
+      "site": "WhatsApp",
+      "list_position": 9,
+      "basis": "not_applicable",
+      "rule": {},
+      "limitations": "手机号、PIN、Passkey 认证；不纳入传统口令猜测对照",
+      "source_section": 9,
+      "source_url": null
+    },
+    {
+      "id": "tiktok",
+      "site": "TikTok",
+      "list_position": 10,
+      "basis": "recommended_scenario",
+      "rule": {
+        "min_length": 12,
+        "require_lower": true,
+        "require_upper": true,
+        "require_digit": true,
+        "require_special": true
+      },
+      "limitations": "采纳建议的 12 位下限；15 位不作最大长度限制",
+      "source_section": 10,
+      "source_url": null
+    },
+    {
+      "id": "yahoo",
+      "site": "Yahoo",
+      "list_position": 11,
+      "basis": "recommended_scenario",
+      "rule": {
+        "min_length": 12
+      },
+      "limitations": "采纳至少 12 位建议；字符组合未指定硬性种类，不强制四类",
+      "source_section": 11,
+      "source_url": null
+    },
+    {
+      "id": "linkedin",
+      "site": "LinkedIn",
+      "list_position": 12,
+      "basis": "recommended_scenario",
+      "rule": {
+        "min_length": 8,
+        "require_lower": true,
+        "require_upper": true,
+        "require_digit": true,
+        "require_special": true
+      },
+      "limitations": "按采纳全部字符建议的场景模拟，基础强制要求尚需补证",
+      "source_section": 12,
+      "source_url": null
+    },
+    {
+      "id": "netflix",
+      "site": "Netflix",
+      "list_position": 13,
+      "basis": "partial_hard",
+      "rule": {
+        "min_length": 6,
+        "max_length": 60
+      },
+      "limitations": "仅公开长度范围；未复刻常见及泄露口令拦截",
+      "source_section": 13,
+      "source_url": null
+    },
+    {
+      "id": "github",
+      "site": "GitHub",
+      "list_position": 14,
+      "basis": "partial_hard",
+      "rule": {
+        "min_length": 8,
+        "require_lower": true,
+        "require_digit": true,
+        "long_password_bypass": 15
+      },
+      "limitations": "长度至少 15 或长度至少 8 且有小写和数字；未复刻弱口令和泄露检测",
+      "source_section": 14,
+      "source_url": null
+    },
+    {
+      "id": "amazon",
+      "site": "Amazon",
+      "list_position": 15,
+      "basis": "partial_hard",
+      "rule": {
+        "min_length": 6
+      },
+      "limitations": "仅最低长度；安全建议不强制",
+      "source_section": 15,
+      "source_url": null
+    }
+  ]
+}
