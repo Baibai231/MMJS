@@ -148,7 +148,7 @@ body{background:#f2f6f4;color:#173028}main{max-width:1200px}section{border-radiu
 ''' + '</style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / POLICY LAB</span>'
                  '<h1>十批注册，哪条策略路径更好？</h1>'
                  '<p>从 Top15 网站规则出发，比较分布、猜测风险和用户修改成本。使用 PCFG 与蒙特卡洛预采样，查看完整路径排名与 10 万用户评价。</p>'
-                 '<nav class="study-nav" aria-label="实验结果导航"><a href="#study-overview">结果概览</a><a href="#sequence-rankings">三指标 Top10</a><a href="#attack-success">F / A0 / A1</a><a href="#final-distribution">口令分布</a><a href="#site-catalog">网站规则</a><a href="#query-panel">单条查询</a><a href="#experiment-settings">实验设置</a></nav>'
+                 '<nav class="study-nav" aria-label="展示台导航"><a href="/open">第一展示台 · 静态策略</a><a href="/dynamic" aria-current="page">第二展示台 · 分批注册</a><a href="/intervention">第三展示台 · 局部干预</a></nav><nav class="study-nav" aria-label="实验结果导航"><a href="#study-overview">结果概览</a><a href="#sequence-rankings">三指标 Top10</a><a href="#attack-success">F / A0 / A1</a><a href="#final-distribution">口令分布</a><a href="#site-catalog">网站规则</a><a href="#query-panel">单条查询</a><a href="#experiment-settings">实验设置</a></nav>'
                  '<p class="actions"><button id="recent">加载已完成研究结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在加载研究结果…</span></p></main>'
                  '<div id="result" aria-live="polite"></div><main class="workbench-tools">'
                  '<section class="settings-card" id="experiment-settings"><details><summary>实验设置<small>展开后可调整批次与规则，重新运行</small></summary><div class="controls">'

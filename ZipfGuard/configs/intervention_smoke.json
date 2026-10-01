@@ -1,0 +1,63 @@
+{
+  "schema_version": "selective-intervention-v1",
+  "seed": 42,
+  "data": {
+    "path": "../rockyou-withcount.txt",
+    "format": "password_with_count",
+    "encoding": "latin-1",
+    "users": 1000,
+    "development": 3000
+  },
+  "budgets": [
+    1,
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "risk_budget": 1000000,
+  "monte_carlo": {
+    "samples": 10000,
+    "seed": 42
+  },
+  "pcfg": {
+    "timeout_seconds": 180
+  },
+  "controller": {
+    "round_fraction": 0.02,
+    "total_fraction": 0.2,
+    "batch_fractions": [
+      0.005,
+      0.01,
+      0.02
+    ],
+    "max_rounds": 40,
+    "max_groups": 12,
+    "popular_k": 20,
+    "lengths": [
+      8,
+      10,
+      12
+    ],
+    "prediction_repeats": 3,
+    "min_gain": 0.000001,
+    "target_relative_reduction": 0.1,
+    "stagnation_patience": 3,
+    "max_hhi_increase": 0.0001
+  },
+  "response": {
+    "nonresponse": 0.15,
+    "weights": [
+      0.6,
+      0.25,
+      0.15
+    ],
+    "max_attempts": 5
+  },
+  "evaluation": {
+    "adaptive": true,
+    "mutation_reference_limit": 10000
+  }
+}

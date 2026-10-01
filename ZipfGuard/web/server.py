@@ -117,6 +117,9 @@ from experiments.open_config import load_open_config
 from web.dynamic_interface import DYNAMIC_INDEX, start_dynamic_job, dynamic_job_snapshot, latest_dynamic_result
 from web.candidate_pool import candidate_pool_snapshot, candidate_pool_asset
 from experiments.dynamic_config import load_dynamic_config
+from web.intervention_interface import (INTERVENTION_INDEX, start_intervention_job,
+                                        intervention_job_snapshot, latest_intervention_result)
+from experiments.intervention_config import load_intervention_config
 LEGACY_INDEX = INDEX
 INDEX = DYNAMIC_INDEX
 
@@ -131,6 +134,24 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/": return self._send(INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path == "/open": return self._send(OPEN_INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path == "/dynamic": return self._send(DYNAMIC_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path == "/intervention":
+                return self._send(INTERVENTION_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path == "/api/intervention/latest":
+                return self._send(_json_safe(latest_intervention_result()))
+            if path.startswith("/api/intervention/config/"):
+                return self._send(_json_safe(load_intervention_config(path.rsplit("/", 1)[-1])))
+            if path.startswith("/api/intervention/jobs/"):
+                return self._send(_json_safe(intervention_job_snapshot(path.rsplit("/", 1)[-1])))
+            intervention_asset = re.fullmatch(
+                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(risk_cost|guarded_cost|attack_F|attack_A1|attack_mutations|final_distribution)\.svg)', path)
+            if intervention_asset:
+                kind, run_id, figure = intervention_asset.groups()
+                if (kind == 'report') != (figure is None):
+                    return self._send(b"not found", "text/plain", 404)
+                filename = ROOT / 'reports' / 'intervention' / run_id / ((figure + '.svg') if figure else 'report.json')
+                if not filename.is_file():
+                    return self._send(b"not found", "text/plain", 404)
+                return self._send(filename.read_bytes(), 'image/svg+xml; charset=utf-8' if figure else 'application/json; charset=utf-8')
             report_match = re.fullmatch(r'/api/dynamic/report/([a-f0-9]{16})\.json', path)
             if report_match:
                 from web.dynamic_interface import dynamic_report_directory
@@ -196,7 +217,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in ("/api/run", "/api/open-compare", "/api/jobs", "/api/dynamic/jobs", "/api/dynamic/query"):
+        if path not in ("/api/run", "/api/open-compare", "/api/jobs", "/api/dynamic/jobs", "/api/dynamic/query", "/api/intervention/jobs"):
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -206,6 +227,8 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 8_000_000:
                 raise ValueError("请求大小无效")
             request = json.loads(self.rfile.read(length))
+            if path == "/api/intervention/jobs":
+                return self._send(_json_safe(start_intervention_job(request)), status=202)
             if path == "/api/dynamic/query":
                 from web.pcfg_query import query_saved
                 return self._send(_json_safe(query_saved(request)))

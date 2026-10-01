@@ -74,7 +74,7 @@ section{border-radius:12px;box-shadow:0 3px 16px #172f4004}h2{letter-spacing:-.3
 '''
 
 OPEN_INDEX='<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ZipfGuard · 策略实验室</title><style>'+STYLE+OPEN_STYLE+'</style>'+r'''
-<body><main><nav class="topbar"><div class="brand">ZipfGuard <span class="muted">/ 策略实验室</span></div><a href="/dynamic">分批注册动态策略 →</a><span class="tag">本地离线 · 开放候选</span></nav>
+<body><main><nav class="topbar"><div class="brand">ZipfGuard <span class="muted">/ 策略实验室</span></div><a href="/dynamic">第二展示台 · 分批注册</a><a href="/intervention">第三展示台 · 局部干预</a><span class="tag">本地离线 · 开放候选</span></nav>
 <div class="hero"><div class="eyebrow">PASSWORD POLICY RESEARCH</div><h1>为不同安全需求，<br>找到合适的口令规则。</h1><p>从真实口令分布出发，考虑用户如何重新选择、攻击者如何适应。在相同预算下，用 Min_auto 比较策略的安全收益与用户修改成本。</p></div>
 <div class="workflow"><span>01 真实频次</span><span>02 规则与用户响应</span><span>03 自适应 Min_auto</span><span>04 风险与成本推荐</span></div>
 <section><h2>设置这次实验</h2><div class="controls">
