@@ -110,24 +110,28 @@ def _path(row):
 
 def sequence_svg(rows, title, field, scale, unit):
     rows = rows[:10]
-    width, height = 1650, 106 + 55 * len(rows)
-    left, bar_width = 820, 440
+    width, height = 1200, 120 + 55 * len(rows)
+    left, bar_width = 590, 360
     largest = max((_value(r, field) * scale for r in rows), default=1) or 1
     parts = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" '
              'role="img" style="max-width:100%;height:auto;background:#fff">',
              f'<title>{escape(title)}</title>',
              f'<text x="20" y="30" font-size="22" font-weight="700" fill="#173028">{escape(title)}</text>',
-             '<text x="20" y="54" font-size="13" fill="#456a61">每行是完整十批路径；数值越低越好</text>']
+             '<text x="20" y="58" font-size="15" fill="#456a61">第 1 → 10 批 · G = Google · A = Amazon · N = Netflix · 数值越低越好</text>']
     for i, row in enumerate(rows):
-        y = 75 + i * 55
+        y = 88 + i * 55
         value = _value(row, field) * scale
         label = _path(row)
+        short = (NAMES.get(row['path'][0], row['path'][0]) + ' × 10 批'
+                 if len(set(row['path'])) == 1 else
+                 ' → '.join({'site_google': 'G', 'site_amazon': 'A', 'site_netflix': 'N'}.get(n, n)
+                            for n in row['path']))
         parts.extend((
-            f'<text x="20" y="{y+17}" font-size="12" fill="#173028">{i+1}. {escape(label)}</text>',
+            f'<text x="20" y="{y+17}" font-size="16" fill="#173028"><title>{escape(label)}</title>{i+1}. {escape(short)}</text>',
             f'<rect x="{left}" y="{y}" width="{bar_width}" height="24" rx="4" fill="#edf2f0"/>',
             f'<rect x="{left}" y="{y}" width="{max(1, bar_width * value / largest):.2f}" '
             'height="24" rx="4" fill="#277a61"/>',
-            f'<text x="{left+bar_width+12}" y="{y+17}" font-size="13" fill="#173028">'
+            f'<text x="{left+bar_width+12}" y="{y+17}" font-size="16" fill="#173028">'
             f'{value:.4f} {escape(unit)}</text>',
         ))
     parts.append('</svg>')
@@ -142,6 +146,8 @@ def render_sequence_rankings(result):
     guess_scope = ('全部效果不同的可行路径组' if exhaustive_rows is not None else
                    f'{search["a1_evaluated_paths"]:,} 条已重训候选')
     parts = ['<section id="sequence-rankings"><h2>十批路径三指标排序</h2>',
+             '<p>每行是一条完整的十批规则路径，三个指标均为越低越好。各图独立排序，猜测排名作为最终选路的主目标。</p>',
+             '<details><summary>查看搜索覆盖、等效合并与高采样复核</summary>',
              f'<p>在独立开发/验证样本上，对 {search["screened_paths"]:,} 条成本可行的不同规则路径'
              '完成冻结 PCFG 筛选、分布碰撞与用户修改计算；'
              f'猜测图的排序范围是{guess_scope}。'
@@ -175,13 +181,15 @@ def render_sequence_rankings(result):
                      f'次名命中 {second["a1_hits_100k_mc"]:,}/20,000；'
                      '第一名保持不变。这次高采样复核仅覆盖原搜索前 10 组，'
                      '不构成 100,000 次采样下的全空间重新排序。</p>')
+    parts.append('</details>')
     for slug, title, key, field, scale, unit in METRICS:
         rows = exhaustive_rows if field == 'a1' and exhaustive_rows is not None else search.get(key, [])
         if field == 'a1':
             rows = sorted(rows, key=lambda r: (r['a1']['rate'], r['collision']))[:10]
-        parts.append(f'<h3>{escape(title)} · 前 {min(10, len(rows))}</h3>')
+        parts.append(f'<div class="ranking-chart" id="ranking-{slug}"><h3>{escape(title)} · 前 {min(10, len(rows))}</h3>')
         parts.append(sequence_svg(rows, title, field, scale, unit))
         parts.append(f'<p class="actions"><a class="figure-link" href="sequence_top10_{slug}.svg">下载此图 SVG</a></p>')
+        parts.append('</div>')
     if search.get('a1_rows'):
         best = exhaustive_rows[0] if exhaustive_rows is not None else search['a1_rows'][0]
         parts.append('<h3>当前候选策略的选取依据</h3>')

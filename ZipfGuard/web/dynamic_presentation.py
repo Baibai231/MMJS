@@ -11,6 +11,7 @@ from web.dynamic_comparison import (PRESET_LABEL, displayed_controls, attack_gro
                                     attack_entries, attack_series)
 
 from policy.site_catalog import site_labels
+from web.study_dashboard import DASHBOARD_STYLE, render_study_overview
 CONTROL_LABELS = {'fixed_preset': PRESET_LABEL, 'fixed_length8': PRESET_LABEL, **site_labels()}
 
 
@@ -57,9 +58,10 @@ def render_dynamic_html(result, *, document=True):
         from web.monte_carlo_presentation import render_mc_attacks
         from web.policy_rankings import render_path_search_status
         from web.sequence_rankings import render_sequence_rankings
+        parts = ['<main class="dynamic-report">', render_study_overview(result)]
+        parts.append(render_sequence_rankings(result))
         parts.append(render_path_search_status(result))
         parts.append(render_mc_attacks(result))
-        parts.append(render_sequence_rankings(result))
     if result['metadata'].get('research_smoke_only'):
         parts.append('<section class="notice"><strong>模型接入验证，非正式安全结论。</strong>'
                      '<p>本次使用缩小架构的 PassGPT，结果仅检查流程与预算。PassLLM 尚未参与，'
@@ -137,7 +139,7 @@ def render_dynamic_html(result, *, document=True):
     if 'monte_carlo' in result['config']:
         parts.append('</main>')
         body = ''.join(parts)
-        return ('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>PCFG 蒙特卡洛 · Top15</title><style>' + STYLE + '</style><body>' + body + '</body></html>') if document else body
+        return ('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PCFG 蒙特卡洛 · Top15</title><style>' + STYLE + DASHBOARD_STYLE + '</style><body>' + body + '</body></html>') if document else body
     attacks = result['attacks']
     parts.append('<section id="attack-success"><h2>攻击效果：猜测次数增加时，累计猜中多少用户？</h2>')
     parts.append('<p>横轴是每个攻击模型已尝试的不同有效猜测次数，纵轴是截至这一次数累计猜中的用户比例。'

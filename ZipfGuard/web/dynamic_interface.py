@@ -10,6 +10,7 @@ from experiments.dynamic_config import load_dynamic_config, validate_dynamic_con
 from experiments.dynamic_pipeline import run_dynamic_pipeline
 from web.dynamic_presentation import render_dynamic_html
 from web.presentation import STYLE
+from web.study_dashboard import DASHBOARD_STYLE
 from policy.site_catalog import site_catalog
 
 JOBS = {}
@@ -37,6 +38,11 @@ def latest_dynamic_result(report_dir=None):
                  Path(__file__).resolve().parents[1] / 'reports' / 'dynamic')
     reports = sorted(directory.rglob('report.json'),
                      key=lambda path: path.stat().st_mtime_ns, reverse=True)
+    # The showcase is the saved post-selection evaluation, even after smoke runs.
+    selected_report = directory / '986f1b33d50388ea' / 'report.json'
+    if selected_report in reports:
+        reports.remove(selected_report)
+        reports.insert(0, selected_report)
     for report in reports:
         try:
             result = json.loads(report.read_text(encoding='utf-8'))
@@ -132,19 +138,20 @@ SITE_CHOICES = [{'id': 'site_' + row['id'], 'site': row['site'], 'basis': row['b
 
 DYNAMIC_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
                  '<meta name="viewport" content="width=device-width,initial-scale=1">'
-                 '<title>ZipfGuard · 分批注册</title><style>' + STYLE + '''
+                 '<title>ZipfGuard · 十批策略研究台</title><style>' + STYLE + DASHBOARD_STYLE + '''
 body{background:#f2f6f4;color:#173028}main{max-width:1200px}section{border-radius:12px}
 .controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
 .controls label{display:flex;min-width:0}.controls input,.controls select{width:100%;box-sizing:border-box}
 .wide-path{display:flex;width:100%;box-sizing:border-box}.wide-path input{width:100%;box-sizing:border-box}
 .actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}button{background:#13715d}
 #status{font-size:13px;color:#456a61}#status.error{color:#b73535}
-''' + '</style><body><main><p><a href="/open">历史静态实验</a></p>'
-                 '<h1>分批注册的网站口令策略实验台</h1>'
-                 '<p class="notice">工作台区分固定网站规则、十批完整路径的全空间筛选和重新训练 PCFG A1 的候选评价。请查看结果区的搜索数量与结论范围；未完成全空间 A1 评价时不宣称全局最优。</p>'
-                 '<p>只使用 PCFG，训练后先建立蒙特卡洛排名索引。对比无策略、Top15 资料中可执行的网站规则子集与动态策略，保留 F / A0 / A1。</p>'
-                 '<p class="actions"><a href="#final-distribution">口令分布</a><a href="#attack-success">攻击曲线</a><a href="#policy-rankings">三指标排序</a><a href="#site-catalog">Top15 策略来源</a></p>'
-                 '<section><h2>实验设置</h2><div class="controls">'
+''' + '</style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / POLICY LAB</span>'
+                 '<h1>十批注册，哪条策略路径更好？</h1>'
+                 '<p>从 Top15 网站规则出发，比较分布、猜测风险和用户修改成本。使用 PCFG 与蒙特卡洛预采样，查看完整路径排名与 10 万用户评价。</p>'
+                 '<nav class="study-nav" aria-label="实验结果导航"><a href="#study-overview">结果概览</a><a href="#sequence-rankings">三指标 Top10</a><a href="#attack-success">F / A0 / A1</a><a href="#final-distribution">口令分布</a><a href="#site-catalog">网站规则</a><a href="#query-panel">单条查询</a><a href="#experiment-settings">实验设置</a></nav>'
+                 '<p class="actions"><button id="recent">加载已完成研究结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在加载研究结果…</span></p></main>'
+                 '<div id="result" aria-live="polite"></div><main class="workbench-tools">'
+                 '<section class="settings-card" id="experiment-settings"><details><summary>实验设置<small>展开后可调整批次与规则，重新运行</small></summary><div class="controls">'
                  '<label>预设<select id="preset"><option value="dynamic_smoke">快速验证 · 300 人</option>'
                  '<option value="dynamic_full">完整研究 · 10 万人</option></select></label>'
                  '<label>随机种子<input id="seed" type="number" min="0"></label>'
@@ -156,20 +163,19 @@ body{background:#f2f6f4;color:#173028}main{max-width:1200px}section{border-radiu
                  '<label>建议场景<select id="recommendations"><option value="false">仅已知强制规则子集</option><option value="true">另纳入建议采纳场景</option></select></label>'
                  '</div><label class="wide-path">本地带频次语料路径<input id="path"></label>'
                  '<h3>逐批网站规则路径</h3><p>可为每批单独指定网站规则并评价这条路径。此功能不自动搜索全部路径。</p>'
-                 '<p class="actions"><button id="load-sequence" type="button">载入开发集选出的十批候选路径</button></p>'
+                 '<p class="actions"><button id="load-sequence" type="button">载入开发集排名第一的路径</button></p>'
                  '<label>选择方式<select id="sequence-mode"><option value="online">逐批控制器</option><option value="explicit">手动指定每一批</option></select></label>'
                  '<div id="sequence-controls" class="controls"></div>'
                  '<details><summary>完整配置</summary><textarea id="config" style="width:100%;height:240px"></textarea>'
                  '<button id="apply">应用配置</button></details>'
                  '<p class="actions"><button id="run">运行当前配置</button>'
-                 '<button id="recent">查看最近 PCFG 结果</button>'
-                 '<button id="download" disabled>下载公开报告</button><span id="status">正在读取配置…</span></p>'
+                 '</p>'
                  '<p class="muted">“300 人”是从整份语料中抽取的人数，首次运行仍需扫描全文件两遍；之后若文件未变，可复用统计缓存并扫描一遍。页面会显示扫描、注册和攻击阶段。逐用户结果只写入本机私有文件，网页不传送口令。</p>'
-                 r'''</section><section><h2>查询一条口令</h2><p>先运行或加载结果。查询复用已保存索引，不重新训练；热门排名来自相应的用户口令集。</p>
+                 r'''</details></section><section class="query-panel" id="query-panel"><h2>查询一条口令</h2><p>输入口令，查看 PCFG 猜测次数估计与它在用户集中的热门排名。查询使用当前已加载的研究结果。</p>
 <label>口令<input id="query-password" type="password" autocomplete="off"></label>
 <label>攻击层次<select id="query-level"><option>F</option><option>A0</option><option>A1</option></select></label>
 <label>A0 网站规则<select id="query-policy"><option value="site_google">Google</option><option value="site_wikipedia">Wikipedia</option><option value="site_netflix">Netflix</option><option value="site_github">GitHub</option><option value="site_amazon">Amazon</option></select></label>
-<button id="query">查询</button><p id="query-result" role="status"></p></section></main><div id="result"></div><script>
+<button id="query">查询</button><p id="query-result" role="status"></p></section><p><a href="/open">查看历史静态实验</a></p></main><script>
 const siteChoices=__SITE_CHOICES_JSON__;
 const $=id=>document.getElementById(id);let cfg=null,last=null;
 function currentSequence(){return [...document.querySelectorAll('#sequence-controls select')].map(x=>x.value)}
@@ -181,7 +187,7 @@ function get(){let c=structuredClone(cfg);c.monte_carlo.samples=+$('samples').va
 async function preset(){try{let r=await fetch('/api/dynamic/config/'+$('preset').value);let c=await r.json();if(!r.ok)throw Error(c.error);put(c);$('status').textContent='配置就绪'}catch(e){$('status').textContent=e.message;$('status').className='error'}}
 async function recent(){if($('run').disabled)return;$('recent').disabled=true;try{let r=await fetch('/api/dynamic/latest');let state=await r.json();if(!r.ok)throw Error(state.error);if(!state.output){$('status').textContent='暂无已完成结果，可运行一次实验';return}last=state.output;const saved=last.summary;put(saved.config);$('preset').value=saved.users>=100000?'dynamic_full':'dynamic_smoke';$('result').innerHTML=last.html;setFigureLinks(saved);$('download').disabled=false;$('status').className='';$('status').textContent='已加载最近完成结果：'+saved.users.toLocaleString()+' 人 · 种子 '+saved.seed+'（无需重新计算）'}catch(e){$('status').textContent='读取结果失败：'+e.message;$('status').className='error'}finally{$('recent').disabled=false}}
 $('recent').onclick=recent;
-$('load-sequence').onclick=async()=>{try{let r=await fetch('/api/dynamic/sequence-search');let s=await r.json();if(!r.ok)throw Error(s.error);if(!s.path)throw Error('路径搜索尚未完成');$('recommendations').value='false';$('sequence-mode').value='explicit';buildSequence(s.path);$('status').className='';$('status').textContent='已载入候选路径：'+s.a1_evaluated_paths+' 条 A1 候选中最优；全局最优性未证明。'}catch(e){$('status').textContent=e.message;$('status').className='error'}};
+$('load-sequence').onclick=async()=>{try{let r=await fetch('/api/dynamic/sequence-search');let s=await r.json();if(!r.ok)throw Error(s.error);if(!s.path)throw Error('路径搜索尚未完成');if(Math.ceil(+$('users').value/Math.max(1,+$('cohort').value))!==s.path.length)throw Error('请先把注册用户设为 100000、每批人数设为 10000，再载入十批路径');$('recommendations').value=String(s.path.some(id=>siteChoices.some(x=>x.id===id&&x.basis==='recommended_scenario')));$('sequence-mode').value='explicit';buildSequence(s.path);$('status').className='';$('status').textContent=s.global_optimum_proven?'已载入开发集可行规则空间第一名：覆盖 '+s.a1_evaluated_paths.toLocaleString()+' 条路径；结论限于本次数据与蒙特卡洛设置。':'已载入 '+s.a1_evaluated_paths+' 条已评价候选中的第一名；全空间评价尚未完成。'}catch(e){$('status').textContent=e.message;$('status').className='error'}};
 $('query').onclick=async()=>{try{if(!last)throw Error('请先运行或加载结果');let saved=last.summary;let r=await fetch('/api/dynamic/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({run_id:saved.run_id,password:$('query-password').value,level:$('query-level').value,policy:$('query-policy').value})});let d=await r.json();if(!r.ok)throw Error(d.error);let g=d.guess,p=d.popularity;let labels={estimated:'蒙特卡洛估计',low_sample_support:'前驱样本不足，估计不稳定',outside_model_support:'模型未覆盖',policy_ineligible:'不符合所选规则'};$('query-result').textContent=d.population+'：热门排名 '+(p.rank??'未出现')+'，出现 '+p.count+' 次；猜测次数 '+(g.guess_count===null?'不可估计':g.guess_count.toLocaleString(undefined,{maximumFractionDigits:1}))+'；'+labels[g.status]+(g.standard_error===null?'':'；采样标准误 '+g.standard_error.toPrecision(3));}catch(e){$('query-result').textContent=e.message}};
 $('preset').onchange=preset;$('sequence-mode').onchange=()=>buildSequence(currentSequence());$('users').onchange=()=>buildSequence(currentSequence());$('cohort').onchange=()=>buildSequence(currentSequence());$('recommendations').onchange=()=>buildSequence(currentSequence());$('apply').onclick=()=>{try{put(JSON.parse($('config').value));$('status').textContent='配置已应用'}catch(e){$('status').textContent=e.message}};
 $('run').onclick=async()=>{last=null;$('result').replaceChildren();$('run').disabled=true;$('recent').disabled=true;$('download').disabled=true;$('status').className='';try{let c=get();$('config').value=JSON.stringify(c,null,2);let r=await fetch('/api/dynamic/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:c})});let j=await r.json();if(!r.ok)throw Error(j.error);while(true){await new Promise(done=>setTimeout(done,1300));let q=await fetch('/api/dynamic/jobs/'+j.job_id);let state=await q.json();if(!q.ok)throw Error(state.error);$('status').textContent=state.message;if(state.status==='failed')throw Error(state.message);if(state.status==='complete'){last=state.output;$('result').innerHTML=last.html;setFigureLinks(last.summary);$('download').disabled=false;break}}}catch(e){$('status').textContent='未完成：'+e.message;$('status').className='error'}finally{$('run').disabled=false;$('recent').disabled=false}};
