@@ -19,6 +19,10 @@ from policy.local_actions import Action, account_order, capacities, generate_act
 
 METHODS = [('dynamic', '动态局部干预'), ('one_shot', '初始一次规划'),
            ('fixed_google', '固定 Google 分批')]
+GOOGLE_DYNAMIC_METHOD = 'google_dynamic'
+GOOGLE_DYNAMIC_LABEL = 'Google 起点动态调整'
+GOOGLE_DYNAMIC_ROUNDS = 10
+GOOGLE_HOLD_METHOD = 'google_hold'
 STOP_LABELS = {'target_reached': '达到配置中的风险目标', 'budget_exhausted': '累计干预预算用尽',
                'no_feasible_positive_gain_action': '当前候选没有可靠的正收益动作',
                'plan_exhausted': '初始计划已执行完', 'no_eligible_accounts': '没有剩余不合规账户',
@@ -65,21 +69,27 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
     target = first['risk']['guarded_risk']*(1-cfg['controller']['target_relative_reduction'])
     stagnant, stop = 0, 'max_rounds'
     terminal_audit = []
-    for round_id in range(1, cfg['controller']['max_rounds']+1):
+    # The Google action establishes round zero for this comparison. Ten adaptive
+    # decisions follow it, so this arm may execute eleven actions in total.
+    round_limit = (1 if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_ROUNDS + 1
+                   if method == GOOGLE_DYNAMIC_METHOD else cfg['controller']['max_rounds'])
+    method_label = ('Google 政策不变' if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_LABEL
+                    if method == GOOGLE_DYNAMIC_METHOD else dict(METHODS)[method])
+    for round_id in range(1, round_limit+1):
         if capacities(population, cfg) <= 0:
             stop = 'budget_exhausted'
             break
-        if trajectory[-1]['risk']['guarded_risk'] <= target:
+        if method not in (GOOGLE_DYNAMIC_METHOD, GOOGLE_HOLD_METHOD) and trajectory[-1]['risk']['guarded_risk'] <= target:
             stop = 'target_reached'
             break
         if progress:
-            progress(f'{dict(METHODS)[method]} · 第 {round_id} 轮：比较局部任务')
+            progress(f'{method_label} · 第 {round_id} 轮：比较局部任务')
         if method == 'one_shot':
             if round_id > len(plan):
                 stop = 'plan_exhausted'
                 break
             action, prediction, audit = plan[round_id-1]
-        elif method == 'fixed_google':
+        elif method in ('fixed_google', GOOGLE_HOLD_METHOD) or (method == GOOGLE_DYNAMIC_METHOD and round_id == 1):
             choices = generate_actions(population, evaluator, cfg, fixed=True)
             if not choices:
                 stop = 'no_eligible_accounts'
@@ -112,7 +122,9 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'nonresponse': sum(r['status'] == 'nonresponse' for r in outcomes),
                        'failed_to_comply': sum(r['status'] == 'failed_to_comply' for r in outcomes),
                        'reference_replay': adaptation,
-                       'selection_reason': ('在本轮可行候选中，每新增受影响账户的保守收益最高' if method == 'dynamic'
+                       'selection_reason': ('首轮与固定 Google 对照执行完全相同的最低 8 字符动作' if method == GOOGLE_DYNAMIC_METHOD and round_id == 1
+                                            else '根据本轮更新后的分布重新选择保守收益最高的局部动作' if method == GOOGLE_DYNAMIC_METHOD
+                                            else '在本轮可行候选中，每新增受影响账户的保守收益最高' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
         trajectory.append(current)
@@ -121,15 +133,79 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             stop = 'realized_risk_stagnation'
             break
     # The final execution is always retained, including at a round limit.
-    if trajectory[-1]['risk']['guarded_risk'] <= target:
+    if method not in (GOOGLE_DYNAMIC_METHOD, GOOGLE_HOLD_METHOD) and trajectory[-1]['risk']['guarded_risk'] <= target:
         stop = 'target_reached'
     elif capacities(population, cfg) <= 0:
         stop = 'budget_exhausted'
-    result = {'method': method, 'label': dict(METHODS)[method], 'trajectory': trajectory,
+    result = {'method': method, 'label': method_label, 'trajectory': trajectory,
               'rounds': rounds, 'stop_reason': stop, 'stop_label': STOP_LABELS[stop],
               'terminal_candidate_audit': terminal_audit, 'target_guarded_risk': target, 'target_reached': trajectory[-1]['risk']['guarded_risk'] <= target,
               'final': trajectory[-1], 'adaptive_reference_ledger': reference.ledger()}
     return result, population.counts(), reference.counts()
+
+
+def google_round_zipf_experiment(initial, reference_words, evaluator, responder, cfg,
+                                  fixed_google, progress=None):
+    """Hold the shared Google state fixed while taking ten adaptive snapshots."""
+    control, control_counts, control_reference = run_arm(
+        GOOGLE_HOLD_METHOD, initial, reference_words, evaluator, responder, cfg, progress)
+    experimental, final_counts, final_reference = run_arm(
+        GOOGLE_DYNAMIC_METHOD, initial, reference_words, evaluator, responder, cfg, progress)
+    start_index = min(1, len(experimental['trajectory']) - 1)
+    common_start = control['final']['state_sha256'] == experimental['trajectory'][start_index]['state_sha256']
+    if not common_start:
+        raise AssertionError('Google 起点实验与固定 Google 对照首轮状态不一致')
+    if fixed_google['rounds'] and control['rounds']:
+        if control['final']['state_sha256'] != fixed_google['trajectory'][1]['state_sha256']:
+            raise AssertionError('Google 共同起点与历史首轮结果不一致')
+    google_start = control['final']
+    control['stop_label'] = '完成共同 Google 动作后保持不变'
+    train = Counter(reference_words)
+    mutations = reference_mutation_ranks(train, cfg['evaluation']['mutation_reference_limit'])
+    adaptive_fits = {}
+    for arm, counts, reference_counts in (
+            (control, control_counts, control_reference),
+            (experimental, final_counts, final_reference)):
+        arm['attacks'] = {'F': arm['final']['risk'], 'A1': None,
+                          'reference_mutations': evaluate_mutations(counts, mutations, cfg['budgets'])}
+        if cfg['evaluation']['adaptive']:
+            if progress:
+                progress(arm['label'] + ' · 在独立参考群体上重训 A1')
+            key = counts_hash(reference_counts)
+            if key not in adaptive_fits:
+                adaptive_fits[key] = make_index(reference_counts, cfg)
+            ai = adaptive_fits[key]
+            arm['attacks']['A1'] = InterventionRisk(ai, cfg['budgets'], cfg['risk_budget']).evaluate(counts)
+            arm['adaptive_model'] = dict(ai.grammar.metadata)
+    return {
+        'protocol': 'google-started-dynamic-10-adjustments-v3',
+        'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
+        'common_google_start_verified': common_start,
+        'arms': {GOOGLE_HOLD_METHOD: control, GOOGLE_DYNAMIC_METHOD: experimental},
+        'control': {
+            'label': '固定 Google 共同起点（后续不调整）',
+            'rounds_completed': len(control['rounds']),
+            'state_sha256': google_start['state_sha256'],
+            'affected_rate': google_start['ledger']['affected_rate'],
+            'distribution': google_start['distribution'],
+        },
+        'experimental': {
+            'label': GOOGLE_DYNAMIC_LABEL,
+            'start_state_sha256': experimental['trajectory'][start_index]['state_sha256'],
+            'rounds_completed': max(0, len(experimental['rounds']) - 1),
+            'stop_reason': experimental['stop_reason'],
+            'stop_label': experimental['stop_label'],
+            'snapshots': [
+                {
+                    'round': row['round'] - 1,
+                    'action': row['action'],
+                    'affected_rate': experimental['trajectory'][row['round']]['ledger']['affected_rate'],
+                    'distribution': experimental['trajectory'][row['round']]['distribution'],
+                }
+                for row in experimental['rounds'][1:]
+            ],
+        },
+    }
 
 
 def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=None, progress=None):
@@ -173,6 +249,8 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
         else:
             result['attacks']['A1'] = None
         arms[method] = result
+    round_zipf = google_round_zipf_experiment(initial, reference_words, evaluator, responder,
+                                              cfg, arms['fixed_google'], progress)
     manifest_files = ['experiments/intervention_config.py', 'experiments/intervention_pipeline.py',
                       'core/intervention_state.py', 'core/intervention_risk.py', 'policy/local_actions.py',
                       'policy/intervention_controller.py', 'policy/intervention_response.py',
@@ -182,7 +260,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
     identity = {'config': cfg, 'dataset': dataset['metadata'], 'sources': source_hashes}
     run_id = hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     report = {'schema_version': PROTOCOL+'-result', 'config': cfg, 'dataset': dataset['metadata'],
-              'baseline': baseline, 'arms': arms,
+              'baseline': baseline, 'arms': arms, 'google_round_zipf': round_zipf,
               'baseline_mutations': evaluate_mutations(initial.counts(), mutations, cfg['budgets']),
               'metadata': {'run_id': run_id, 'protocol': PROTOCOL, 'response_protocol': RESPONSE_PROTOCOL,
                            'risk_method': VERSION, 'frozen_model': dict(frozen_index.grammar.metadata),

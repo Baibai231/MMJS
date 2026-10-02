@@ -72,9 +72,9 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  #status.error{color:#b73535}button{background:#13715d}.plot-distinct{min-width:510px}
  </style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / SELECTIVE INTERVENTION</span>
  <h1>少改一部分账户，能降低多少风险？</h1>
- <p>第三展示台 · 全站保留初始账户状态，每轮决定改谁、怎么改、改多少。对比动态局部干预、初始一次规划和固定 Google 分批。</p>
+ <p>第三展示台 · 对比无政策、Google 政策不变、从共同 Google 起点继续逐步干预 10 轮。每轮决定改谁、怎么改、改多少。</p>
  <nav class="study-nav" aria-label="展示台导航"><a href="/open">第一展示台 · 静态策略</a><a href="/dynamic">第二展示台 · 分批注册</a><a href="/intervention" aria-current="page">第三展示台 · 局部干预</a></nav>
- <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#risk_cost">风险与成本</a><a href="#attack_F">猜测曲线</a><a href="#final_distribution">口令分布</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#risk_cost">风险与成本</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#final_distribution">口令分布</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
  <p class="actions"><button id="recent">加载最近完成结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在读取结果…</span></p></main>
  <div id="result" aria-live="polite"></div>
  <main><section id="experiment-settings"><h2>实验设置</h2><p>首先使用快速验证检查流程。所有比例以全站初始账户数为分母；通知过的账户本次不再重复干预。</p>

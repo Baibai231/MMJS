@@ -143,7 +143,7 @@ class Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/intervention/jobs/"):
                 return self._send(_json_safe(intervention_job_snapshot(path.rsplit("/", 1)[-1])))
             intervention_asset = re.fullmatch(
-                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(risk_cost|guarded_cost|attack_F|attack_A1|attack_mutations|final_distribution)\.svg)', path)
+                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(risk_cost|guarded_cost|attack_F|attack_A1|attack_mutations|final_distribution|google_round_zipf)\.svg)', path)
             if intervention_asset:
                 kind, run_id, figure = intervention_asset.groups()
                 if (kind == 'report') != (figure is None):

@@ -54,7 +54,31 @@ def main():
                 report = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))
                 assert report['schema_version'] == 'selective-intervention-v1-result'
                 assert report['dataset']['source_rows'] > 1000000
+                comparison = report['google_round_zipf']
+                assert comparison['control']['state_sha256'] == comparison['experimental']['start_state_sha256']
+                assert comparison['experimental']['rounds_completed'] == 10
+                expected = ['无政策', 'Google 政策不变', 'Google 起点＋10 轮逐步干预']
+                for name in ('risk_cost', 'guarded_cost', 'attack_F', 'attack_A1', 'attack_mutations', 'final_distribution'):
+                    panel = page.locator('#'+name)
+                    assert panel.locator('.legend label span').all_text_contents() == expected
+                    assert panel.locator('svg > .plot-series').count() == 3
+                    exported = page.request.get(origin+panel.locator('a').get_attribute('href'))
+                    assert exported.status == 200
+                    assert all(label in exported.text() for label in expected)
+                    assert '初始一次规划' not in exported.text()
                 page.locator('#attack_A1').screenshot(path=str(out/'attack_A1.png'))
+                page.locator('#final_distribution').screenshot(path=str(out/'final_distribution.png'))
+                zipf = page.locator('#google_round_zipf .plot-distinct')
+                assert zipf.locator('.legend input[type="checkbox"]').count() == 11
+                assert zipf.locator('svg > .plot-series').count() == 11
+                last = zipf.locator('.series-key-10 input')
+                last.uncheck()
+                assert zipf.locator('svg > .series-10').evaluate("e=>getComputedStyle(e).display") == 'none'
+                last.check()
+                zipf_url = page.locator('#google_round_zipf a').get_attribute('href')
+                zipf_svg = page.request.get(origin+zipf_url)
+                assert zipf_svg.status == 200 and '固定 Google 共同起点' in zipf_svg.text()
+                page.locator('#google_round_zipf').screenshot(path=str(out/'google_round_zipf.png'))
                 page.set_viewport_size({'width': 390, 'height': 844})
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1')
                 page.screenshot(path=str(out/'mobile.png'))
@@ -89,7 +113,8 @@ def main():
                 assert response.status == 200 and '/intervention' in response.text()
             assert not errors, errors
             summary = {'browser': browser.version, 'javascript_errors': errors,
-                       'checks': ['real report', 'shared legend toggle and hover', 'SVG legend export',
+                       'checks': ['real report', 'shared legend toggle and hover',
+                                  'six consistent three-strategy charts', '11-line Google-started Zipf chart', 'SVG legend export',
                                   'report download', 'mobile containment', 'background job',
                                   'invalid config clears stale results', 'cross-site rejection',
                                   'asset path boundary', 'three workbench navigation']}

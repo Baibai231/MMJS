@@ -10,12 +10,13 @@ from ai.pcfg_monte_carlo import Grammar, MonteCarloIndex
 from core.intervention_state import Population
 from core.intervention_risk import InterventionRisk, reference_mutation_ranks, evaluate_mutations
 from experiments.intervention_config import load_intervention_config, validate_intervention_config
-from experiments.intervention_pipeline import run_arm, run_intervention_pipeline, reference_replay
+from experiments.intervention_pipeline import (run_arm, run_intervention_pipeline, reference_replay,
+                                                google_round_zipf_experiment)
 from policy.intervention_response import InterventionResponder
 from policy.local_actions import Action, Group, LocalRule, generate_actions, capacities
 from policy.open_policy import Rule
 from policy.intervention_controller import predict_action, select_action, plan_once
-from web.intervention_presentation import render_intervention_html
+from web.intervention_presentation import render_intervention_html, chart_specs, LABELS
 
 
 class ExactIndex:
@@ -144,6 +145,64 @@ class TestIntervention(unittest.TestCase):
         self.assertAlmostEqual(result['final']['risk']['guarded_risk'], .8)
         self.assertEqual(sum(counts.values()), 100)
 
+    def test_google_control_and_dynamic_experiment_share_start_and_run_ten_rounds(self):
+        cfg = self.cfg(100)
+        cfg['controller'].update(round_fraction=.02, total_fraction=.2,
+                                 batch_fractions=[.02], stagnation_patience=20)
+        class Responder:
+            def respond(self, p, a, seed, stream):
+                return [{'index': i, 'old': p.accounts[i].password,
+                         'new': p.accounts[i].password+'!', 'status': 'changed',
+                         'edit_cost': .25} for i in a.indices]
+        population = Population(['abc']*100)
+        responder = Responder()
+        fixed, _, _ = run_arm('fixed_google', population, ['abc']*100,
+                              self.risk(), responder, cfg)
+
+        def choose(current, evaluator, response, config, round_id):
+            ids = tuple(i for i, a in enumerate(current.accounts) if not a.notifications)[:1]
+            action = self.action(ids, Rule('adaptive', min_length=8),
+                                 eligible=sum(not a.notifications for a in current.accounts))
+            prediction = {'predicted_guarded_gain': .01}
+            return (action, prediction), [{'action': action.public(), 'score': 1,
+                                           'feasible': True, 'rejection_reasons': []}]
+
+        cfg['evaluation']['adaptive'] = True
+        with patch('experiments.intervention_pipeline.select_action', side_effect=choose), patch(
+                'experiments.intervention_pipeline.make_index', return_value=ExactIndex()) as fit:
+            comparison = google_round_zipf_experiment(
+                population, ['abc']*100, self.risk(), responder, cfg, fixed)
+        self.assertEqual(fit.call_count, 2)
+        self.assertTrue(comparison['common_google_start_verified'])
+        self.assertEqual(comparison['control']['state_sha256'],
+                         comparison['experimental']['start_state_sha256'])
+        self.assertEqual(comparison['control']['distribution'],
+                         fixed['trajectory'][1]['distribution'])
+        self.assertNotEqual(comparison['control']['distribution'],
+                            fixed['final']['distribution'])
+        self.assertEqual(comparison['experimental']['rounds_completed'], 10)
+        self.assertEqual(len(comparison['experimental']['snapshots']), 10)
+        self.assertEqual(comparison['experimental']['snapshots'][0]['round'], 1)
+        self.assertEqual(comparison['experimental']['snapshots'][0]['action']['rule'], 'test')
+        self.assertEqual(comparison['experimental']['snapshots'][-1]['affected_rate'], .12)
+        arms = comparison['arms']
+        self.assertEqual(arms['google_hold']['final'], fixed['trajectory'][1])
+        self.assertEqual(arms['google_dynamic']['final']['ledger']['affected_rate'], .12)
+        self.assertEqual(arms['google_hold']['trajectory'][1], arms['google_dynamic']['trajectory'][1])
+        report = {'google_round_zipf': comparison, 'baseline': fixed['trajectory'][0], 'config': cfg,
+                  'baseline_mutations': evaluate_mutations(population.counts(),
+                      reference_mutation_ranks({'abc': 100}, 100), cfg['budgets'])}
+        specs = chart_specs(report)
+        for name in ('risk_cost', 'guarded_cost', 'attack_F', 'attack_A1', 'attack_mutations', 'final_distribution'):
+            series = specs[name][1]
+            self.assertEqual([label for label, _ in series], [label for _, label in LABELS])
+            self.assertEqual(len(series), 3)
+        self.assertEqual(specs['risk_cost'][1][1][1][-1][0], .02)
+        self.assertEqual(specs['risk_cost'][1][2][1][-1][0], .12)
+        self.assertEqual(specs['final_distribution'][1][2][1],
+                         comparison['experimental']['snapshots'][-1]['distribution']['full_rank_frequency'])
+        self.assertEqual(len(specs['google_round_zipf'][1]), 11)
+
     def test_one_shot_disjoint_and_predictions_do_not_follow_outcomes(self):
         cfg = self.cfg(100)
         class Responder:
@@ -197,15 +256,18 @@ class TestIntervention(unittest.TestCase):
             report = run_intervention_pipeline(cfg, dataset=dataset, index=ExactIndex(), output_dir=directory)
             public = json.dumps(report, ensure_ascii=False)
             self.assertNotIn('"abc"', public)
+            self.assertIn('google_round_zipf', report)
             html = render_intervention_html(report)
             self.assertIn('plot-distinct', html)
             self.assertIn('input type="checkbox"', html)
+            self.assertIn('Google 固定对照与动态调整 10 轮的 Zipf 分布', html)
             self.assertIn('10³', html)
             self.assertIn('未运行', html)
             self.assertNotIn('"abc"', html)
             svg = (Path(directory)/'risk_cost.svg').read_text(encoding='utf-8')
             self.assertIn('aria-label="图例"', svg)
-            self.assertIn('动态局部干预', svg)
+            self.assertIn('Google 政策不变', svg)
+            self.assertNotIn('初始一次规划', svg)
             self.assertTrue((Path(directory)/'report.json.sha256').is_file())
 
     def test_real_monte_carlo_adapter_and_weighted_risk(self):
