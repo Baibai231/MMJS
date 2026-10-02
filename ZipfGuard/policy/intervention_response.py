@@ -7,6 +7,7 @@ RESPONSE_PROTOCOL = 'existing-accounts-finite-response-v1'
 
 class InterventionResponder:
     def __init__(self, reference, config):
+        self.reference = dict(reference)
         self.pool = weighted_pool(reference)
         self.vocabulary = phrase_vocabulary(reference)
         self.config = dict(config)

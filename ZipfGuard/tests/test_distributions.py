@@ -46,13 +46,16 @@ class DistributionTests(unittest.TestCase):
     def test_heldout_pipeline_uses_valid_finite_statistics(self):
         counts = np.random.default_rng(18).multinomial(80_000, model_pmf("zipf", 300, {"s": 1.12}))
         report = analyze_counts(counts, q=0.8, budget=20, bootstrap_repetitions=30, seed=8)
-        self.assertEqual(report["selected_model"], "zipf")
+        self.assertEqual(report["selected_model"], "cdf_sampling")
         self.assertEqual(report["sample_size"], report["train_size"] + report["validation_size"])
         low, high = report["risk_threshold"]["heldout_top_b_ci95"]
         self.assertLessEqual(low, high)
         self.assertTrue(0 <= low <= 1 and 0 <= high <= 1)
         for model in report["models"]:
-            self.assertTrue(math.isfinite(model["validation_log_likelihood"]))
+            self.assertIsNone(model["validation_log_likelihood"])
+            self.assertIsNone(model['bic'])
+            self.assertTrue(math.isfinite(model['validation_ks']))
+        self.assertEqual(report['llr_comparisons'], [])
         for comparison in report["llr_comparisons"]:
             self.assertIsNone(comparison["p_value"])
 

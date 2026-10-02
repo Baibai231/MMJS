@@ -30,6 +30,10 @@ def rate(value):
     return f"{100 * value:.2f}%"
 
 
+def optional_number(value):
+    return '—' if value is None else f'{value:.3f}'
+
+
 def interval(value, bounds):
     return f"{rate(value)} [{rate(bounds['lower'])}, {rate(bounds['upper'])}]"
 
@@ -196,7 +200,8 @@ def report_html(result, *, document=True):
             parts.append('<div class="notice">观测为每项一次或用户声明去重字典：下面仅描述条目计数，不可用于推断真实用户口令频率。</div>')
         parts.append('</section>')
     parts.append('<section><h2>分布拟合与残差</h2>')
-    parts.append(table(['模型','验证对数似然','KS','BIC'], [(m['id'], f"{m['validation_log_likelihood']:.3f}", f"{m['validation_ks']:.4f}", f"{m['bic']:.3f}") for m in a['models']]))
+    parts.append(table(['拟合方法','验证累计误差'], [(m['name'], optional_number(m['validation_ks'])) for m in a['models']]))
+    parts.append('<p>CDF 采样拟合描述独立排序的分布形状，不计算口令身份似然或 BIC。</p>')
     curves = a['curves']
     series = [(label, [(r['rank'], r[key]) for r in curves]) for label, key in [('经验 CDF','empirical_cdf')] + [(m['id'],m['id']+'_cdf') for m in a['models']]]
     parts.append(plot(series, xlabel='排名', ylabel='累计概率', log=True))

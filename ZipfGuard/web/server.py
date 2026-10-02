@@ -11,6 +11,7 @@ aggregates.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import sys
@@ -117,25 +118,35 @@ from experiments.open_config import load_open_config
 from web.dynamic_interface import DYNAMIC_INDEX, start_dynamic_job, dynamic_job_snapshot, latest_dynamic_result
 from web.candidate_pool import candidate_pool_snapshot, candidate_pool_asset
 from experiments.dynamic_config import load_dynamic_config
-from web.intervention_interface import (INTERVENTION_INDEX, start_intervention_job,
+from web.intervention_interface import (INTERVENTION_INDEX, PUBLISHED_ROOT,
+                                        intervention_index_with_latest,
+                                        start_intervention_job,
                                         intervention_job_snapshot, latest_intervention_result)
 from experiments.intervention_config import load_intervention_config
 LEGACY_INDEX = INDEX
-INDEX = DYNAMIC_INDEX
+INDEX = INTERVENTION_INDEX
 
 
 class Handler(BaseHTTPRequestHandler):
     def _send(self, body, content_type="application/json; charset=utf-8", status=200):
-        self.send_response(status); self.send_header("Content-Type", content_type); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+        self.send_response(status); self.send_header("Content-Type", content_type); self.send_header("Cache-Control", "no-store"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
 
     def do_GET(self):
         path = urlparse(self.path).path
         try:
-            if path == "/": return self._send(INDEX.encode("utf-8"), "text/html; charset=utf-8")
+            if path in ('/open', '/dynamic', '/legacy') or path.startswith('/dynamic/'):
+                self.send_response(302)
+                self.send_header('Location', '/intervention')
+                self.send_header('Content-Length', '0')
+                self.end_headers()
+                return
+            if path not in ('/', '/intervention') and not path.startswith('/api/intervention/'):
+                return self._send(b'not found', 'text/plain; charset=utf-8', 404)
+            if path == "/": return self._send(intervention_index_with_latest().encode("utf-8"), "text/html; charset=utf-8")
             if path == "/open": return self._send(OPEN_INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path == "/dynamic": return self._send(DYNAMIC_INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path == "/intervention":
-                return self._send(INTERVENTION_INDEX.encode("utf-8"), "text/html; charset=utf-8")
+                return self._send(intervention_index_with_latest().encode("utf-8"), "text/html; charset=utf-8")
             if path == "/api/intervention/latest":
                 return self._send(_json_safe(latest_intervention_result()))
             if path.startswith("/api/intervention/config/"):
@@ -143,14 +154,18 @@ class Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/intervention/jobs/"):
                 return self._send(_json_safe(intervention_job_snapshot(path.rsplit("/", 1)[-1])))
             intervention_asset = re.fullmatch(
-                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(risk_cost|guarded_cost|attack_F|attack_A1|attack_mutations|final_distribution|google_round_zipf)\.svg)', path)
+                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(risk_cost|guarded_cost|attack_F|attack_A1|attack_mutations|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_dynamic)\.svg)', path)
             if intervention_asset:
                 kind, run_id, figure = intervention_asset.groups()
                 if (kind == 'report') != (figure is None):
                     return self._send(b"not found", "text/plain", 404)
                 filename = ROOT / 'reports' / 'intervention' / run_id / ((figure + '.svg') if figure else 'report.json')
                 if not filename.is_file():
+                    filename = PUBLISHED_ROOT / run_id / ((figure + '.svg') if figure else 'report.json.gz')
+                if not filename.is_file():
                     return self._send(b"not found", "text/plain", 404)
+                if figure is None and filename.suffix == '.gz':
+                    return self._send(gzip.decompress(filename.read_bytes()), 'application/json; charset=utf-8')
                 return self._send(filename.read_bytes(), 'image/svg+xml; charset=utf-8' if figure else 'application/json; charset=utf-8')
             report_match = re.fullmatch(r'/api/dynamic/report/([a-f0-9]{16})\.json', path)
             if report_match:
@@ -217,7 +232,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path not in ("/api/run", "/api/open-compare", "/api/jobs", "/api/dynamic/jobs", "/api/dynamic/query", "/api/intervention/jobs"):
+        if path != '/api/intervention/jobs':
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":

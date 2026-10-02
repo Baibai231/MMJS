@@ -285,7 +285,7 @@ def render_markdown(result: Mapping[str, Any]) -> str:
              f"- 随机种子：`{result['metadata']['seed']}`",
              f"- 运行时间：{result['metadata']['runtime_ms']} ms", "",
              "## 模型选择", "", f"选择模型：`{analysis['selected_model']}`（{analysis['selection_method']}）", "",
-             "| 模型 | 验证对数似然 | KS | BIC |", "|---|---:|---:|---:|"]
+             "| 拟合方法 | 验证累计误差 |", "|---|---:|"]
     if result.get("simulation"):
         split_counts = result["simulation"].get("metadata", {}).get("split_counts", {})
         lines[8:8] = [
@@ -293,7 +293,7 @@ def render_markdown(result: Mapping[str, Any]) -> str:
             "- 用途：train/validation 用于分布拟合验证；攻击器使用 train 拟合、validation 选参、test 评价；M3 在三个划分内独立模拟用户响应",
         ]
     for model in analysis["models"]:
-        lines.append(f"| {model['id']} | {model['validation_log_likelihood']:.3f} | {model['validation_ks']:.4f} | {model['bic']:.3f} |")
+        lines.append(f"| {model['name']} | {model['validation_ks']:.4f} |")
     threshold = analysis["risk_threshold"]
     lines += ["", "## 风险预算", "", f"q={threshold['q']} 时模型头部排名：{threshold['model_rank']}；预算 B={threshold['budget']} 的实测留出 Top-B 质量：{threshold['heldout_fixed_order_top_b_mass']:.4f}。"]
     attack_baselines = result.get("attack_baselines")

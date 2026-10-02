@@ -25,7 +25,7 @@ class MvpTests(unittest.TestCase):
 
     def test_pipeline_contains_model_strategy_and_repro_metadata(self):
         result = run_pipeline(seed=8, synthetic_size=5_000, bootstrap_repetitions=20)
-        self.assertIn(result["analysis"]["selected_model"], {"zipf", "cdf_zipf", "stretched_exponential"})
+        self.assertEqual(result["analysis"]["selected_model"], 'cdf_sampling')
         self.assertGreaterEqual(len(result["policies"]), 3)
         self.assertEqual(result["metadata"]["seed"], 8)
         self.assertIn("privacy", result["metadata"])

@@ -1,4 +1,5 @@
 """Independent third workbench and background job lifecycle."""
+import gzip
 import json
 import threading
 import uuid
@@ -11,6 +12,7 @@ from web.study_dashboard import DASHBOARD_STYLE
 
 JOBS, LOCK = {}, threading.Lock()
 REPORT_ROOT = ROOT/'reports'/'intervention'
+PUBLISHED_ROOT = ROOT/'published'/'intervention'
 
 
 def published(result):
@@ -28,7 +30,30 @@ def latest_intervention_result():
                 return {'output': published(result)}
         except (OSError, ValueError, KeyError):
             continue
+    manifest = PUBLISHED_ROOT / 'latest.json'
+    try:
+        run_id = json.loads(manifest.read_text(encoding='utf-8'))['run_id']
+        if not isinstance(run_id, str) or len(run_id) != 16 or any(
+                c not in '0123456789abcdef' for c in run_id):
+            raise ValueError('发布快照编号无效')
+        with gzip.open(PUBLISHED_ROOT/run_id/'report.json.gz', 'rt', encoding='utf-8') as handle:
+            result = json.load(handle)
+        if result.get('schema_version') == PROTOCOL+'-result':
+            return {'output': published(result)}
+    except (OSError, ValueError, KeyError):
+        pass
     return {'output': None}
+
+
+def intervention_index_with_latest():
+    """Render the newest finished report in the initial HTML response."""
+    output = latest_intervention_result()['output']
+    if output is None:
+        return INTERVENTION_INDEX
+    marker = '<div id="result" aria-live="polite"></div>'
+    replacement = (f'<div id="result" aria-live="polite" data-run-id="{output["run_id"]}">'
+                   f'{output["html"]}</div>')
+    return INTERVENTION_INDEX.replace(marker, replacement, 1)
 
 
 def start_intervention_job(request):
@@ -73,8 +98,8 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  </style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / SELECTIVE INTERVENTION</span>
  <h1>少改一部分账户，能降低多少风险？</h1>
  <p>第三展示台 · 对比无政策、Google 政策不变、从共同 Google 起点继续逐步干预 10 轮。每轮决定改谁、怎么改、改多少。</p>
- <nav class="study-nav" aria-label="展示台导航"><a href="/open">第一展示台 · 静态策略</a><a href="/dynamic">第二展示台 · 分批注册</a><a href="/intervention" aria-current="page">第三展示台 · 局部干预</a></nav>
- <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#risk_cost">风险与成本</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#final_distribution">口令分布</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#risk_cost">风险与成本</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <p class="muted">后续动态干预从去重的 1—18 条政策片段中选动作；分布拟合统一使用 CDF 采样方法，实际频次与攻击风险分别展示。</p>
  <p class="actions"><button id="recent">加载最近完成结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在读取结果…</span></p></main>
  <div id="result" aria-live="polite"></div>
  <main><section id="experiment-settings"><h2>实验设置</h2><p>首先使用快速验证检查流程。所有比例以全站初始账户数为分母；通知过的账户本次不再重复干预。</p>
@@ -94,14 +119,14 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  const $=id=>document.getElementById(id);let cfg=null,last=null,busy=false;
  function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error)}
  async function request(url,options){const res=await fetch(url,options);const data=await res.json();if(!res.ok)throw Error(data.error||'请求失败');return data}
- function fill(value){cfg=value;$('users').value=cfg.data.users;$('development').value=cfg.data.development;$('round').value=cfg.controller.round_fraction*100;$('total').value=cfg.controller.total_fraction*100;$('nonresponse').value=cfg.response.nonresponse*100;$('target').value=cfg.controller.target_relative_reduction*100;$('seed').value=cfg.seed;$('samples').value=cfg.monte_carlo.samples;$('path').value=cfg.data.path;$('config').value=JSON.stringify(cfg,null,2)}
+ function fill(value){cfg=value;$('preset').value=cfg.data.users===100000?'intervention_full':'intervention_smoke';$('users').value=cfg.data.users;$('development').value=cfg.data.development;$('round').value=cfg.controller.round_fraction*100;$('total').value=cfg.controller.total_fraction*100;$('nonresponse').value=cfg.response.nonresponse*100;$('target').value=cfg.controller.target_relative_reduction*100;$('seed').value=cfg.seed;$('samples').value=cfg.monte_carlo.samples;$('path').value=cfg.data.path;$('config').value=JSON.stringify(cfg,null,2)}
  function read(){const v=JSON.parse(JSON.stringify(cfg));v.data.users=+$('users').value;v.data.development=+$('development').value;v.data.path=$('path').value;v.controller.round_fraction=+$('round').value/100;v.controller.total_fraction=+$('total').value/100;v.response.nonresponse=+$('nonresponse').value/100;v.controller.target_relative_reduction=+$('target').value/100;v.seed=+$('seed').value;v.monte_carlo.samples=+$('samples').value;return v}
  function show(output){last=output;$('result').innerHTML=output?output.html:'<main><section><h2>还没有局部干预结果</h2><p>在下方选择配置，运行第一轮实验。</p></section></main>';$('download').disabled=!output}
- async function recent(){try{const data=await request('/api/intervention/latest');show(data.output);if(data.output)fill(data.output.config);status(data.output?'已加载真实运行结果':'尚无结果，可运行快速验证')}catch(e){status(e.message,true)}}
+ async function recent(){try{const data=await request('/api/intervention/latest');show(data.output);if(data.output)fill(data.output.config);status(data.output?'已加载真实运行结果':'尚无结果，可运行快速验证');return data.output}catch(e){status(e.message,true);return null}}
  $('preset').onchange=async()=>{try{fill(await request('/api/intervention/config/'+$('preset').value))}catch(e){status(e.message,true)}};
  $('apply').onclick=()=>{try{fill(JSON.parse($('config').value));status('配置已应用；运行时会检查参数')}catch(e){status('配置无效：'+e.message,true)}};
  $('recent').onclick=recent;
  $('download').onclick=()=>{if(last){const a=document.createElement('a');a.href=last.report_url;a.download='intervention_report.json';a.click()}};
  $('run').onclick=async()=>{if(busy)return;busy=true;$('run').disabled=true;$('recent').disabled=true;show(null);status('准备运行…');try{const current=read();fill(current);const job=await request('/api/intervention/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:current})});while(true){const state=await request('/api/intervention/jobs/'+job.job_id);status(state.message);if(state.status==='complete'){show(state.output);break}if(state.status==='failed')throw Error(state.message);await new Promise(resolve=>setTimeout(resolve,1500))}}catch(e){show(null);status('实验未完成：'+e.message,true)}finally{busy=false;$('run').disabled=false;$('recent').disabled=false}};
- (async()=>{try{fill(await request('/api/intervention/config/intervention_smoke'));await recent()}catch(e){status(e.message,true)}})();
+ (async()=>{try{if(!await recent())fill(await request('/api/intervention/config/intervention_smoke'))}catch(e){status(e.message,true)}})();
  </script></body></html>''')

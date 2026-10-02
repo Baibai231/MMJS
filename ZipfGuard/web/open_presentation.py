@@ -101,15 +101,14 @@ def render_open_html(result,document=True):
     a=result.get('analysis')
     if a:
         parts.append('<section><h2>口令频次分布拟合与残差</h2>')
-        parts.append('<p class="muted">训练集内部分割后拟合有限支持的频次排名分布。'
-                     '验证对数似然越大（负值越接近零）越好；验证 KS 与 BIC 越小越好。'
+        parts.append('<p class="muted">训练集内部分割后使用 CDF 采样拟合频次分布。'
+                     '验证累计误差越小越好；该方法不计算口令身份似然或 BIC。'
                      '拟合仅作分布诊断，不代替上面的开放攻击命中率。</p>')
         selected_name=next((m['name'] for m in a['models'] if m['id']==a['selected_model']),a['selected_model'])
         parts.append('<p>分布诊断选择：'+escape(selected_name)+'；选择依据：'+escape(a['selection_method'])+'</p>')
-        parts.append(table(['模型','拟合参数','验证对数似然','验证 KS','BIC','诊断选择'],
+        parts.append(table(['模型','拟合参数','验证累计误差','诊断选择'],
             [(m['name'],'、'.join(f'{key}={value:.4g}' for key,value in m['parameters'].items()),
-              f"{m['validation_log_likelihood']:.3f}",f"{m['validation_ks']:.4f}",
-              f"{m['bic']:.3f}",'是' if m['id']==a['selected_model'] else '否') for m in a['models']]))
+              num(m['validation_ks']),'是' if m['id']==a['selected_model'] else '否') for m in a['models']]))
         curves=a['curves']
         series=[('训练经验 CDF',[(r['rank'],r['empirical_cdf']) for r in curves])]+[
             (m['name'],[(r['rank'],r[m['id']+'_cdf']) for r in curves]) for m in a['models']]

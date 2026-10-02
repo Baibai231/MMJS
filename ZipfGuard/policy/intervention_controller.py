@@ -1,4 +1,4 @@
-"""One-step marginal-gain selection. Predictions never mutate actual state."""
+"""Choose the largest feasible whole-population gain. Predictions do not mutate state."""
 from collections import Counter
 from statistics import mean
 from policy.local_actions import generate_actions
@@ -22,24 +22,33 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     reasons = []
     if gain <= cfg['controller']['min_gain']:
         reasons.append('扣除模型未覆盖质量后，预计风险改善不足')
+    if min(trials) <= 0:
+        reasons.append('至少一次模拟未显示保守风险下降')
     if mean(hits) <= 0:
         reasons.append('PCFG 点估计命中质量没有减少')
     if max(hhi_changes) > cfg['controller']['max_hhi_increase']:
         reasons.append('预测新分布聚集超过容忍量')
     return {'predicted_guarded_gain': gain, 'predicted_hit_gain': mean(hits),
             'predicted_gain_range': [min(trials), max(trials)],
+            'predicted_hhi_change': mean(hhi_changes),
             'max_predicted_hhi_increase': max(hhi_changes),
-            'score': gain/(len(action.indices)/n), 'feasible': not reasons,
+            'gain_per_notified_account': gain/(len(action.indices)/n),
+            'score': gain, 'feasible': not reasons,
             'rejection_reasons': reasons}
 
 
 def select_action(population, risk, responder, cfg, round_id):
-    candidates = generate_actions(population, risk, cfg)
+    candidates = generate_actions(population, risk, cfg,
+                                  minimum_length=cfg['controller'].get('policy_floor_minimum_length', 0),
+                                  catalog_reference=getattr(responder, 'reference', None))
     counts = population.counts()
     evaluated = [(a, predict_action(population, a, risk, responder, cfg, round_id, counts)) for a in candidates]
     feasible = [(a, p) for a, p in evaluated if p['feasible']]
-    winner = max(feasible, key=lambda row: (round(row[1]['score'], 12),
-                 row[1]['predicted_guarded_gain'], -len(row[0].indices)), default=None)
+    # A tiny group may be efficient per person but barely change the sitewide
+    # distribution. Prioritize total risk reduction under the existing hard
+    # notification budget; use concentration and cost only for equal gains.
+    winner = max(feasible, key=lambda row: (row[1]['predicted_guarded_gain'],
+                 -row[1]['predicted_hhi_change'], -len(row[0].indices)), default=None)
     audit = [{'action': a.public(), **p} for a, p in evaluated]
     return winner, audit
 

@@ -33,7 +33,9 @@ def main():
             page.wait_for_function("document.getElementById('users').value !== ''")
             page.wait_for_function("!document.getElementById('status').textContent.includes('读取')")
             assert '第三展示台' in page.title()
-            assert page.locator('nav[aria-label="展示台导航"] a').count() == 3
+            assert page.locator('nav[aria-label="实验结果导航"] a').count() >= 8
+            latest_run = page.request.get(origin+'/api/intervention/latest').json()['output']['run_id']
+            assert page.locator('#result').get_attribute('data-run-id') == latest_run
             if page.locator('#risk_cost').count():
                 page.locator('#intervention-overview').screenshot(path=str(out/'overview.png'))
                 page.locator('#risk_cost').screenshot(path=str(out/'risk_cost.png'))
@@ -77,7 +79,7 @@ def main():
                 last.check()
                 zipf_url = page.locator('#google_round_zipf a').get_attribute('href')
                 zipf_svg = page.request.get(origin+zipf_url)
-                assert zipf_svg.status == 200 and '固定 Google 共同起点' in zipf_svg.text()
+                assert zipf_svg.status == 200 and 'Google 政策不变' in zipf_svg.text()
                 page.locator('#google_round_zipf').screenshot(path=str(out/'google_round_zipf.png'))
                 page.set_viewport_size({'width': 390, 'height': 844})
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1')
@@ -117,7 +119,7 @@ def main():
                                   'six consistent three-strategy charts', '11-line Google-started Zipf chart', 'SVG legend export',
                                   'report download', 'mobile containment', 'background job',
                                   'invalid config clears stale results', 'cross-site rejection',
-                                  'asset path boundary', 'three workbench navigation']}
+                                  'asset path boundary', 'single third workbench navigation']}
             (out/'checks.json').write_text(json.dumps(summary, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
             print(json.dumps(summary, ensure_ascii=False))
             browser.close()

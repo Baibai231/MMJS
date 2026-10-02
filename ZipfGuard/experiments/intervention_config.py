@@ -16,7 +16,9 @@ DEFAULT = {
     'pcfg': {'timeout_seconds': 180},
     'controller': {'round_fraction': .02, 'total_fraction': .20,
                    'batch_fractions': [.005, .01, .02], 'max_rounds': 40,
-                   'max_groups': 12, 'popular_k': 20, 'lengths': [8, 10, 12],
+                   'max_groups': 12, 'popular_k': 20, 'lengths': [10, 12, 15],
+                   'candidate_pool': 'site-fragments-1-18-v1',
+                   'predictable_terms': ['gitlab', 'devops'],
                    'prediction_repeats': 3, 'min_gain': 0.000001,
                    'target_relative_reduction': .10, 'stagnation_patience': 3,
                    'max_hhi_increase': .0001},
@@ -95,6 +97,13 @@ def validate_intervention_config(value):
     for n in c['lengths']:
         integer(n, 1, 64, '长度')
     c['lengths'] = sorted(set(c['lengths']))
+    if c['candidate_pool'] != 'site-fragments-1-18-v1':
+        raise ValueError('候选池版本无效')
+    if (not isinstance(c['predictable_terms'], list) or len(c['predictable_terms']) > 50
+            or any(not isinstance(term, str) or not term or len(term) > 40
+                   for term in c['predictable_terms'])):
+        raise ValueError('可预测词表无效')
+    c['predictable_terms'] = sorted(set(term.lower() for term in c['predictable_terms']))
     for k in ('min_gain', 'target_relative_reduction', 'max_hhi_increase'):
         number(c[k], 0, 1, k)
     number(r['nonresponse'], 0, 1, '未响应概率')

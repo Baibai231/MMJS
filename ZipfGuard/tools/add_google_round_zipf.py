@@ -19,6 +19,7 @@ from core.registration import load_registration
 from experiments.intervention_config import validate_intervention_config
 from experiments.intervention_pipeline import make_index, google_round_zipf_experiment
 from policy.intervention_response import InterventionResponder
+from experiments.cdf_fit_benchmark import intervention_fit_diagnostics
 from web.intervention_presentation import render_intervention_html, export_intervention_figures
 
 
@@ -46,13 +47,18 @@ def add_comparison(report_path: Path) -> dict:
     responder = InterventionResponder(train, cfg['response'])
     comparison = google_round_zipf_experiment(
         Population(words), reference_words, evaluator, responder, cfg,
-        report['arms']['fixed_google'],
+        report.get('legacy_arms', report['arms']).get('fixed_google'),
         progress=lambda message: print(message, flush=True),
     )
     sources = [
         'experiments/intervention_pipeline.py',
+        'policy/intervention_controller.py',
+        'policy/local_actions.py',
         'web/intervention_presentation.py',
         'tools/add_google_round_zipf.py',
+        'core/cdf_sampling.py',
+        'core/distribution_analysis.py',
+        'experiments/cdf_fit_benchmark.py',
     ]
     comparison['metadata'] = {
         'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
@@ -62,10 +68,11 @@ def add_comparison(report_path: Path) -> dict:
                           for name in sources},
     }
     report['google_round_zipf'] = comparison
+    report['distribution_fits'] = intervention_fit_diagnostics(report)
     content = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False) + '\n'
     report_path.write_text(content, encoding='utf-8')
     (report_path.parent / 'report.json.sha256').write_text(
-        hashlib.sha256(content.encode()).hexdigest() + '  report.json\n', encoding='utf-8')
+        hashlib.sha256(report_path.read_bytes()).hexdigest() + '  report.json\n', encoding='utf-8')
     (report_path.parent / 'report.html').write_text(
         render_intervention_html(report), encoding='utf-8')
     export_intervention_figures(report, report_path.parent)

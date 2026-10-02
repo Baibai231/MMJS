@@ -6,6 +6,7 @@ import math
 import re
 from policy.open_policy import Rule
 from policy.engine import extract_features
+from policy.intervention_fragments import LENGTHS, Fragment, candidate_fragments
 from core.htpg_features import lsd_structure
 
 
@@ -21,12 +22,16 @@ def features(word):
 class LocalRule:
     base: Rule
     repeat_pattern: bool = False
+    fragment: Fragment | None = None
 
     def accepts(self, word):
-        return self.base.accepts(word) and not (self.repeat_pattern and features(word)['repeat_pattern'])
+        return (self.base.accepts(word)
+                and not (self.repeat_pattern and features(word)['repeat_pattern'])
+                and (self.fragment is None or self.fragment.accepts(word)))
 
     def summary(self):
-        return {**self.base.summary(), 'block_repeat_pattern': self.repeat_pattern}
+        return {**self.base.summary(), 'block_repeat_pattern': self.repeat_pattern,
+                **(self.fragment.summary() if self.fragment else {})}
 
 
 @dataclass(frozen=True)
@@ -99,11 +104,13 @@ def build_groups(population, risk, cfg):
     return [(g, buckets[g]) for g in selected], hot
 
 
-def generate_actions(population, risk, cfg, *, fixed=False):
+def generate_actions(population, risk, cfg, *, fixed=False, minimum_length=0,
+                     catalog_reference=None):
     cap = capacities(population, cfg)
     if cap <= 0:
         return []
     c = cfg['controller']
+    minimum_length = max(minimum_length, c.get('policy_floor_minimum_length', 0))
     if fixed:
         rule = LocalRule(Rule('fixed-google-length-8', min_length=8))
         ids = [i for i, a in enumerate(population.accounts) if not a.notifications and not rule.accepts(a.password)]
@@ -114,18 +121,16 @@ def generate_actions(population, risk, cfg, *, fixed=False):
                        '固定 Google 规则子集：至少 8 字符', tuple(order[:cap]), len(ids))] if ids else []
     groups, hot = build_groups(population, risk, cfg)
     actions = []
+    fragments = candidate_fragments(
+        hot=hot, development=catalog_reference,
+        predictable_terms=c.get('predictable_terms', ['gitlab', 'devops']))
     for group, ids in groups:
-        rules = [(LocalRule(Rule('deny-popular', blocklist=hot)), '避开本轮热门名单')]
-        words = [population.accounts[i].password for i in ids]
-        if any(features(w)['repeat_pattern'] for w in words):
-            rules.append((LocalRule(Rule('deny-repeat'), True), '避免 1–3 字符片段连续重复三次'))
-        for feature, label in [('sequential_digits', '避免连续数字模式'), ('keyboard_walk', '避免键盘连续模式')]:
-            if any(features(w)[feature] for w in words):
-                rules.append((LocalRule(Rule('deny-'+feature, deny=(feature,))), label))
-        for length in c['lengths']:
-            if any(len(w) < length for w in words):
-                rules.append((LocalRule(Rule(f'local-length-{length}', min_length=length)), f'本批最低长度 {length} 字符'))
-        for rule, label in rules:
+        for fragment in fragments:
+            if fragment.number in LENGTHS and LENGTHS[fragment.number] not in c['lengths']:
+                continue
+            rule = LocalRule(Rule(f'fragment-{fragment.number}',
+                                  min_length=max(minimum_length, LENGTHS.get(fragment.number, 0))),
+                             fragment=fragment)
             eligible = [i for i in ids if not rule.accepts(population.accounts[i].password)]
             if not eligible:
                 continue
@@ -134,5 +139,6 @@ def generate_actions(population, risk, cfg, *, fixed=False):
                      for f in c['batch_fractions']}
             for n in sorted(sizes):
                 if n:
-                    actions.append(Action(group, rule, label, tuple(order[:n]), len(eligible)))
+                    actions.append(Action(group, rule, f'第 {fragment.number} 条：{fragment.label}',
+                                          tuple(order[:n]), len(eligible)))
     return actions

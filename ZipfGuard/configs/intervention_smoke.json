@@ -37,9 +37,9 @@
     "max_groups": 12,
     "popular_k": 20,
     "lengths": [
-      8,
       10,
-      12
+      12,
+      15
     ],
     "prediction_repeats": 3,
     "min_gain": 0.000001,

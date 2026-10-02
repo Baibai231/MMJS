@@ -1,4 +1,5 @@
 import copy
+import hashlib
 import json
 import tempfile
 import unittest
@@ -129,6 +130,32 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(counts, p.counts())
         self.assertEqual(len(result['trajectory']), 1)
 
+    def test_selects_largest_sitewide_gain_not_smallest_group_efficiency(self):
+        population = Population(['abc']*100)
+        small = self.action(range(3))
+        large = self.action(range(20))
+        small_prediction = {'feasible': True, 'predicted_guarded_gain': .003,
+                            'predicted_hhi_change': -.0001, 'score': .003}
+        large_prediction = {'feasible': True, 'predicted_guarded_gain': .02,
+                            'predicted_hhi_change': -.0002, 'score': .02}
+        with patch('policy.intervention_controller.generate_actions', return_value=[small, large]), patch(
+                'policy.intervention_controller.predict_action',
+                side_effect=[small_prediction, large_prediction]):
+            winner, audit = select_action(population, self.risk(), object(), self.cfg(100), 1)
+        self.assertIs(winner[0], large)
+        self.assertEqual([row['score'] for row in audit], [.003, .02])
+
+    def test_rejects_tiny_candidate_when_one_prediction_has_no_gain(self):
+        class VariableResponder:
+            def respond(self, population, action, seed, stream):
+                new = 'abc' if stream.endswith('-1') else 'abc!'
+                return [{'index': 0, 'old': 'abc', 'new': new}]
+        prediction = predict_action(Population(['abc']*100), self.action([0]),
+                                    self.risk(), VariableResponder(), self.cfg(100), 1)
+        self.assertGreater(prediction['predicted_guarded_gain'], 0)
+        self.assertEqual(prediction['predicted_gain_range'][0], 0)
+        self.assertFalse(prediction['feasible'])
+
     def test_feedback_recomputed_and_final_snapshot_retained(self):
         cfg = self.cfg(100)
         class Responder:
@@ -154,14 +181,15 @@ class TestIntervention(unittest.TestCase):
                 return [{'index': i, 'old': p.accounts[i].password,
                          'new': p.accounts[i].password+'!', 'status': 'changed',
                          'edit_cost': .25} for i in a.indices]
-        population = Population(['abc']*100)
+        words = ['abc']*60 + ['longpass123']*40
+        population = Population(words)
         responder = Responder()
-        fixed, _, _ = run_arm('fixed_google', population, ['abc']*100,
+        fixed, _, _ = run_arm('fixed_google', population, words,
                               self.risk(), responder, cfg)
 
         def choose(current, evaluator, response, config, round_id):
             ids = tuple(i for i, a in enumerate(current.accounts) if not a.notifications)[:1]
-            action = self.action(ids, Rule('adaptive', min_length=8),
+            action = self.action(ids, Rule('adaptive', min_length=12),
                                  eligible=sum(not a.notifications for a in current.accounts))
             prediction = {'predicted_guarded_gain': .01}
             return (action, prediction), [{'action': action.public(), 'score': 1,
@@ -171,24 +199,30 @@ class TestIntervention(unittest.TestCase):
         with patch('experiments.intervention_pipeline.select_action', side_effect=choose), patch(
                 'experiments.intervention_pipeline.make_index', return_value=ExactIndex()) as fit:
             comparison = google_round_zipf_experiment(
-                population, ['abc']*100, self.risk(), responder, cfg, fixed)
+                population, words, self.risk(), responder, cfg, fixed)
         self.assertEqual(fit.call_count, 2)
         self.assertTrue(comparison['common_google_start_verified'])
         self.assertEqual(comparison['control']['state_sha256'],
                          comparison['experimental']['start_state_sha256'])
-        self.assertEqual(comparison['control']['distribution'],
-                         fixed['trajectory'][1]['distribution'])
-        self.assertNotEqual(comparison['control']['distribution'],
-                            fixed['final']['distribution'])
+        self.assertEqual(comparison['google_baseline']['target']['eligible'], 60)
+        self.assertEqual(comparison['google_baseline']['target']['changed'], 60)
+        self.assertEqual(comparison['google_baseline']['target']['failures'], 0)
+        self.assertEqual(comparison['google_baseline']['target']['short_passwords_remaining'], 0)
+        self.assertGreater(comparison['google_baseline']['target']['explicit_length_completions'], 0)
+        self.assertNotEqual(comparison['control']['distribution'], fixed['final']['distribution'])
         self.assertEqual(comparison['experimental']['rounds_completed'], 10)
         self.assertEqual(len(comparison['experimental']['snapshots']), 10)
+        for state in comparison['arms']['google_dynamic']['trajectory']:
+            self.assertEqual(state['google_compliance']['short_password_accounts'], 0)
+        for row in comparison['arms']['google_dynamic']['rounds']:
+            self.assertGreaterEqual(row['action']['rule_definition']['min_length'], 8)
+            self.assertEqual(row['reference_replay']['google_compliance']['short_password_accounts'], 0)
         self.assertEqual(comparison['experimental']['snapshots'][0]['round'], 1)
         self.assertEqual(comparison['experimental']['snapshots'][0]['action']['rule'], 'test')
-        self.assertEqual(comparison['experimental']['snapshots'][-1]['affected_rate'], .12)
+        self.assertEqual(comparison['experimental']['snapshots'][-1]['affected_rate'], .7)
         arms = comparison['arms']
-        self.assertEqual(arms['google_hold']['final'], fixed['trajectory'][1])
-        self.assertEqual(arms['google_dynamic']['final']['ledger']['affected_rate'], .12)
-        self.assertEqual(arms['google_hold']['trajectory'][1], arms['google_dynamic']['trajectory'][1])
+        self.assertEqual(arms['google_hold']['final'], arms['google_dynamic']['trajectory'][0])
+        self.assertEqual(arms['google_dynamic']['final']['ledger']['affected_rate'], .7)
         report = {'google_round_zipf': comparison, 'baseline': fixed['trajectory'][0], 'config': cfg,
                   'baseline_mutations': evaluate_mutations(population.counts(),
                       reference_mutation_ranks({'abc': 100}, 100), cfg['budgets'])}
@@ -197,8 +231,8 @@ class TestIntervention(unittest.TestCase):
             series = specs[name][1]
             self.assertEqual([label for label, _ in series], [label for _, label in LABELS])
             self.assertEqual(len(series), 3)
-        self.assertEqual(specs['risk_cost'][1][1][1][-1][0], .02)
-        self.assertEqual(specs['risk_cost'][1][2][1][-1][0], .12)
+        self.assertEqual(specs['risk_cost'][1][1][1][-1][0], .6)
+        self.assertEqual(specs['risk_cost'][1][2][1][-1][0], .7)
         self.assertEqual(specs['final_distribution'][1][2][1],
                          comparison['experimental']['snapshots'][-1]['distribution']['full_rank_frequency'])
         self.assertEqual(len(specs['google_round_zipf'][1]), 11)
@@ -215,7 +249,34 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(len(ids), len(set(ids)))
         self.assertEqual(len(ids), 20)
         self.assertEqual(p.ledger()['affected'], 0)
-        self.assertTrue(all(a.rule.base.blocklist == frozenset({'abc'}) for a, _, _ in schedule))
+        self.assertTrue(all(a.rule.fragment is not None and
+                            1 <= a.rule.fragment.number <= 18 for a, _, _ in schedule))
+
+    def test_google_dynamic_rejects_short_responses_before_applying(self):
+        cfg = self.cfg(100)
+        cfg['controller']['policy_floor_minimum_length'] = 8
+        population = Population(['longpass123']*100)
+        action = self.action([0], Rule('local', min_length=8), eligible=100)
+        class BadResponder:
+            def respond(self, p, a, seed, stream):
+                return [{'index': 0, 'old': p.accounts[0].password, 'new': 'short',
+                         'status': 'changed', 'edit_cost': 1.}]
+        with patch('experiments.intervention_pipeline.select_action',
+                   return_value=((action, {'predicted_guarded_gain': .1}), [])):
+            with self.assertRaisesRegex(AssertionError, '动态响应'):
+                run_arm('google_dynamic', population, ['longpass123']*100,
+                        self.risk(), BadResponder(), cfg)
+        self.assertEqual(population.ledger()['affected'], 0)
+
+    def test_google_floor_is_inherited_by_all_local_candidates(self):
+        cfg = self.cfg(100)
+        cfg['controller']['policy_floor_minimum_length'] = 8
+        population = Population(['12345678']*50+['aaaaaaaa']*50)
+        risk = self.risk()
+        with patch.object(risk, 'hit', return_value=1.):
+            actions = generate_actions(population, risk, cfg)
+        self.assertTrue(actions)
+        self.assertTrue(all(action.rule.base.min_length >= 8 for action in actions))
 
     def test_reference_replay_targets_only_matching_independent_accounts(self):
         cfg = self.cfg(100)
@@ -257,6 +318,8 @@ class TestIntervention(unittest.TestCase):
             public = json.dumps(report, ensure_ascii=False)
             self.assertNotIn('"abc"', public)
             self.assertIn('google_round_zipf', report)
+            self.assertEqual(set(report['arms']), {'google_hold', 'google_dynamic'})
+            self.assertNotIn('legacy_arms', report)
             html = render_intervention_html(report)
             self.assertIn('plot-distinct', html)
             self.assertIn('input type="checkbox"', html)
@@ -269,6 +332,8 @@ class TestIntervention(unittest.TestCase):
             self.assertIn('Google 政策不变', svg)
             self.assertNotIn('初始一次规划', svg)
             self.assertTrue((Path(directory)/'report.json.sha256').is_file())
+            self.assertEqual(hashlib.sha256((Path(directory)/'report.json').read_bytes()).hexdigest(),
+                             (Path(directory)/'report.json.sha256').read_text().split()[0])
 
     def test_real_monte_carlo_adapter_and_weighted_risk(self):
         grammar = Grammar({'T': {'abc': .6, 'def': .4}}, [(['T'], 1.)])

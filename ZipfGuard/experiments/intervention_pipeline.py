@@ -1,5 +1,6 @@
 """Existing-account feedback experiments with independent adaptive references."""
 from collections import Counter
+from copy import deepcopy
 import hashlib
 import json
 import math
@@ -16,6 +17,8 @@ from experiments.intervention_config import ROOT, PROTOCOL, validate_interventio
 from policy.intervention_response import InterventionResponder, RESPONSE_PROTOCOL
 from policy.intervention_controller import select_action, plan_once, predict_action
 from policy.local_actions import Action, account_order, capacities, generate_actions
+from policy.user_response import satisfy_visible_rules, _rng
+from policy.open_policy import edit_distance
 
 METHODS = [('dynamic', '动态局部干预'), ('one_shot', '初始一次规划'),
            ('fixed_google', '固定 Google 分批')]
@@ -26,7 +29,8 @@ GOOGLE_HOLD_METHOD = 'google_hold'
 STOP_LABELS = {'target_reached': '达到配置中的风险目标', 'budget_exhausted': '累计干预预算用尽',
                'no_feasible_positive_gain_action': '当前候选没有可靠的正收益动作',
                'plan_exhausted': '初始计划已执行完', 'no_eligible_accounts': '没有剩余不合规账户',
-               'realized_risk_stagnation': '连续多轮实现风险未改善', 'max_rounds': '达到轮数上限'}
+               'realized_risk_stagnation': '连续多轮实现风险未改善', 'max_rounds': '达到轮数上限',
+               'fixed_policy_hold': 'Google 政策保持不变'}
 
 
 def make_index(counts, cfg):
@@ -39,7 +43,22 @@ def snapshot(population, evaluator, round_id):
     counts = population.counts()
     return {'round': round_id, 'state_sha256': population.fingerprint(),
             'ledger': population.ledger(), 'risk': evaluator.evaluate(counts),
-            'distribution': distribution_summary(counts)}
+            'distribution': distribution_summary(counts),
+            'google_compliance': google_compliance(population)}
+
+
+def google_compliance(population):
+    short = sum(len(account.password) < 8 for account in population.accounts)
+    return {'required_minimum_length': 8,
+            'minimum_observed_length': min(len(account.password) for account in population.accounts),
+            'short_password_accounts': short, 'all_accounts_compliant': short == 0}
+
+
+def assert_google_compliant(population):
+    audit = google_compliance(population)
+    if not audit['all_accounts_compliant']:
+        raise AssertionError('Google 起点动态实验出现低于 8 字符的口令')
+    return audit
 
 
 def reference_replay(reference, action, target_total, responder, cfg, round_id):
@@ -60,18 +79,22 @@ def reference_replay(reference, action, target_total, responder, cfg, round_id):
             'selected_fraction_within_group': fraction}
 
 
-def run_arm(method, initial, reference_words, evaluator, responder, cfg, progress=None):
+def run_arm(method, initial, reference_words, evaluator, responder, cfg, progress=None,
+            reference_initial=None):
     population = initial.clone()
-    reference = Population(reference_words, 'adaptive-reference')
+    reference = reference_initial.clone() if reference_initial is not None else Population(reference_words, 'adaptive-reference')
+    if method == GOOGLE_DYNAMIC_METHOD:
+        if cfg['controller'].get('policy_floor_minimum_length', 0) < 8:
+            raise AssertionError('Google 动态实验必须保留最低长度 8')
+        assert_google_compliant(population)
+        assert_google_compliant(reference)
     first = snapshot(population, evaluator, 0)
     trajectory, rounds = [first], []
     plan = plan_once(initial, evaluator, responder, cfg) if method == 'one_shot' else None
     target = first['risk']['guarded_risk']*(1-cfg['controller']['target_relative_reduction'])
     stagnant, stop = 0, 'max_rounds'
     terminal_audit = []
-    # The Google action establishes round zero for this comparison. Ten adaptive
-    # decisions follow it, so this arm may execute eleven actions in total.
-    round_limit = (1 if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_ROUNDS + 1
+    round_limit = (0 if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_ROUNDS
                    if method == GOOGLE_DYNAMIC_METHOD else cfg['controller']['max_rounds'])
     method_label = ('Google 政策不变' if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_LABEL
                     if method == GOOGLE_DYNAMIC_METHOD else dict(METHODS)[method])
@@ -89,7 +112,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                 stop = 'plan_exhausted'
                 break
             action, prediction, audit = plan[round_id-1]
-        elif method in ('fixed_google', GOOGLE_HOLD_METHOD) or (method == GOOGLE_DYNAMIC_METHOD and round_id == 1):
+        elif method == 'fixed_google':
             choices = generate_actions(population, evaluator, cfg, fixed=True)
             if not choices:
                 stop = 'no_eligible_accounts'
@@ -107,10 +130,17 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             action, prediction = winner
         if len(action.indices) > capacities(population, cfg):
             raise AssertionError('动作超出剩余硬预算')
+        if method == GOOGLE_DYNAMIC_METHOD and action.rule.base.min_length < 8:
+            raise AssertionError('局部动作不能降低 Google 最低长度要求')
         previous = trajectory[-1]
         outcomes = responder.respond(population, action, cfg['seed'], f'execution-{round_id}')
+        if method == GOOGLE_DYNAMIC_METHOD and any(len(row['new']) < 8 for row in outcomes):
+            raise AssertionError('动态响应产生了不符合 Google 规则的口令')
         population.apply(outcomes)
         adaptation = reference_replay(reference, action, initial.total, responder, cfg, round_id)
+        if method == GOOGLE_DYNAMIC_METHOD:
+            assert_google_compliant(population)
+            adaptation['google_compliance'] = assert_google_compliant(reference)
         current = snapshot(population, evaluator, round_id)
         gain = previous['risk']['guarded_risk'] - current['risk']['guarded_risk']
         rounds.append({'round': round_id, 'action': action.public(), 'prediction': prediction,
@@ -122,12 +152,15 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'nonresponse': sum(r['status'] == 'nonresponse' for r in outcomes),
                        'failed_to_comply': sum(r['status'] == 'failed_to_comply' for r in outcomes),
                        'reference_replay': adaptation,
-                       'selection_reason': ('首轮与固定 Google 对照执行完全相同的最低 8 字符动作' if method == GOOGLE_DYNAMIC_METHOD and round_id == 1
-                                            else '根据本轮更新后的分布重新选择保守收益最高的局部动作' if method == GOOGLE_DYNAMIC_METHOD
-                                            else '在本轮可行候选中，每新增受影响账户的保守收益最高' if method == 'dynamic'
+                       'selection_reason': ('根据本轮更新后的 Google 合规分布，选择预计全站保守风险下降最大的局部动作' if method == GOOGLE_DYNAMIC_METHOD
+                                            else '在本轮可行候选中，预计全站保守风险下降最大' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
         trajectory.append(current)
+        if progress:
+            progress(f'{method_label} · 第 {round_id} 轮完成：通知 {len(action.indices):,} 人，'
+                     f'修改 {sum(r["status"] == "changed" for r in outcomes):,} 人，'
+                     f'短口令 {current["google_compliance"]["short_password_accounts"]:,} 个')
         stagnant = stagnant+1 if gain <= 0 else 0
         if stagnant >= cfg['controller']['stagnation_patience']:
             stop = 'realized_risk_stagnation'
@@ -145,21 +178,79 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
 
 
 def google_round_zipf_experiment(initial, reference_words, evaluator, responder, cfg,
-                                  fixed_google, progress=None):
-    """Hold the shared Google state fixed while taking ten adaptive snapshots."""
-    control, control_counts, control_reference = run_arm(
-        GOOGLE_HOLD_METHOD, initial, reference_words, evaluator, responder, cfg, progress)
+                                  fixed_google=None, progress=None):
+    """Establish an all-account Google-compliant state, then compare hold vs feedback."""
+    google_cfg = deepcopy(cfg)
+    bootstrap_cfg = deepcopy(cfg)
+    bootstrap_cfg['controller']['round_fraction'] = 1.
+    bootstrap_cfg['controller']['total_fraction'] = 1.
+    bootstrap_response = dict(cfg['response'], nonresponse=0.)
+    bootstrap_responder = InterventionResponder(Counter(reference_words), bootstrap_response)
+    google_start = initial.clone()
+    reference_start = Population(reference_words, 'google-baseline-reference')
+
+    def apply_google_baseline(population, stream):
+        choices = generate_actions(population, evaluator, bootstrap_cfg, fixed=True)
+        if choices:
+            action = choices[0]
+            outcomes = bootstrap_responder.respond(population, action, cfg['seed'], stream)
+            completions = 0
+            # The common start is defined to be fully compliant. Finite response
+            # attempts can still fail with zero refusal; explicitly construct a
+            # compliant completion instead of claiming those failures complied.
+            for row in outcomes:
+                if row['status'] != 'changed':
+                    account = population.accounts[row['index']]
+                    new = satisfy_visible_rules(row['new'], min_length=8, classes=0,
+                        rng=_rng(cfg['seed'], f'{stream}|completion|{account.identifier}'))
+                    row.update(new=new, status='changed',
+                        edit_cost=edit_distance(row['old'], new)/max(1, len(row['old']), len(new)))
+                    completions += 1
+            population.apply(outcomes)
+            failures = sum(row['status'] != 'changed' for row in outcomes)
+        else:
+            action, failures, completions = None, 0, 0
+        short = sum(len(account.password) < 8 for account in population.accounts)
+        if short:
+            raise ValueError(f'Google 起始规则未能使全部账户合规，仍有 {short} 个短口令')
+        return {'eligible': action.eligible_count if action else 0,
+                'notified': len(action.indices) if action else 0,
+                'changed': population.ledger()['changed'],
+                'failures': failures,
+                'explicit_length_completions': completions,
+                'affected_rate': population.ledger()['affected_rate'],
+                'short_passwords_remaining': short,
+                'all_accounts_compliant': short == 0,
+                'rule': 'Google 最低长度 8 字符'}
+
+    bootstrap_target = apply_google_baseline(google_start, 'google-baseline-target')
+    bootstrap_reference = apply_google_baseline(reference_start, 'google-baseline-reference')
+    if bootstrap_target['failures'] or bootstrap_reference['failures']:
+        raise AssertionError('全量 Google 起点存在未完成的账户修改')
+
+    # The configured total budget applies to the ten adaptive rounds after the
+    # Google baseline. Count the full-population Google migration separately.
+    google_cfg['controller']['total_fraction'] = min(
+        1., google_start.ledger()['affected_rate'] + cfg['controller']['total_fraction'])
+    google_cfg['controller']['policy_floor_minimum_length'] = 8
+    control_snapshot = snapshot(google_start, evaluator, 0)
+    control = {'method': GOOGLE_HOLD_METHOD, 'label': 'Google 政策不变',
+               'trajectory': [control_snapshot], 'rounds': [],
+               'stop_reason': 'fixed_policy_hold', 'stop_label': STOP_LABELS['fixed_policy_hold'],
+               'terminal_candidate_audit': [], 'final': control_snapshot,
+               'adaptive_reference_ledger': reference_start.ledger(),
+               'google_baseline': bootstrap_target}
     experimental, final_counts, final_reference = run_arm(
-        GOOGLE_DYNAMIC_METHOD, initial, reference_words, evaluator, responder, cfg, progress)
-    start_index = min(1, len(experimental['trajectory']) - 1)
+        GOOGLE_DYNAMIC_METHOD, google_start, reference_words, evaluator, responder,
+        google_cfg, progress, reference_initial=reference_start)
+    experimental['google_baseline'] = bootstrap_target
+    control_counts = google_start.counts()
+    control_reference = reference_start.counts()
+    start_index = 0
     common_start = control['final']['state_sha256'] == experimental['trajectory'][start_index]['state_sha256']
     if not common_start:
         raise AssertionError('Google 起点实验与固定 Google 对照首轮状态不一致')
-    if fixed_google['rounds'] and control['rounds']:
-        if control['final']['state_sha256'] != fixed_google['trajectory'][1]['state_sha256']:
-            raise AssertionError('Google 共同起点与历史首轮结果不一致')
-    google_start = control['final']
-    control['stop_label'] = '完成共同 Google 动作后保持不变'
+    google_start_snapshot = control['final']
     train = Counter(reference_words)
     mutations = reference_mutation_ranks(train, cfg['evaluation']['mutation_reference_limit'])
     adaptive_fits = {}
@@ -178,37 +269,41 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
             arm['attacks']['A1'] = InterventionRisk(ai, cfg['budgets'], cfg['risk_budget']).evaluate(counts)
             arm['adaptive_model'] = dict(ai.grammar.metadata)
     return {
-        'protocol': 'google-started-dynamic-10-adjustments-v3',
+        'protocol': 'google-started-dynamic-10-adjustments-v5',
         'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
         'common_google_start_verified': common_start,
+        'google_baseline': {'target': bootstrap_target, 'reference': bootstrap_reference,
+                            'interpretation': '全体账户先执行 Google 最低 8 字符规则；基线迁移成本单独计入覆盖率'},
         'arms': {GOOGLE_HOLD_METHOD: control, GOOGLE_DYNAMIC_METHOD: experimental},
         'control': {
-            'label': '固定 Google 共同起点（后续不调整）',
+            'label': 'Google 政策不变',
             'rounds_completed': len(control['rounds']),
-            'state_sha256': google_start['state_sha256'],
-            'affected_rate': google_start['ledger']['affected_rate'],
-            'distribution': google_start['distribution'],
+            'state_sha256': google_start_snapshot['state_sha256'],
+            'affected_rate': google_start_snapshot['ledger']['affected_rate'],
+            'distribution': google_start_snapshot['distribution'],
         },
         'experimental': {
             'label': GOOGLE_DYNAMIC_LABEL,
             'start_state_sha256': experimental['trajectory'][start_index]['state_sha256'],
-            'rounds_completed': max(0, len(experimental['rounds']) - 1),
+            'rounds_completed': len(experimental['rounds']),
             'stop_reason': experimental['stop_reason'],
             'stop_label': experimental['stop_label'],
             'snapshots': [
                 {
-                    'round': row['round'] - 1,
+                    'round': row['round'],
                     'action': row['action'],
                     'affected_rate': experimental['trajectory'][row['round']]['ledger']['affected_rate'],
                     'distribution': experimental['trajectory'][row['round']]['distribution'],
+                    'google_compliance': experimental['trajectory'][row['round']]['google_compliance'],
                 }
-                for row in experimental['rounds'][1:]
+                for row in experimental['rounds']
             ],
         },
     }
 
 
-def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=None, progress=None):
+def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=None, progress=None,
+                              include_legacy=False):
     cfg = validate_intervention_config(config)
     started = time.perf_counter()
     if dataset is None:
@@ -233,7 +328,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
     baseline = snapshot(initial, evaluator, 0)
     mutations = reference_mutation_ranks(train, cfg['evaluation']['mutation_reference_limit'])
     arms, adaptive_fits = {}, {counts_hash(train): frozen_index}
-    for method, label in METHODS:
+    for method, label in (METHODS if include_legacy else []):
         result, final_counts, reference_counts = run_arm(method, initial, reference_words, evaluator, responder, cfg, progress)
         result['attacks'] = {'F': result['final']['risk'],
                              'reference_mutations': evaluate_mutations(final_counts, mutations, cfg['budgets'])}
@@ -250,33 +345,49 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
             result['attacks']['A1'] = None
         arms[method] = result
     round_zipf = google_round_zipf_experiment(initial, reference_words, evaluator, responder,
-                                              cfg, arms['fixed_google'], progress)
+                                              cfg, arms.get('fixed_google'), progress)
     manifest_files = ['experiments/intervention_config.py', 'experiments/intervention_pipeline.py',
                       'core/intervention_state.py', 'core/intervention_risk.py', 'policy/local_actions.py',
+                      'policy/intervention_fragments.py',
                       'policy/intervention_controller.py', 'policy/intervention_response.py',
                       'ai/pcfg_monte_carlo.py', 'policy/user_response.py', 'policy/open_policy.py',
-                      'core/registration.py', 'core/monte_carlo_attack.py']
+                      'core/registration.py', 'core/monte_carlo_attack.py',
+                      'core/cdf_sampling.py', 'core/distribution_analysis.py',
+                      'experiments/cdf_fit_benchmark.py']
     source_hashes = {f: hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in manifest_files}
-    identity = {'config': cfg, 'dataset': dataset['metadata'], 'sources': source_hashes}
+    identity = {'config': cfg, 'dataset': dataset['metadata'], 'sources': source_hashes,
+                'include_legacy': include_legacy}
     run_id = hashlib.sha256(json.dumps(identity, sort_keys=True, ensure_ascii=False).encode()).hexdigest()[:16]
     report = {'schema_version': PROTOCOL+'-result', 'config': cfg, 'dataset': dataset['metadata'],
-              'baseline': baseline, 'arms': arms, 'google_round_zipf': round_zipf,
+              'baseline': baseline, 'arms': round_zipf['arms'], 'google_round_zipf': round_zipf,
               'baseline_mutations': evaluate_mutations(initial.counts(), mutations, cfg['budgets']),
               'metadata': {'run_id': run_id, 'protocol': PROTOCOL, 'response_protocol': RESPONSE_PROTOCOL,
                            'risk_method': VERSION, 'frozen_model': dict(frozen_index.grammar.metadata),
                            'python': platform.python_version(), 'source_hashes': source_hashes,
                            'runtime_seconds': time.perf_counter()-started,
                            'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                           'scope': '真实频次初始抽样；有限次模拟响应；PCFG 蒙特卡洛估计',
+                           'scope': '真实频次初始抽样；Google 起点；1—18 条片段候选；有限次模拟响应；PCFG 蒙特卡洛估计',
+                           'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
-                           'decision_metric': 'PCFG 估计命中率 + 模型未覆盖比例；仅作保守选择代理，不是实测破解率或置信上界'}}
+                            'decision_metric': '在通知硬预算内最大化全站保守风险预计下降；PCFG 估计命中率 + 模型未覆盖比例仅作选择代理，HHI 防止明显聚集；不是实测破解率或置信上界'}}
+    if progress:
+        progress('使用 CDF 采样方法拟合三组终态，独立种子复核')
+    if include_legacy:
+        report['legacy_arms'] = arms
+    from experiments.cdf_fit_benchmark import (intervention_fit_diagnostics,
+                                               intervention_round_parameter_diagnostics)
+    report['distribution_fits'] = intervention_fit_diagnostics(report)
+    if progress:
+        progress('拟合 Google 起点和每轮动态调整后的分布参数')
+    report['round_parameter_fits'] = intervention_round_parameter_diagnostics(report)
+    report['metadata']['runtime_seconds'] = time.perf_counter()-started
     directory = Path(output_dir) if output_dir is not None else ROOT/'reports'/'intervention'/run_id
     directory.mkdir(parents=True, exist_ok=True)
     from web.intervention_presentation import render_intervention_html, export_intervention_figures
     content = json.dumps(report, ensure_ascii=False, indent=2, allow_nan=False)+'\n'
     (directory/'report.json').write_text(content, encoding='utf-8')
-    (directory/'report.json.sha256').write_text(hashlib.sha256(content.encode()).hexdigest()+'  report.json\n', encoding='utf-8')
+    (directory/'report.json.sha256').write_text(hashlib.sha256((directory/'report.json').read_bytes()).hexdigest()+'  report.json\n', encoding='utf-8')
     (directory/'report.html').write_text(render_intervention_html(report), encoding='utf-8')
     export_intervention_figures(report, directory)
     return report

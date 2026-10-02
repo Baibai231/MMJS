@@ -1,4 +1,7 @@
-"""Finite-support, rank-based distribution analysis for a synthetic-data demo.
+"""Default CDF sampling analysis and explicitly retained historical fitters.
+
+``analyze_counts`` uses the sampled CDF-Zipf shape model. The finite-support
+MLE utilities and ``analyze_counts_legacy`` below are historical benchmarks.
 
 Only anonymous integer counts enter this module. Models are normalized PMFs;
 CDF-Zipf is a power CDF, *not* the cumulative sum of a Zipf PMF.
@@ -182,7 +185,7 @@ def _percentile_interval(values: Sequence[float]) -> list[float]:
     return np.quantile(values, [0.025, 0.975]).astype(float).tolist()
 
 
-def analyze_counts(
+def analyze_counts_legacy(
     counts: Sequence[int], *, q: float = 0.8, budget: int = 100,
     bootstrap_repetitions: int = 120, seed: int = 20260916,
     training_counts: Sequence[int] | None = None,
@@ -335,6 +338,15 @@ def analyze_counts(
             "Bootstrap 条件于支持集，置信区间为探索性结果；模型选择后的区间未作选择校正。",
         ],
     }
+
+
+def analyze_counts(counts, *, q=.8, budget=100, bootstrap_repetitions=120,
+                   seed=20260916, training_counts=None, validation_counts=None):
+    """Project default. Historical MLE comparison requires analyze_counts_legacy."""
+    from core.distribution_analysis import analyze_sampling_counts
+    return analyze_sampling_counts(counts, q=q, budget=budget,
+        bootstrap_repetitions=bootstrap_repetitions, seed=seed,
+        training_counts=training_counts, validation_counts=validation_counts)
 
 
 if __name__ == "__main__":
