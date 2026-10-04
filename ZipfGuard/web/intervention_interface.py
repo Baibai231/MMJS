@@ -97,12 +97,12 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  #status.error{color:#b73535}button{background:#13715d}.plot-distinct{min-width:510px}
  </style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / SELECTIVE INTERVENTION</span>
  <h1>少改一部分账户，能降低多少风险？</h1>
- <p>第三展示台 · 对比无政策、Google 政策不变、从共同 Google 起点继续逐步干预 10 轮。每轮决定改谁、怎么改、改多少。</p>
- <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#risk_cost">风险与成本</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <p>第三展示台 · 五组实验对照：原始分布、Google 基础策略，以及共同 Google 起点后的随机分批、初始排序分批和逐轮动态调整。</p>
+ <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#coverage_F">成本与猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
  <p class="muted">后续动态干预从去重的 1—18 条政策片段中选动作；分布拟合统一使用 CDF 采样方法，实际频次与攻击风险分别展示。</p>
  <p class="actions"><button id="recent">加载最近完成结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在读取结果…</span></p></main>
  <div id="result" aria-live="polite"></div>
- <main><section id="experiment-settings"><h2>实验设置</h2><p>首先使用快速验证检查流程。所有比例以全站初始账户数为分母；通知过的账户本次不再重复干预。</p>
+ <main><section id="experiment-settings"><h2>实验设置</h2><p>首先使用快速验证检查流程。所有比例以全站初始账户数为分母；Google 起点通知与后续通知分别计数，后续阶段每账户最多通知一次。</p>
  <div class="controls">
  <label>预设<select id="preset"><option value="intervention_smoke">快速验证 · 1,000 人</option><option value="intervention_full">完整研究 · 10 万人</option></select></label>
  <label>模拟账户<input id="users" type="number" min="1"></label><label>开发参考样本<input id="development" type="number" min="10"></label>

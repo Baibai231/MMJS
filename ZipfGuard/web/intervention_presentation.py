@@ -5,15 +5,20 @@ from web.cdf_fit_presentation import fit_chart_specs, render_fit_diagnostics
 from web.round_parameter_presentation import round_parameter_html, round_parameter_svg
 from policy.intervention_fragments import LABELS as FRAGMENT_LABELS
 
-LABELS = [('baseline', '无政策'), ('google_hold', 'Google 政策不变'),
-          ('google_dynamic', 'Google 起点＋10 轮逐步干预')]
+LABELS = [('baseline', '原始分布（无干预）'), ('google_hold', 'Google 基础策略'),
+          ('google_random', 'Google＋随机分批调整'),
+          ('google_frozen', 'Google＋初始排序后分批执行'),
+          ('google_dynamic', 'Google＋每轮重新评估的动态调整')]
 
 
 def comparison_labels(result):
     completed = result['google_round_zipf']['experimental']['rounds_completed']
-    if completed == 10:
-        return LABELS
-    return [*LABELS[:2], ('google_dynamic', f'Google 起点＋{completed} 轮干预（提前停止）')]
+    arms = result['google_round_zipf']['arms']
+    labels = [(key, label) for key, label in LABELS if key == 'baseline' or key in arms]
+    if completed != 10:
+        labels = [(key, f'{label}（{completed} 轮后停止）' if key == 'google_dynamic' else label)
+                  for key, label in labels]
+    return labels
 
 
 def pct(value):
@@ -45,30 +50,26 @@ def chart_specs(result):
     base, cfg = result['baseline'], result['config']
     labels = comparison_labels(result)
     budget = cfg['risk_budget']
-    maximum = max((a['final']['ledger']['affected_rate'] for a in arms.values()), default=0)
-    # A horizontal baseline explicitly represents taking no further action, not
-    # invented observations from intervening on baseline accounts.
+    google_cost = arms['google_hold']['final']['ledger']['affected_rate']
+    def added_cost(state):
+        ledger = state['ledger']
+        return ledger.get('adaptive_affected_rate', max(0, ledger['affected_rate']-google_cost))
+    maximum = max((added_cost(a['final']) for a in arms.values()), default=0)
     initial = main_point(base['risk'], budget)['rate']
-    cost_series = [('无政策', [(0, initial), (maximum, initial)])]
-    cost_series += [(label, [(s['ledger']['affected_rate'], main_point(s['risk'], budget)['rate'])
+    cost_series = [(labels[0][1], [(0, initial)])]
+    cost_series += [(label, [(added_cost(s), main_point(s['risk'], budget)['rate'])
                             for s in arms[key]['trajectory']]) for key, label in labels[1:]]
-    guarded = [('无政策', [(0, base['risk']['guarded_risk']), (maximum, base['risk']['guarded_risk'])])]
-    guarded += [(label, [(s['ledger']['affected_rate'], s['risk']['guarded_risk'])
-                         for s in arms[key]['trajectory']]) for key, label in labels[1:]]
     specs = {
-        'risk_cost': ('同样影响一部分账户，风险降了多少？', cost_series,
-                      dict(xlabel='累计受影响账户比例', ylabel=f'PCFG F 累计猜中比例（{budget:,} 次）',
-                           x_format='percent', y_format='percent',
-                           x_domain=(0, min(1, max(cfg['controller']['total_fraction'], maximum*1.08))), y_domain=(0, 1))),
-        'guarded_cost': ('选择动作时使用的保守风险代理', guarded,
-                         dict(xlabel='累计受影响账户比例', ylabel='估计命中比例 + 模型未覆盖比例',
-                              x_format='percent', y_format='percent',
-                              x_domain=(0, min(1, max(cfg['controller']['total_fraction'], maximum*1.08))), y_domain=(0, 1))),
+        'coverage_F': ('累计受影响账户比例—猜测成功率', cost_series,
+                        dict(xlabel='Google 起点后累计通知的不同账户比例',
+                            ylabel=f'F 模型估计猜中比例（{budget:,} 次）',
+                            x_format='percent', y_format='percent',
+                            x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1))),
     }
     for level, title in [('F', 'F：攻击者不更新模型'), ('A1', 'A1：攻击者学习局部干预后的参考分布')]:
         if level == 'A1' and not any(a['attacks']['A1'] for a in arms.values()):
             continue
-        series = [('无政策', [(p['budget'], p['rate']) for p in base['risk']['minauto']])]
+        series = [(labels[0][1], [(p['budget'], p['rate']) for p in base['risk']['minauto']])]
         for key, label in labels[1:]:
             ev = arms[key]['attacks'][level]
             if ev:
@@ -76,13 +77,7 @@ def chart_specs(result):
         specs['attack_'+level] = (title, series,
             dict(xlabel='累计攻击次数（估计猜测预算）', ylabel='累计猜出的口令比例（全部账户）',
                  log=True, x_format='power10', y_format='percent', y_domain=(0, 1)))
-    mutation = [('无政策', [(p['effective_guesses'], p['rate']) for p in result['baseline_mutations']['points']])]
-    mutation += [(label, [(p['effective_guesses'], p['rate']) for p in arms[key]['attacks']['reference_mutations']['points']])
-                 for key, label in labels[1:]]
-    specs['attack_mutations'] = ('公开常见变换：检查追加后缀造成的表面改善', mutation,
-        dict(xlabel='实际不同猜测次数', ylabel='累计猜出的口令比例（全部账户）',
-             log=True, x_format='power10', y_format='percent', y_domain=(0, 1)))
-    dist = [('无政策', base['distribution']['full_rank_frequency'])]
+    dist = [(labels[0][1], base['distribution']['full_rank_frequency'])]
     dist += [(label, arms[key]['final']['distribution']['full_rank_frequency']) for key, label in labels[1:]]
     specs['final_distribution'] = ('最终口令分布', dist,
         dict(xlabel='口令排名 r', ylabel='使用该口令的人数 f(r)', log=True, log_y=True,
@@ -111,7 +106,7 @@ def render_intervention_html(result, *, document=True):
                 DASHBOARD_STYLE+'</style><body>'+body+'</body></html>') if document else body
     arms = result.get('google_round_zipf', {}).get('arms')
     if not arms:
-        return '<main><section><h2>此旧报告尚未补算三方案对照</h2><p>请重新运行实验，生成共同 Google 起点后的风险、攻击与成本结果。</p></section></main>'
+        return '<main><section><h2>此旧报告尚未补算共同 Google 起点</h2><p>请重新运行实验。</p></section></main>'
     cfg = result['config']
     labels = comparison_labels(result)
     dynamic = arms['google_dynamic']
@@ -123,11 +118,12 @@ def render_intervention_html(result, *, document=True):
     parts = ['<main class="intervention-report"><section class="study-overview" id="intervention-overview">',
              '<span class="eyebrow">第三展示台 · 存量账户局部干预</span>',
              '<h2>改谁、怎么改、改多少</h2>',
-             '<p>账户总数固定。每轮从尚未干预的账户中选择一批，提出局部要求；'
-             '未响应者保留旧口令与风险。修改后重新分析分布。</p><div class="metrics">']
+             '<p>五组使用相同初始账户。后三组从同一个 Google 合规状态出发，'
+             '共享 18 条候选规则、用户响应假设和攻击评估。</p><div class="metrics">']
     for label, value, note in [
         ('模拟账户', f'{ledger["accounts"]:,}', '本次各组使用相同初始账户'),
-        ('累计受影响', pct(ledger['affected_rate']), f'{ledger["affected"]:,} 个账户被通知'),
+        ('后续受影响', pct(ledger.get('adaptive_affected_rate', ledger['affected_rate'])),
+         f'{ledger.get("adaptive_affected", ledger["affected"]):,} 个账户在 Google 起点后被通知'),
         ('实际修改', pct(ledger['changed_rate']), f'{ledger["changed"]:,} 个账户完成修改'),
         ('F 累计猜中比例', pct(after['rate']), f'初始 {pct(before["rate"])} · {budget:,} 次估计猜测')]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong><small>{escape(note)}</small></div>')
@@ -135,14 +131,83 @@ def render_intervention_html(result, *, document=True):
     parts.append('<section id="intervention-conditions"><h2>先看懂这次比较</h2>'
                  '<p>图例支持勾选显示或隐藏曲线，悬停突出对应曲线；'
                  '重叠线使用线型与点形辅助区分。每张图保持相同方案顺序和颜色。</p>'
-                 '<p>六张对照图统一比较：无政策、Google 政策不变、Google 起点后逐步干预。'
-                 '无政策保留原始账户；后两组先把全体账户迁移到满足 Google 最低 8 字符要求的状态，'
-                  '固定组此后保持不变，实验组再根据新分布最多干预 10 轮。'
-                  '攻击曲线和最终口令分布使用各组终态，风险—成本图展示实际执行过程。</p>')
-    parts.append(f'<p>每轮先从热门口令和结构群体中预筛最多 {cfg["controller"]["max_groups"]} 个高风险组，'
-                 '再从文档第 1—18 条片段中选择预计全站保守风险下降最大的可行动作；'
-                 '各次响应模拟均须显示正收益。预计口令集中度用于约束和同收益时排序，'
-                 '逐轮 CDF 拟合参数用于事后核验分布变化。</p>')
+                 '<p>原始组保留原口令；另外四组先把全体账户迁移到满足 Google 最低 8 字符要求的同一状态。'
+                 'Google 基础组此后不再调整；随机组先抽人再选规则；初始排序组只在起点规划一次；'
+                 '完整动态组每轮重新分析分布。</p>')
+    parts.append(table(['实验组', '要回答的问题'], [
+        ['原始分布（无干预）', '原始风险有多高'],
+        ['Google 基础策略', '基础策略本身改善多少'],
+        ['Google＋随机分批调整', '优先选择高风险账户是否有价值'],
+        ['Google＋初始排序后分批执行', '每轮重新分析分布是否有价值'],
+        ['Google＋每轮重新评估的动态调整', '完整方法的结果'],
+    ]))
+    replications = result.get('paired_replications')
+    if replications and replications.get('protocol') == 'cost-matched-F-v1' and replications.get('runs'):
+        def pp(value):
+            return f'{value*100:+.3f} 个百分点'
+
+        rows = []
+        for run in replications['runs']:
+            values = run['arms']
+            random, frozen, dynamic_value = (values[key]['F'] for key in
+                                             ('google_random', 'google_frozen', 'google_dynamic'))
+            rows.append([run['seed'], pct(random), pct(frozen), pct(dynamic_value),
+                         pp(dynamic_value-random), pp(dynamic_value-frozen)])
+        means = replications['mean']
+        rows.append(['平均', pct(means['google_random']['F']), pct(means['google_frozen']['F']),
+                     pct(means['google_dynamic']['F']), pp(means['dynamic_minus_random']['F']),
+                     pp(means['dynamic_minus_frozen']['F'])])
+        parts.append('<section id="paired-replications"><h2>配对随机种子复验</h2>'
+                     f'<p>三个 10 万账户实验分别用种子 42、43、44；每行的后三组共享该种子的 Google 起点。'
+                     f'下表统一在后续通知 {pct(replications["comparison_cost"])} 账户时比较固定 F 模型'
+                     '在主猜测预算下的估计命中比例。轮次之间按相邻观测点线性插值，'
+                     '未达到该成本的种子不纳入比较。Δ 为动态组减对照组，负值表示动态组更低。'
+                     'A1 仅在各组终态重训，终态成本不同，不能拿来做这张等成本表的差值。</p>')
+        parts.append(table(['种子', '随机组 F', '初始排序 F', '动态组 F',
+                            '动态−随机 Δ', '动态−初始排序 Δ'], rows))
+        parts.append('</section>')
+    elif replications and replications.get('runs'):
+        def pp(value):
+            return f'{value*100:+.3f} 个百分点'
+
+        rows = []
+        for run in replications['runs']:
+            values = run['arms']
+            d, f, random = values['google_dynamic'], values['google_frozen'], values['google_random']
+            rows.append([run['seed'], pct(d['affected_rate']),
+                         f'{pct(random["F"])} / {pct(random["A1"])}',
+                         f'{pct(f["F"])} / {pct(f["A1"])}',
+                         f'{pct(d["F"])} / {pct(d["A1"])}',
+                         f'{pp(d["F"]-f["F"])} / {pp(d["A1"]-f["A1"])}'])
+        means = replications['mean']
+        rows.append(['平均', pct(means['google_dynamic']['affected_rate']),
+                     f'{pct(means["google_random"]["F"])} / {pct(means["google_random"]["A1"])}',
+                     f'{pct(means["google_frozen"]["F"])} / {pct(means["google_frozen"]["A1"])}',
+                     f'{pct(means["google_dynamic"]["F"])} / {pct(means["google_dynamic"]["A1"])}',
+                     f'{pp(means["dynamic_minus_frozen"]["F"])} / '
+                     f'{pp(means["dynamic_minus_frozen"]["A1"])}'])
+        parts.append('<section id="paired-replications"><h2>配对随机种子复验</h2>'
+                     f'<p>下方单次曲线对应种子 {cfg["seed"]}；表格列出三个种子的配对结果。'
+                      '每行使用同一随机种子下的共同 Google 起点和相同逐轮通知上限；各组可能提前停止或未用满预算。'
+                     'Δ 为动态组减初始排序组，负值表示动态组估计风险更低；这是模拟点估计，'
+                     '种子数量较少，不代表统计显著性。</p>')
+        parts.append(table(['种子', '累计受影响账户', '随机组 F / A1',
+                            '初始排序 F / A1', '逐轮动态 F / A1', '动态−初始排序 Δ F / A1'], rows))
+        parts.append('</section>')
+    parts.append('<p>初始排序组只在 Google 起点用当时的 F 与 A1 模型排好后续账户和规则，之后不重新排序；'
+                 '动态组每轮执行后，先用独立参考群体的迁移结果更新 A1，再按更新后的风险重新选账户和规则。'
+                 '随机组的账户顺序不看口令风险，选规则时使用与动态组相同的当前风险模型。'
+                  '三组在运行前固定每轮与累计通知预算；未用完的预算如实保留。</p>')
+    parts.append(f'<p>动态组比较热门口令、结构和跨结构账户中的局部动作，'
+                  '随机组先抽取账户，再从文档第 1—18 条片段中分配修改方法。'
+                  '动态组和随机组选规则时，使用固定 F 攻击模型与本轮最新独立参考群体重训的 A1 PCFG；'
+                  f'评分综合多个猜测预算下的命中风险与完全相同口令的集中度，风险权重为 {pct(cfg["controller"].get("risk_weight", .8))}。'
+                  'A1 只在独立参考群体上训练；逐轮 CDF 拟合参数用于事后核验分布变化。'
+                   '随机账户按与风险无关的种子排序，只通知至少违反一条候选规则且被分配了合格修改方法的账户。</p>')
+    parts.append('<p>动态组在相同起点、相同预测模型下，也会评价达到相同单轮人数的随机组动作。'
+                 '若随机组动作不足一整轮，两组只能按实际累计通知成本比较。执行后的账户分布会分叉，'
+                 '用户响应有波动，F 与 A1 终点评估也不同于选动作时的综合目标；'
+                 '这些因素都可能使最终曲线不按当轮预测排序。结论以实际等成本曲线为准。</p>')
     parts.append('<p>第 15 条的字典词使用独立开发样本中的纯字母词作为可复现代理，'
                  '第 17 条名单随每轮热门完整口令更新，第 18 条使用独立开发样本中的完整口令。'
                  '三者的名单覆盖范围不同，不能解释为对所有字典词或所有泄露口令的完整拦截。</p>')
@@ -152,40 +217,55 @@ def render_intervention_html(result, *, document=True):
     baseline_policy = result['google_round_zipf']['google_baseline']['target']
     parts.append(f'<p>Google 起点有 {baseline_policy["eligible"]:,} 个账户原口令短于 8 字符，'
                  f'均在起始迁移阶段改为符合规则的口令（占 {pct(baseline_policy["affected_rate"])}）。'
-                 '为构造严格符合 Google 规则的起点，起始迁移按全部账户完成处理；之后 10 轮使用配置中的通知比例、'
-                 '用户响应率和累计附加预算。起始迁移成本也包含在风险—成本图中。</p>')
+                 '为构造严格符合 Google 长度规则的起点，起始迁移按全部账户完成处理；之后三组分批干预使用相同的通知上限、'
+                  '用户响应率和累计附加预算。下方成本图从 Google 起点开始计算后续新增通知。</p>')
     parts.append(f'<p>共同起点属于全体合规的模拟设定：有限次修改尝试后仍未合规的 '
                  f'{baseline_policy.get("explicit_length_completions", 0):,} 个账户，通过固定种子的长度补全构造合规口令。'
                  '该构造只用于起点；后续局部干预仍保留未响应和修改失败。</p>')
     parts.append(table(['设置', '本次取值'], [
         ['后续每轮 / 累计新增通知上限', f'{pct(cfg["controller"]["round_fraction"])} / {pct(cfg["controller"]["total_fraction"])}'],
-        ['每账户最多干预', '1 次；已通知但未修改也计入覆盖'],
+        ['每账户最多干预', 'Google 起点一次、后续局部干预一次；已通知但未修改也计入后续成本'],
         ['未响应概率（情景假设）', pct(cfg['response']['nonresponse'])],
         ['响应者：简单修补 / 片段重组 / 重选', ' / '.join(pct(x) for x in cfg['response']['weights'])],
-        ['停止条件', '共同起点后最多 10 轮；预算不足、无有效动作或连续停滞可提前停止'],
-        ['基础要求', 'Google 两组全站至少 8 字符；动态局部要求在此基础上叠加'],
+        ['停止条件', '共同起点后最多 10 轮；无可行动作或预算不足时可提前停止'],
+        ['基础要求', '四个 Google 组全站至少 8 字符；局部要求在此基础上叠加'],
         ['实验编号', result['metadata']['run_id']],
     ]))
+    random_arm, frozen_arm = arms['google_random'], arms['google_frozen']
+    same_schedule = (len(random_arm['rounds']) == len(frozen_arm['rounds']) == len(dynamic['rounds'])
+                     and all(random_arm['rounds'][i]['action']['selected'] ==
+                             frozen_arm['rounds'][i]['action']['selected'] ==
+                             dynamic['rounds'][i]['action']['selected']
+                             for i in range(len(dynamic['rounds']))))
+    if same_schedule:
+        parts.append(f'<p class="notice">本次后三组每轮通知人数相同，后续各组均通知 '
+                      f'{pct(ledger.get("adaptive_affected_rate", ledger["affected_rate"]))} 的账户。'
+                      'Google 起点的通知另行统计；20% 是后续通知预算上限。</p>')
+    if all(left['state_sha256'] == right['state_sha256'] for left, right in
+           zip(frozen_arm['trajectory'], dynamic['trajectory'])) and len(frozen_arm['trajectory']) == len(dynamic['trajectory']):
+        parts.append('<p class="notice">本次初始排序组与逐轮动态组的每轮账户状态、F 和 A1 终值完全重合。'
+                      '本次未观察到逐轮重新分析相对初始排序的额外收益；与随机组选人的效果须按共同实际成本比较。'
+                     '冻结组只在共同 Google 起点规划账户和规则；相同轨迹不是重新规划的结果。</p>')
+    random_already = random_arm['final']['ledger'].get('already_compliant', 0)
+    if random_already:
+        parts.append(f'<p>随机组有 {random_already:,} 名被通知账户已符合选中的规则，计入通知成本但没有修改口令。'
+                     '因此相同通知人数不代表相同实际修改人数。</p>')
     parts.append('<p class="notice">PCFG 曲线是蒙特卡洛估计，不是实际破解记录。模型未覆盖不等于安全。'
                  '控制器把未覆盖质量计入保守风险代理，防止只因超出模型支持范围就获得收益；'
-                 '该代理不是现实风险或置信上界。不同方案可能提前停止，应按实际覆盖率比较。</p></section>')
+                 '该代理不是现实风险或置信上界。后三组共用每轮与累计预算上限；'
+                 '只在曲线共同覆盖的成本区间内比较，不外推到未达到的 20% 附加覆盖。</p></section>')
     specs = chart_specs(result)
     for name, (title, series, opts) in specs.items():
         if name.startswith('cdf_fit_'):
             continue  # Fit diagnostics have their own explanation and tables below.
         parts.append(f'<section id="{escape(name)}"><h2>{escape(title)}</h2>')
-        if name in ('risk_cost', 'guarded_cost'):
-            parts.append('<p>横轴是累计被要求修改的不同账户比例，纵轴越低表示该模型的估计命中比例越低。'
-                         '无政策是水平风险参照线，其实际成本为零。Google 固定组停在全体账户满足长度要求后的实际成本，'
-                         '实验组从该点继续；固定组没有后续同成本观测，不把它延伸到实验组终态成本。</p>'
-                         if name == 'risk_cost' else '<p>展示三方案实际执行过程中的保守风险代理。Google 固定组在全体账户达到长度要求后保持分布不变，曲线停在其实际迁移成本。</p>')
+        if name == 'coverage_F':
+            parts.append(f'<p>横轴从共同 Google 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
+                         '原始组和 Google 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
+                         '相同横轴位置才能比较方法差异，未到达的成本不作外推。</p>')
         if name == 'attack_A1':
             parts.append('<p>A1 只用独立开发参考群体的模拟迁移结果训练。参考群体构成不同，'
                          '实际干预比例可能与目标群体不同，见下方覆盖与参考账本。</p>')
-        if name == 'attack_mutations':
-            parts.append(f'<p>从独立开发口令生成常见数字、年份和符号变换，共 '
-                         f'{result["baseline_mutations"]["unique_guesses"]:,} 个不同猜测。'
-                         '横轴只显示实际猜测次数；有限词表耗尽后没有继续猜测。此项不是全部攻击的上界。</p>')
         if name == 'final_distribution':
             parts.append('<p>横轴为频次排名，纵轴为使用人数，两轴均为对数刻度；'
                          '曲线更分散本身不能证明更安全。</p>')
@@ -196,7 +276,7 @@ def render_intervention_html(result, *, document=True):
                          '固定对照从这个时点起不再调整，实验组随后根据最新分布连续决策 10 轮。'
                          '每条实验曲线对应一次调整后的全站分布，两轴均为对数刻度。</p>')
             parts.append(f'<p>初始 Google 迁移修改了 {pct(comparison["control"]["affected_rate"])} 的账户；'
-                         '完成后全体账户均符合至少 8 字符规则。该迁移覆盖率计入两条 Google 方案的横轴成本。</p>')
+                          '完成后全体账户均符合至少 8 字符规则；后续干预成本图从此时的零新增通知起算。</p>')
             if completed != comparison['requested_rounds']:
                 parts.append(f'<p class="notice">本次实验请求 {comparison["requested_rounds"]} 轮，实际完成 {completed} 轮；'
                              f'停止原因：{escape(comparison["experimental"]["stop_label"])}。图中没有复制末态补足轮数。</p>')
@@ -234,11 +314,12 @@ def render_intervention_html(result, *, document=True):
         parts.append('<p>本次没有执行动作。候选没有通过风险收益或预算检查时，系统会停止，'
                      '不会为了展示效果强制修改账户。</p>')
     else:
-        parts.append(table(['轮次', '改谁', '怎么改', '通知 / 成功', '累计受影响',
-                            '预计 / 实现风险代理下降'], [
+        parts.append(table(['轮次', '改谁', '怎么改', '通知 / 成功', '后续累计通知',
+                             '预计 / 实现综合目标改善'], [
             [r['round'], r['action']['group'], r['action']['rule'], f'{r["action"]["selected"]} / {r["changed"]}',
-             pct(dynamic['trajectory'][i+1]['ledger']['affected_rate']),
-             f'{100*r["prediction"]["predicted_guarded_gain"]:.3f} / {100*r["realized_guarded_gain"]:.3f} 个百分点']
+              pct(dynamic['trajectory'][i+1]['ledger'].get('adaptive_affected_rate',
+                  dynamic['trajectory'][i+1]['ledger']['affected_rate'])),
+              f'{100*r["prediction"].get("predicted_composite_gain", r["prediction"]["predicted_guarded_gain"]):.3f} / {100*r["realized_guarded_gain"]:.3f} 分']
             for i, r in enumerate(dynamic['rounds'])]))
         for r in dynamic['rounds']:
             round_label = f'调整第 {r["round"]} 轮'
@@ -246,9 +327,9 @@ def render_intervention_html(result, *, document=True):
                          f'<p>{escape(r["selection_reason"])}。未响应 {r["nonresponse"]} 人，'
                          f'尝试后未完成 {r["failed_to_comply"]} 人。</p>')
             ordered = sorted(r['candidate_audit'], key=lambda x: -x['score'])[:12]
-            parts.append(table(['对象', '要求', '人数', '预计风险代理下降', '判断'], [
+            parts.append(table(['对象', '要求', '人数', '预计综合目标改善', '判断'], [
                 [a['action']['group'], a['action']['rule'], a['action']['selected'],
-                 f'{100*a["predicted_guarded_gain"]:.3f} 个百分点',
+                  f'{100*a.get("predicted_composite_gain", a["predicted_guarded_gain"]):.3f} 分',
                  '可行' if a['feasible'] else '；'.join(a['rejection_reasons'])] for a in ordered]))
             parts.append(f'<p>本轮共评价 {r["candidate_count"]} 个候选，表中显示评分最高的 12 个；完整记录见公开报告。</p></details>')
     if dynamic.get('terminal_candidate_audit'):
@@ -261,7 +342,7 @@ def render_intervention_html(result, *, document=True):
     rows = []
     baseline_point = main_point(result['baseline']['risk'], budget)
     for level in ('F', 'A1'):
-        rows.append(['无政策', level, pct(baseline_point['rate']),
+        rows.append([labels[0][1], level, pct(baseline_point['rate']),
                      pct(baseline_point['outside_model_support_weight']/baseline_point['target_weight']),
                      pct(baseline_point['low_sample_support_weight']/baseline_point['target_weight'])])
     for key, label in labels[1:]:
@@ -276,13 +357,13 @@ def render_intervention_html(result, *, document=True):
                              pct(p['low_sample_support_weight']/p['target_weight'])])
     parts.append(table(['方案', '攻击层次', '估计猜中比例', '模型未覆盖比例', '低采样支持比例'], rows))
     parts.append(table(['方案', '累计通知', '实际修改', '编辑成本 / 全部账户', 'A1 参考通知比例', '停止原因'], [
-        ['无政策', pct(0), pct(0), '0.0000', pct(0), '保持原始账户'], *[
+        [labels[0][1], pct(0), pct(0), '0.0000', pct(0), '保持原始账户'], *[
         [label, pct(arms[key]['final']['ledger']['affected_rate']), pct(arms[key]['final']['ledger']['changed_rate']),
          f'{arms[key]["final"]["ledger"]["edit_cost"]:.4f}',
          pct(arms[key]['adaptive_reference_ledger']['affected_rate']), arms[key]['stop_label']]
         for key, label in labels[1:]]]))
     parts.append('<p>A0 未运行：局部规则不能用于过滤全站未干预或未响应账户。'
-                 '本页展示 F、A1 和独立参考变换攻击，各自含义单独标注。</p></section></main>')
+                 '原始无干预组的 A1 与 F 相同；其他组的 A1 使用各自独立参考群体的模拟迁移训练。</p></section></main>')
     body = ''.join(parts)
     if not document:
         return body

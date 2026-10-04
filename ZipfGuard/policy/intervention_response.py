@@ -13,10 +13,17 @@ class InterventionResponder:
         self.config = dict(config)
 
     def respond(self, population, action, seed, stream):
+        if hasattr(action, 'components'):
+            return [row for component in action.components
+                    for row in self.respond(population, component, seed, stream)]
         rows = []
         for i in action.indices:
             account = population.accounts[i]
             old = account.password
+            if action.rule.accepts(old):
+                rows.append({'index': i, 'old': old, 'new': old,
+                             'status': 'already_compliant', 'attempts': 0, 'edit_cost': 0.})
+                continue
             rng = _rng(seed, f'{stream}|{account.identifier}')
             new, status, attempts = old, 'nonresponse', 0
             if rng.random() >= self.config['nonresponse']:

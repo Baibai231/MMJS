@@ -1,7 +1,15 @@
 {
-  "run_id": "a856c7cffdc4cbf7",
+  "run_id": "677e51a8ab3e1229",
   "users": 100000,
   "google_start": true,
-  "dynamic_rounds": 10,
-  "candidate_pool": "site-fragments-1-18-v1"
+  "dynamic_rounds": 5,
+  "candidate_pool": "site-fragments-1-18-v1",
+  "comparison_arms": 5,
+  "paired_seeds": [
+    42,
+    43,
+    44
+  ],
+  "comparison_cost": 0.08,
+  "protocol": "selective-intervention-v2"
 }

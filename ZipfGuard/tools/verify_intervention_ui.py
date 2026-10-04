@@ -36,10 +36,10 @@ def main():
             assert page.locator('nav[aria-label="实验结果导航"] a').count() >= 8
             latest_run = page.request.get(origin+'/api/intervention/latest').json()['output']['run_id']
             assert page.locator('#result').get_attribute('data-run-id') == latest_run
-            if page.locator('#risk_cost').count():
+            if page.locator('#coverage_F').count():
                 page.locator('#intervention-overview').screenshot(path=str(out/'overview.png'))
-                page.locator('#risk_cost').screenshot(path=str(out/'risk_cost.png'))
-                chart = page.locator('#risk_cost .plot-distinct')
+                page.locator('#coverage_F').screenshot(path=str(out/'coverage_F.png'))
+                chart = page.locator('#coverage_F .plot-distinct')
                 checkbox = chart.locator('.series-key-1 input')
                 checkbox.uncheck()
                 assert chart.locator('svg > .series-1').evaluate("e=>getComputedStyle(e).display") == 'none'
@@ -47,35 +47,41 @@ def main():
                 chart.locator('.series-key-1').hover()
                 assert float(chart.locator('svg > .series-2').evaluate("e=>getComputedStyle(e).opacity")) < .1
                 page.get_by_role('heading', name='每轮具体做了什么').hover()
-                figure_url = page.locator('#risk_cost a').get_attribute('href')
+                figure_url = page.locator('#coverage_F a').get_attribute('href')
                 svg = page.request.get(origin+figure_url)
                 assert svg.status == 200 and '图例' in svg.text()
                 with page.expect_download() as download:
                     page.locator('#download').click()
                 assert download.value.suggested_filename == 'intervention_report.json'
                 report = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))
-                assert report['schema_version'] == 'selective-intervention-v1-result'
+                assert report['schema_version'] == 'selective-intervention-v2-result'
                 assert report['dataset']['source_rows'] > 1000000
                 comparison = report['google_round_zipf']
                 assert comparison['control']['state_sha256'] == comparison['experimental']['start_state_sha256']
-                assert comparison['experimental']['rounds_completed'] == 10
-                expected = ['无政策', 'Google 政策不变', 'Google 起点＋10 轮逐步干预']
-                for name in ('risk_cost', 'guarded_cost', 'attack_F', 'attack_A1', 'attack_mutations', 'final_distribution'):
+                assert 0 <= comparison['experimental']['rounds_completed'] <= 10
+                expected = ['原始分布（无干预）', 'Google 基础策略', 'Google＋随机分批调整',
+                            'Google＋初始排序后分批执行', 'Google＋每轮重新评估的动态调整']
+                if comparison['experimental']['rounds_completed'] != 10:
+                    expected[-1] += f'（{comparison["experimental"]["rounds_completed"]} 轮后停止）'
+                for removed in ('risk_cost', 'guarded_cost', 'attack_mutations'):
+                    assert page.locator('#'+removed).count() == 0
+                for name in ('coverage_F', 'attack_F', 'attack_A1', 'final_distribution'):
                     panel = page.locator('#'+name)
                     assert panel.locator('.legend label span').all_text_contents() == expected
-                    assert panel.locator('svg > .plot-series').count() == 3
+                    assert panel.locator('svg > .plot-series').count() == 5
                     exported = page.request.get(origin+panel.locator('a').get_attribute('href'))
                     assert exported.status == 200
                     assert all(label in exported.text() for label in expected)
-                    assert '初始一次规划' not in exported.text()
+                    assert '固定 Google 分批' not in exported.text()
                 page.locator('#attack_A1').screenshot(path=str(out/'attack_A1.png'))
                 page.locator('#final_distribution').screenshot(path=str(out/'final_distribution.png'))
                 zipf = page.locator('#google_round_zipf .plot-distinct')
-                assert zipf.locator('.legend input[type="checkbox"]').count() == 11
-                assert zipf.locator('svg > .plot-series').count() == 11
-                last = zipf.locator('.series-key-10 input')
+                expected_lines = 1 + comparison['experimental']['rounds_completed']
+                assert zipf.locator('.legend input[type="checkbox"]').count() == expected_lines
+                assert zipf.locator('svg > .plot-series').count() == expected_lines
+                last = zipf.locator(f'.series-key-{expected_lines-1} input')
                 last.uncheck()
-                assert zipf.locator('svg > .series-10').evaluate("e=>getComputedStyle(e).display") == 'none'
+                assert zipf.locator(f'svg > .series-{expected_lines-1}').evaluate("e=>getComputedStyle(e).display") == 'none'
                 last.check()
                 zipf_url = page.locator('#google_round_zipf a').get_attribute('href')
                 zipf_svg = page.request.get(origin+zipf_url)
@@ -99,13 +105,13 @@ def main():
             page.evaluate('(cfg)=>fill(cfg)', cfg)
             page.locator('#run').click()
             page.wait_for_function("document.getElementById('status').textContent === '局部干预实验完成'", timeout=180000)
-            assert page.locator('#risk_cost svg[role=img]').count() == 1
+            assert page.locator('#coverage_F svg[role=img]').count() == 1
             assert page.locator('#attack_A1').count() == 0
             page.locator('#total').fill('0')
             page.locator('#run').click()
             page.wait_for_function("document.getElementById('status').textContent.startsWith('实验未完成')")
             assert page.locator('#download').is_disabled()
-            assert page.locator('#risk_cost').count() == 0
+            assert page.locator('#coverage_F').count() == 0
             bad = page.request.post(origin+'/api/intervention/jobs', data=json.dumps({'config': {}}),
                                     headers={'Content-Type':'application/json', 'Sec-Fetch-Site':'cross-site'})
             assert bad.status == 403
@@ -116,7 +122,7 @@ def main():
             assert not errors, errors
             summary = {'browser': browser.version, 'javascript_errors': errors,
                        'checks': ['real report', 'shared legend toggle and hover',
-                                  'six consistent three-strategy charts', '11-line Google-started Zipf chart', 'SVG legend export',
+                                  'four consistent five-strategy charts', 'actual-round Google-started Zipf chart', 'SVG legend export',
                                   'report download', 'mobile containment', 'background job',
                                   'invalid config clears stale results', 'cross-site rejection',
                                   'asset path boundary', 'single third workbench navigation']}

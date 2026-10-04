@@ -1,5 +1,5 @@
 {
-  "schema_version": "selective-intervention-v1",
+  "schema_version": "selective-intervention-v2",
   "seed": 42,
   "data": {
     "path": "../rockyou-withcount.txt",

@@ -9,14 +9,16 @@ from unittest.mock import patch
 
 from ai.pcfg_monte_carlo import Grammar, MonteCarloIndex
 from core.intervention_state import Population
-from core.intervention_risk import InterventionRisk, reference_mutation_ranks, evaluate_mutations
+from core.intervention_risk import (CombinedInterventionRisk, InterventionRisk,
+                                    reference_mutation_ranks, evaluate_mutations)
 from experiments.intervention_config import load_intervention_config, validate_intervention_config
 from experiments.intervention_pipeline import (run_arm, run_intervention_pipeline, reference_replay,
                                                 google_round_zipf_experiment)
 from policy.intervention_response import InterventionResponder
-from policy.local_actions import Action, Group, LocalRule, generate_actions, capacities
+from policy.local_actions import Action, Group, LocalRule, MultiAction, generate_actions, capacities
 from policy.open_policy import Rule
-from policy.intervention_controller import predict_action, select_action, plan_once
+from policy.intervention_controller import (predict_action, select_action,
+                                            select_random_action, random_account_order, plan_once)
 from web.intervention_presentation import render_intervention_html, chart_specs, LABELS
 
 
@@ -94,6 +96,21 @@ class TestIntervention(unittest.TestCase):
             self.assertFalse(set(ids).intersection(a.indices))
         self.assertEqual(p.counts()['abc'], 103-len(ids))
 
+    def test_google_migration_is_separate_from_adaptive_budget(self):
+        cfg = self.cfg(100)
+        p = Population(['abc'] * 100)
+        p.apply([{'index': i, 'old': 'abc', 'new': 'abcdefgh',
+                  'status': 'changed', 'edit_cost': 1.} for i in range(100)], phase='google')
+        self.assertEqual(p.ledger()['google_affected'], 100)
+        self.assertEqual(p.ledger()['adaptive_affected'], 0)
+        self.assertEqual(capacities(p, cfg), 10)
+        p.apply([{'index': i, 'old': 'abcdefgh', 'new': 'abcdefgh!',
+                  'status': 'changed', 'edit_cost': .1} for i in range(10)])
+        self.assertEqual(p.ledger()['adaptive_affected'], 10)
+        self.assertEqual(capacities(p, cfg), 10)
+        self.assertEqual(p.ledger()['affected'], 100)
+        self.assertEqual(p.ledger()['adaptive_notification_events'], 10)
+
     def test_transaction_validates_before_any_mutation(self):
         p = Population(['A', 'B'])
         rows = [{'index': 0, 'old': 'A', 'new': 'F', 'status': 'changed', 'edit_cost': 1.},
@@ -113,6 +130,39 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(pred['predicted_hit_gain'], .1)
         self.assertEqual(pred['predicted_guarded_gain'], 0)
         self.assertFalse(pred['feasible'])
+
+    def test_composite_gain_matches_realized_objective_on_same_model(self):
+        model = self.risk()
+        before = Counter({'A': 60, 'B': 40})
+        risk = CombinedInterventionRisk(model, model, baseline_counts=before,
+                                        risk_weight=.8)
+        rows = [{'old': 'A', 'new': 'F'} for _ in range(10)]
+        after = before.copy()
+        after['A'] -= 10
+        after['F'] += 10
+        _, _, gain, _ = risk.gain_components(rows, before)
+        self.assertAlmostEqual(gain, risk.objective(before)-risk.objective(after))
+        self.assertEqual(risk.loss('outside'), .5)
+
+    def test_dynamic_considers_random_action_under_same_state(self):
+        population = Population(['abcdefgh']*20)
+        risk = CombinedInterventionRisk(self.risk(), self.risk(),
+                                        baseline_counts=population.counts())
+        action = self.action((0, 1))
+        prediction = {'score': .1, 'feasible': True, 'predicted_hhi_change': -.01}
+        with patch('policy.intervention_controller.generate_actions', return_value=[]), patch(
+                'policy.intervention_controller.select_random_action',
+                return_value=((action, prediction), [])):
+            winner, audit = select_action(population, risk, object(), self.cfg(20), 1)
+        self.assertIs(winner[0], action)
+        self.assertEqual(audit[0]['score'], .1)
+        with patch('policy.intervention_controller.generate_actions', return_value=[]), patch(
+                'policy.intervention_controller.select_random_action',
+                return_value=((action, prediction), [])):
+            winner, audit = select_action(population, risk, object(), self.cfg(20), 1,
+                                          target_size=3)
+        self.assertIsNone(winner)
+        self.assertEqual(audit, [])
 
     def test_prediction_isolation_and_no_feasible_stop(self):
         cfg = self.cfg(100)
@@ -187,7 +237,7 @@ class TestIntervention(unittest.TestCase):
         fixed, _, _ = run_arm('fixed_google', population, words,
                               self.risk(), responder, cfg)
 
-        def choose(current, evaluator, response, config, round_id):
+        def choose(current, evaluator, response, config, round_id, **kwargs):
             ids = tuple(i for i, a in enumerate(current.accounts) if not a.notifications)[:1]
             action = self.action(ids, Rule('adaptive', min_length=12),
                                  eligible=sum(not a.notifications for a in current.accounts))
@@ -200,8 +250,21 @@ class TestIntervention(unittest.TestCase):
                 'experiments.intervention_pipeline.make_index', return_value=ExactIndex()) as fit:
             comparison = google_round_zipf_experiment(
                 population, words, self.risk(), responder, cfg, fixed)
-        self.assertEqual(fit.call_count, 2)
+        self.assertGreaterEqual(fit.call_count, 2)
         self.assertTrue(comparison['common_google_start_verified'])
+        self.assertEqual(set(comparison['arms']),
+                         {'google_hold', 'google_random', 'google_frozen', 'google_dynamic'})
+        for key in ('google_random', 'google_frozen', 'google_dynamic'):
+            self.assertEqual(comparison['arms'][key]['trajectory'][0]['state_sha256'],
+                             comparison['control']['state_sha256'])
+        schedule = [row['action']['selected'] for row in comparison['arms']['google_dynamic']['rounds']]
+        self.assertEqual(comparison['comparison_budget']['dynamic_round_notification_schedule'], schedule)
+        self.assertEqual(comparison['comparison_budget']['planned_round_notification_schedule'], [2]*10)
+        self.assertEqual(comparison['arms']['google_random']['stop_reason'],
+                         'no_feasible_positive_gain_action')
+        self.assertEqual(comparison['arms']['google_random']['rounds'], [])
+        frozen_sizes = [row['action']['selected'] for row in comparison['arms']['google_frozen']['rounds']]
+        self.assertTrue(all(size <= 2 for size in frozen_sizes))
         self.assertEqual(comparison['control']['state_sha256'],
                          comparison['experimental']['start_state_sha256'])
         self.assertEqual(comparison['google_baseline']['target']['eligible'], 60)
@@ -220,6 +283,7 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(comparison['experimental']['snapshots'][0]['round'], 1)
         self.assertEqual(comparison['experimental']['snapshots'][0]['action']['rule'], 'test')
         self.assertEqual(comparison['experimental']['snapshots'][-1]['affected_rate'], .7)
+        self.assertEqual(comparison['arms']['google_dynamic']['final']['ledger']['adaptive_affected_rate'], .1)
         arms = comparison['arms']
         self.assertEqual(arms['google_hold']['final'], arms['google_dynamic']['trajectory'][0])
         self.assertEqual(arms['google_dynamic']['final']['ledger']['affected_rate'], .7)
@@ -227,13 +291,16 @@ class TestIntervention(unittest.TestCase):
                   'baseline_mutations': evaluate_mutations(population.counts(),
                       reference_mutation_ranks({'abc': 100}, 100), cfg['budgets'])}
         specs = chart_specs(report)
-        for name in ('risk_cost', 'guarded_cost', 'attack_F', 'attack_A1', 'attack_mutations', 'final_distribution'):
+        for name in ('coverage_F', 'attack_F', 'attack_A1', 'final_distribution'):
             series = specs[name][1]
             self.assertEqual([label for label, _ in series], [label for _, label in LABELS])
-            self.assertEqual(len(series), 3)
-        self.assertEqual(specs['risk_cost'][1][1][1][-1][0], .6)
-        self.assertEqual(specs['risk_cost'][1][2][1][-1][0], .7)
-        self.assertEqual(specs['final_distribution'][1][2][1],
+            self.assertEqual(len(series), 5)
+        self.assertNotIn('risk_cost', specs)
+        self.assertNotIn('guarded_cost', specs)
+        self.assertNotIn('attack_mutations', specs)
+        self.assertEqual(specs['coverage_F'][1][1][1][-1][0], 0.)
+        self.assertEqual(specs['coverage_F'][1][4][1][-1][0], .1)
+        self.assertEqual(specs['final_distribution'][1][4][1],
                          comparison['experimental']['snapshots'][-1]['distribution']['full_rank_frequency'])
         self.assertEqual(len(specs['google_round_zipf'][1]), 11)
 
@@ -278,6 +345,39 @@ class TestIntervention(unittest.TestCase):
         self.assertTrue(actions)
         self.assertTrue(all(action.rule.base.min_length >= 8 for action in actions))
 
+    def test_random_group_is_drawn_before_rule_selection_and_compliant_users_keep_passwords(self):
+        cfg = self.cfg(100)
+        cfg['controller']['policy_floor_minimum_length'] = 8
+        population = Population(['abcdefgh']*50 + ['abc12345']*50)
+        responder = InterventionResponder({'abcdefgh': 50, 'abc12345': 50},
+                                          {**cfg['response'], 'nonresponse': 0.})
+        with patch('policy.intervention_controller.predict_action',
+                   side_effect=lambda p, a, *args, **kwargs: {
+                       'predicted_guarded_gain': (sum(x.rule.fragment.number for x in a.components)
+                                                  if isinstance(a, MultiAction) else a.rule.fragment.number) / 1000,
+                       'predicted_hhi_change': 0., 'score': (sum(x.rule.fragment.number for x in a.components)
+                                                            if isinstance(a, MultiAction) else a.rule.fragment.number) / 1000,
+                       'feasible': True, 'rejection_reasons': []}):
+            winner, audit = select_random_action(population, self.risk(), responder, cfg, 1)
+        action = winner[0]
+        self.assertGreater(len(audit), 1)
+        self.assertEqual(audit[-1]['action']['selected'], len(winner[0].indices))
+        self.assertIsInstance(action, MultiAction)
+        self.assertEqual(set(action.indices), set(random_account_order(
+            population, list(range(100)), cfg['seed'], 1)[:10]))
+        self.assertEqual(len(action.indices), len(set(action.indices)))
+        self.assertTrue(all(part.group.kind == 'random' and part.rule.base.min_length >= 8
+                            for part in action.components))
+        # A randomly notified account already meeting a chosen rule pays the
+        # notification cost but is not forced to change its password.
+        accepted = Action(Group('random', '', '随机抽取账户'),
+                          LocalRule(Rule('length-8', min_length=8)), 'length-8', (0,), 100)
+        rows = responder.respond(population, accepted, cfg['seed'], 'execution-1')
+        self.assertEqual(rows[0]['status'], 'already_compliant')
+        population.apply(rows)
+        self.assertEqual(population.ledger()['affected'], 1)
+        self.assertEqual(population.ledger()['changed'], 0)
+
     def test_reference_replay_targets_only_matching_independent_accounts(self):
         cfg = self.cfg(100)
         cfg['controller']['round_fraction'] = .2
@@ -318,7 +418,8 @@ class TestIntervention(unittest.TestCase):
             public = json.dumps(report, ensure_ascii=False)
             self.assertNotIn('"abc"', public)
             self.assertIn('google_round_zipf', report)
-            self.assertEqual(set(report['arms']), {'google_hold', 'google_dynamic'})
+            self.assertEqual(set(report['arms']),
+                             {'google_hold', 'google_random', 'google_frozen', 'google_dynamic'})
             self.assertNotIn('legacy_arms', report)
             html = render_intervention_html(report)
             self.assertIn('plot-distinct', html)
@@ -327,9 +428,9 @@ class TestIntervention(unittest.TestCase):
             self.assertIn('10³', html)
             self.assertIn('未运行', html)
             self.assertNotIn('"abc"', html)
-            svg = (Path(directory)/'risk_cost.svg').read_text(encoding='utf-8')
+            svg = (Path(directory)/'coverage_F.svg').read_text(encoding='utf-8')
             self.assertIn('aria-label="图例"', svg)
-            self.assertIn('Google 政策不变', svg)
+            self.assertIn('Google 基础策略', svg)
             self.assertNotIn('初始一次规划', svg)
             self.assertTrue((Path(directory)/'report.json.sha256').is_file())
             self.assertEqual(hashlib.sha256((Path(directory)/'report.json').read_bytes()).hexdigest(),

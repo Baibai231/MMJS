@@ -12,11 +12,13 @@ from ai.pcfg_monte_carlo import Grammar, MonteCarloIndex, VERSION
 from core.corpus import counts_hash
 from core.registration import load_registration
 from core.intervention_state import Population, distribution_summary
-from core.intervention_risk import InterventionRisk, reference_mutation_ranks, evaluate_mutations
+from core.intervention_risk import (InterventionRisk, CombinedInterventionRisk,
+                                    reference_mutation_ranks, evaluate_mutations)
 from experiments.intervention_config import ROOT, PROTOCOL, validate_intervention_config
 from policy.intervention_response import InterventionResponder, RESPONSE_PROTOCOL
-from policy.intervention_controller import select_action, plan_once, predict_action
-from policy.local_actions import Action, account_order, capacities, generate_actions
+from policy.intervention_controller import (select_action, select_random_action,
+                                            random_account_order, plan_once, predict_action)
+from policy.local_actions import Action, MultiAction, account_order, capacities, generate_actions
 from policy.user_response import satisfy_visible_rules, _rng
 from policy.open_policy import edit_distance
 
@@ -26,6 +28,9 @@ GOOGLE_DYNAMIC_METHOD = 'google_dynamic'
 GOOGLE_DYNAMIC_LABEL = 'Google 起点动态调整'
 GOOGLE_DYNAMIC_ROUNDS = 10
 GOOGLE_HOLD_METHOD = 'google_hold'
+GOOGLE_RANDOM_METHOD = 'google_random'
+GOOGLE_FROZEN_METHOD = 'google_frozen'
+GOOGLE_METHODS = (GOOGLE_DYNAMIC_METHOD, GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD)
 STOP_LABELS = {'target_reached': '达到配置中的风险目标', 'budget_exhausted': '累计干预预算用尽',
                'no_feasible_positive_gain_action': '当前候选没有可靠的正收益动作',
                'plan_exhausted': '初始计划已执行完', 'no_eligible_accounts': '没有剩余不合规账户',
@@ -39,9 +44,21 @@ def make_index(counts, cfg):
     return MonteCarloIndex(grammar, **cfg['monte_carlo'])
 
 
+def make_selection_risk(population, frozen_risk, cfg, index_cache, baseline_counts=None):
+    """Pair frozen F with an A1 PCFG retrained only on the independent reference."""
+    counts = population.counts()
+    key = counts_hash(counts)
+    if key not in index_cache:
+        index_cache[key] = make_index(counts, cfg)
+    adaptive = InterventionRisk(index_cache[key], cfg['budgets'], cfg['risk_budget'])
+    return CombinedInterventionRisk(frozen_risk, adaptive,
+        baseline_counts=baseline_counts, risk_weight=cfg['controller']['risk_weight']), key
+
+
 def snapshot(population, evaluator, round_id):
     counts = population.counts()
     return {'round': round_id, 'state_sha256': population.fingerprint(),
+            'account_state_sha256': population.account_fingerprint(),
             'ledger': population.ledger(), 'risk': evaluator.evaluate(counts),
             'distribution': distribution_summary(counts),
             'google_compliance': google_compliance(population)}
@@ -63,13 +80,26 @@ def assert_google_compliant(population):
 
 def reference_replay(reference, action, target_total, responder, cfg, round_id):
     """Known public action, independently simulated accounts; never target outcomes."""
+    if isinstance(action, MultiAction):
+        rows = [reference_replay(reference, component, target_total, responder, cfg, round_id)
+                for component in action.components]
+        selected = sum(row['selected_reference_accounts'] for row in rows)
+        return {'eligible_reference_accounts': sum(row['eligible_reference_accounts'] for row in rows),
+                'selected_reference_accounts': selected,
+                'target_selected_fraction': len(action.indices)/target_total,
+                'reference_selected_fraction': selected/reference.total,
+                'components': rows}
     eligible = [i for i, a in enumerate(reference.accounts)
-                if not a.notifications and action.group.matches(a.password)
+                 if not a.adaptive_notifications and action.group.matches(a.password)
                 and not action.rule.accepts(a.password)]
     # Match selected fraction within the independently observed eligible group.
-    fraction = len(action.indices)/action.eligible_count
-    take = min(len(eligible), math.floor(len(eligible)*fraction + .5), capacities(reference, cfg))
-    ids = tuple(account_order(reference, eligible, cfg['seed'])[:take])
+    fraction = (len(action.indices)/target_total if action.group.kind == 'random'
+                else len(action.indices)/action.eligible_count)
+    take = min(len(eligible), math.floor((reference.total if action.group.kind == 'random'
+                                        else len(eligible))*fraction + .5), capacities(reference, cfg))
+    order = (random_account_order(reference, eligible, cfg['seed'], round_id)
+             if action.group.kind == 'random' else account_order(reference, eligible, cfg['seed']))
+    ids = tuple(order[:take])
     if ids:
         replay = Action(action.group, action.rule, action.rule_label, ids, len(eligible))
         reference.apply(responder.respond(reference, replay, cfg['seed'], f'adaptive-reference-{round_id}'))
@@ -80,38 +110,74 @@ def reference_replay(reference, action, target_total, responder, cfg, round_id):
 
 
 def run_arm(method, initial, reference_words, evaluator, responder, cfg, progress=None,
-            reference_initial=None):
+            reference_initial=None, round_targets=None, selection_index_cache=None):
     population = initial.clone()
     reference = reference_initial.clone() if reference_initial is not None else Population(reference_words, 'adaptive-reference')
-    if method == GOOGLE_DYNAMIC_METHOD:
+    if method in GOOGLE_METHODS:
         if cfg['controller'].get('policy_floor_minimum_length', 0) < 8:
             raise AssertionError('Google 动态实验必须保留最低长度 8')
         assert_google_compliant(population)
         assert_google_compliant(reference)
     first = snapshot(population, evaluator, 0)
     trajectory, rounds = [first], []
-    plan = plan_once(initial, evaluator, responder, cfg) if method == 'one_shot' else None
+    selection_index_cache = selection_index_cache if selection_index_cache is not None else {}
+    if method == GOOGLE_FROZEN_METHOD:
+        planning_cfg = deepcopy(cfg)
+        planning_cfg['controller']['max_rounds'] = GOOGLE_DYNAMIC_ROUNDS
+        if selection_index_cache is None:
+            frozen_selection_risk, frozen_selection_model_key = evaluator, None
+        else:
+            frozen_selection_risk, frozen_selection_model_key = make_selection_risk(
+                reference, evaluator, cfg, selection_index_cache, initial.counts())
+        plan = plan_once(initial, frozen_selection_risk, responder, planning_cfg,
+                         round_targets=round_targets)
+    else:
+        plan = plan_once(initial, evaluator, responder, cfg) if method == 'one_shot' else None
     target = first['risk']['guarded_risk']*(1-cfg['controller']['target_relative_reduction'])
     stagnant, stop = 0, 'max_rounds'
     terminal_audit = []
-    round_limit = (0 if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_ROUNDS
-                   if method == GOOGLE_DYNAMIC_METHOD else cfg['controller']['max_rounds'])
+    round_limit = (0 if method == GOOGLE_HOLD_METHOD else
+                   len(round_targets) if method in (GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD)
+                   and round_targets is not None else GOOGLE_DYNAMIC_ROUNDS
+                   if method in GOOGLE_METHODS else cfg['controller']['max_rounds'])
     method_label = ('Google 政策不变' if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_LABEL
-                    if method == GOOGLE_DYNAMIC_METHOD else dict(METHODS)[method])
+                    if method == GOOGLE_DYNAMIC_METHOD else
+                    'Google＋随机分批调整' if method == GOOGLE_RANDOM_METHOD else
+                    'Google＋初始排序后分批执行' if method == GOOGLE_FROZEN_METHOD else
+                    dict(METHODS)[method])
     for round_id in range(1, round_limit+1):
         if capacities(population, cfg) <= 0:
             stop = 'budget_exhausted'
             break
-        if method not in (GOOGLE_DYNAMIC_METHOD, GOOGLE_HOLD_METHOD) and trajectory[-1]['risk']['guarded_risk'] <= target:
+        if method not in (*GOOGLE_METHODS, GOOGLE_HOLD_METHOD) and trajectory[-1]['risk']['guarded_risk'] <= target:
             stop = 'target_reached'
             break
         if progress:
-            progress(f'{method_label} · 第 {round_id} 轮：比较局部任务')
-        if method == 'one_shot':
+            progress(f'{method_label} · 第 {round_id} 轮：更新独立参考攻击模型并比较动作')
+        if method in (GOOGLE_DYNAMIC_METHOD, GOOGLE_RANDOM_METHOD) and selection_index_cache is not None:
+            selection_risk, selection_model_key = make_selection_risk(
+                reference, evaluator, cfg, selection_index_cache, initial.counts())
+        elif method == GOOGLE_FROZEN_METHOD:
+            selection_risk, selection_model_key = frozen_selection_risk, frozen_selection_model_key
+        else:
+            selection_risk, selection_model_key = evaluator, None
+        selection_before = (selection_risk.objective(population.counts())
+                            if isinstance(selection_risk, CombinedInterventionRisk)
+                            else selection_risk.evaluate(population.counts())['guarded_risk'])
+        if method in ('one_shot', GOOGLE_FROZEN_METHOD):
             if round_id > len(plan):
                 stop = 'plan_exhausted'
                 break
             action, prediction, audit = plan[round_id-1]
+        elif method == GOOGLE_RANDOM_METHOD:
+            winner, audit = select_random_action(population, selection_risk, responder, cfg, round_id,
+                                                 target_size=round_targets[round_id-1]
+                                                 if round_targets is not None else None)
+            if winner is None:
+                terminal_audit = audit
+                stop = 'no_feasible_positive_gain_action'
+                break
+            action, prediction = winner
         elif method == 'fixed_google':
             choices = generate_actions(population, evaluator, cfg, fixed=True)
             if not choices:
@@ -122,7 +188,9 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             audit = [{'action': action.public(), **prediction}]
             # Fixed-policy baseline is deliberately not selected by predicted gain.
         else:
-            winner, audit = select_action(population, evaluator, responder, cfg, round_id)
+            winner, audit = select_action(population, selection_risk, responder, cfg, round_id,
+                                          target_size=capacities(population, cfg)
+                                          if method == GOOGLE_DYNAMIC_METHOD else None)
             if winner is None:
                 terminal_audit = audit
                 stop = 'no_feasible_positive_gain_action'
@@ -130,29 +198,38 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             action, prediction = winner
         if len(action.indices) > capacities(population, cfg):
             raise AssertionError('动作超出剩余硬预算')
-        if method == GOOGLE_DYNAMIC_METHOD and action.rule.base.min_length < 8:
+        action_parts = action.components if isinstance(action, MultiAction) else (action,)
+        if method in GOOGLE_METHODS and any(part.rule.base.min_length < 8 for part in action_parts):
             raise AssertionError('局部动作不能降低 Google 最低长度要求')
         previous = trajectory[-1]
         outcomes = responder.respond(population, action, cfg['seed'], f'execution-{round_id}')
-        if method == GOOGLE_DYNAMIC_METHOD and any(len(row['new']) < 8 for row in outcomes):
+        if method in GOOGLE_METHODS and any(len(row['new']) < 8 for row in outcomes):
             raise AssertionError('动态响应产生了不符合 Google 规则的口令')
         population.apply(outcomes)
         adaptation = reference_replay(reference, action, initial.total, responder, cfg, round_id)
-        if method == GOOGLE_DYNAMIC_METHOD:
+        if method in GOOGLE_METHODS:
             assert_google_compliant(population)
             adaptation['google_compliance'] = assert_google_compliant(reference)
         current = snapshot(population, evaluator, round_id)
-        gain = previous['risk']['guarded_risk'] - current['risk']['guarded_risk']
+        selection_after = (selection_risk.objective(population.counts())
+                           if isinstance(selection_risk, CombinedInterventionRisk)
+                           else current['risk']['guarded_risk'])
+        gain = selection_before - selection_after
         rounds.append({'round': round_id, 'action': action.public(), 'prediction': prediction,
                        'candidate_count': len(audit), 'candidate_audit': audit,
                        'before_state_sha256': previous['state_sha256'],
                        'after_state_sha256': current['state_sha256'],
                        'realized_guarded_gain': gain,
+                       'selection_risk_before': selection_before,
+                       'selection_risk_after_same_model': selection_after,
+                       'selection_model_reference_sha256': selection_model_key,
                        'changed': sum(r['status'] == 'changed' for r in outcomes),
                        'nonresponse': sum(r['status'] == 'nonresponse' for r in outcomes),
                        'failed_to_comply': sum(r['status'] == 'failed_to_comply' for r in outcomes),
                        'reference_replay': adaptation,
-                       'selection_reason': ('根据本轮更新后的 Google 合规分布，选择预计全站保守风险下降最大的局部动作' if method == GOOGLE_DYNAMIC_METHOD
+                        'selection_reason': ('先随机抽取当前可行动账户，再在相同的 18 条规则中分配预计有正收益的修改方法' if method == GOOGLE_RANDOM_METHOD
+                                             else '只按 Google 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
+                                             else '使用多个猜测预算的 F 与当前 A1 风险曲线、完整口令集中度，选择预计综合改善最大的局部动作' if method == GOOGLE_DYNAMIC_METHOD
                                             else '在本轮可行候选中，预计全站保守风险下降最大' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
@@ -162,11 +239,11 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                      f'修改 {sum(r["status"] == "changed" for r in outcomes):,} 人，'
                      f'短口令 {current["google_compliance"]["short_password_accounts"]:,} 个')
         stagnant = stagnant+1 if gain <= 0 else 0
-        if stagnant >= cfg['controller']['stagnation_patience']:
+        if method not in (GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD) and stagnant >= cfg['controller']['stagnation_patience']:
             stop = 'realized_risk_stagnation'
             break
     # The final execution is always retained, including at a round limit.
-    if method not in (GOOGLE_DYNAMIC_METHOD, GOOGLE_HOLD_METHOD) and trajectory[-1]['risk']['guarded_risk'] <= target:
+    if method not in (*GOOGLE_METHODS, GOOGLE_HOLD_METHOD) and trajectory[-1]['risk']['guarded_risk'] <= target:
         stop = 'target_reached'
     elif capacities(population, cfg) <= 0:
         stop = 'budget_exhausted'
@@ -179,7 +256,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
 
 def google_round_zipf_experiment(initial, reference_words, evaluator, responder, cfg,
                                   fixed_google=None, progress=None):
-    """Establish an all-account Google-compliant state, then compare hold vs feedback."""
+    """Give all four Google arms the exact same compliant starting state."""
     google_cfg = deepcopy(cfg)
     bootstrap_cfg = deepcopy(cfg)
     bootstrap_cfg['controller']['round_fraction'] = 1.
@@ -206,7 +283,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
                     row.update(new=new, status='changed',
                         edit_cost=edit_distance(row['old'], new)/max(1, len(row['old']), len(new)))
                     completions += 1
-            population.apply(outcomes)
+            population.apply(outcomes, phase='google')
             failures = sum(row['status'] != 'changed' for row in outcomes)
         else:
             action, failures, completions = None, 0, 0
@@ -230,8 +307,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
 
     # The configured total budget applies to the ten adaptive rounds after the
     # Google baseline. Count the full-population Google migration separately.
-    google_cfg['controller']['total_fraction'] = min(
-        1., google_start.ledger()['affected_rate'] + cfg['controller']['total_fraction'])
+    google_cfg['controller']['total_fraction'] = cfg['controller']['total_fraction']
     google_cfg['controller']['policy_floor_minimum_length'] = 8
     control_snapshot = snapshot(google_start, evaluator, 0)
     control = {'method': GOOGLE_HOLD_METHOD, 'label': 'Google 政策不变',
@@ -240,22 +316,54 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
                'terminal_candidate_audit': [], 'final': control_snapshot,
                'adaptive_reference_ledger': reference_start.ledger(),
                'google_baseline': bootstrap_target}
+    selection_index_cache = None
+    if cfg['evaluation']['adaptive']:
+        selection_index_cache = {}
+        if progress:
+            progress('Google 共同起点 · 训练独立参考攻击模型')
+        key = counts_hash(reference_start.counts())
+        selection_index_cache[key] = make_index(reference_start.counts(), cfg)
+    # Fix the notification schedule before running any arm. Each method may
+    # stop early if no feasible action exists; unused budget is disclosed.
+    per_round = math.floor(initial.total*cfg['controller']['round_fraction'] + 1e-9)
+    remaining = math.floor(initial.total*cfg['controller']['total_fraction'] + 1e-9)
+    round_targets = []
+    for _ in range(GOOGLE_DYNAMIC_ROUNDS):
+        if remaining <= 0:
+            break
+        take = min(per_round, remaining)
+        round_targets.append(take)
+        remaining -= take
     experimental, final_counts, final_reference = run_arm(
         GOOGLE_DYNAMIC_METHOD, google_start, reference_words, evaluator, responder,
-        google_cfg, progress, reference_initial=reference_start)
+        google_cfg, progress, reference_initial=reference_start,
+        selection_index_cache=selection_index_cache)
     experimental['google_baseline'] = bootstrap_target
+    random_arm, random_counts, random_reference = run_arm(
+        GOOGLE_RANDOM_METHOD, google_start, reference_words, evaluator, responder,
+        google_cfg, progress, reference_initial=reference_start,
+        round_targets=round_targets, selection_index_cache=selection_index_cache)
+    frozen_arm, frozen_counts, frozen_reference = run_arm(
+        GOOGLE_FROZEN_METHOD, google_start, reference_words, evaluator, responder,
+        google_cfg, progress, reference_initial=reference_start,
+        round_targets=round_targets, selection_index_cache=selection_index_cache)
     control_counts = google_start.counts()
     control_reference = reference_start.counts()
     start_index = 0
-    common_start = control['final']['state_sha256'] == experimental['trajectory'][start_index]['state_sha256']
-    if not common_start:
-        raise AssertionError('Google 起点实验与固定 Google 对照首轮状态不一致')
+    common_start = (control['final']['account_state_sha256'] ==
+                    experimental['trajectory'][start_index]['account_state_sha256'])
+    if not common_start or any(arm['trajectory'][0]['account_state_sha256'] !=
+                               control['final']['account_state_sha256']
+                                for arm in (random_arm, frozen_arm)):
+        raise AssertionError('四组 Google 实验的账户起点不一致')
     google_start_snapshot = control['final']
     train = Counter(reference_words)
     mutations = reference_mutation_ranks(train, cfg['evaluation']['mutation_reference_limit'])
-    adaptive_fits = {}
+    adaptive_fits = selection_index_cache if selection_index_cache is not None else {}
     for arm, counts, reference_counts in (
             (control, control_counts, control_reference),
+            (random_arm, random_counts, random_reference),
+            (frozen_arm, frozen_counts, frozen_reference),
             (experimental, final_counts, final_reference)):
         arm['attacks'] = {'F': arm['final']['risk'], 'A1': None,
                           'reference_mutations': evaluate_mutations(counts, mutations, cfg['budgets'])}
@@ -269,12 +377,23 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
             arm['attacks']['A1'] = InterventionRisk(ai, cfg['budgets'], cfg['risk_budget']).evaluate(counts)
             arm['adaptive_model'] = dict(ai.grammar.metadata)
     return {
-        'protocol': 'google-started-dynamic-10-adjustments-v5',
+        'protocol': 'google-started-five-arm-comparison-v3-multibudget-concentration',
         'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
         'common_google_start_verified': common_start,
         'google_baseline': {'target': bootstrap_target, 'reference': bootstrap_reference,
                             'interpretation': '全体账户先执行 Google 最低 8 字符规则；基线迁移成本单独计入覆盖率'},
-        'arms': {GOOGLE_HOLD_METHOD: control, GOOGLE_DYNAMIC_METHOD: experimental},
+        'arms': {GOOGLE_HOLD_METHOD: control, GOOGLE_RANDOM_METHOD: random_arm,
+                 GOOGLE_FROZEN_METHOD: frozen_arm, GOOGLE_DYNAMIC_METHOD: experimental},
+        'comparison_budget': {'per_round_fraction': cfg['controller']['round_fraction'],
+                               'additional_fraction_after_google': cfg['controller']['total_fraction'],
+                               'planned_round_notification_schedule': round_targets,
+                               'dynamic_round_notification_schedule':
+                               [row['action']['selected'] for row in experimental['rounds']],
+                               'controls_request_same_round_sizes': True,
+                              'random_only_notifies_accounts_ineligible_for_selected_rule': True,
+                              'dynamic_selection_uses_updated_independent_reference_a1': bool(selection_index_cache),
+                              'actual_coverage_may_differ': True,
+                               'cost_axis': 'Google 共同起点后累计通知的不同账户比例；Google 起点迁移成本另列'},
         'control': {
             'label': 'Google 政策不变',
             'rounds_completed': len(control['rounds']),
@@ -370,7 +489,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
-                            'decision_metric': '在通知硬预算内最大化全站保守风险预计下降；PCFG 估计命中率 + 模型未覆盖比例仅作选择代理，HHI 防止明显聚集；不是实测破解率或置信上界'}}
+                             'decision_metric': '各猜测预算对数区间加权的固定 F 保守风险与当前独立参考 A1 命中风险，加上完全相同口令 HHI；按共同 Google 起点归一化，权重见 controller.risk_weight；不是实测破解率或置信上界'}}
     if progress:
         progress('使用 CDF 采样方法拟合三组终态，独立种子复核')
     if include_legacy:
