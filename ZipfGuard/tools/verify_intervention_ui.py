@@ -54,7 +54,7 @@ def main():
                     page.locator('#download').click()
                 assert download.value.suggested_filename == 'intervention_report.json'
                 report = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))
-                assert report['schema_version'] == 'selective-intervention-v2-result'
+                assert report['schema_version'] == 'selective-intervention-v3-result'
                 assert report['dataset']['source_rows'] > 1000000
                 comparison = report['google_round_zipf']
                 assert comparison['control']['state_sha256'] == comparison['experimental']['start_state_sha256']

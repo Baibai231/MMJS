@@ -164,6 +164,8 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
         selection_before = (selection_risk.objective(population.counts())
                             if isinstance(selection_risk, CombinedInterventionRisk)
                             else selection_risk.evaluate(population.counts())['guarded_risk'])
+        primary_before = (selection_risk.primary_risk(population.counts())
+                          if isinstance(selection_risk, CombinedInterventionRisk) else None)
         if method in ('one_shot', GOOGLE_FROZEN_METHOD):
             if round_id > len(plan):
                 stop = 'plan_exhausted'
@@ -215,11 +217,16 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                            if isinstance(selection_risk, CombinedInterventionRisk)
                            else current['risk']['guarded_risk'])
         gain = selection_before - selection_after
+        primary_after = (selection_risk.primary_risk(population.counts())
+                         if isinstance(selection_risk, CombinedInterventionRisk) else None)
         rounds.append({'round': round_id, 'action': action.public(), 'prediction': prediction,
                        'candidate_count': len(audit), 'candidate_audit': audit,
                        'before_state_sha256': previous['state_sha256'],
                        'after_state_sha256': current['state_sha256'],
                        'realized_guarded_gain': gain,
+                       'realized_primary_gain': (primary_before-primary_after
+                                                 if primary_before is not None else None),
+                       'bridge_action': bool(prediction.get('bridge')),
                        'selection_risk_before': selection_before,
                        'selection_risk_after_same_model': selection_after,
                        'selection_model_reference_sha256': selection_model_key,
@@ -229,7 +236,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'reference_replay': adaptation,
                         'selection_reason': ('先随机抽取当前可行动账户，再在相同的 18 条规则中分配预计有正收益的修改方法' if method == GOOGLE_RANDOM_METHOD
                                              else '只按 Google 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
-                                             else '使用多个猜测预算的 F 与当前 A1 风险曲线、完整口令集中度，选择预计综合改善最大的局部动作' if method == GOOGLE_DYNAMIC_METHOD
+                                             else '以固定 F 主预算的预计命中下降选动作，A1 与集中度作准入检查，保守代理单独披露；桥接动作需预测两轮累计改善' if method == GOOGLE_DYNAMIC_METHOD
                                             else '在本轮可行候选中，预计全站保守风险下降最大' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
@@ -239,7 +246,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                      f'修改 {sum(r["status"] == "changed" for r in outcomes):,} 人，'
                      f'短口令 {current["google_compliance"]["short_password_accounts"]:,} 个')
         stagnant = stagnant+1 if gain <= 0 else 0
-        if method not in (GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD) and stagnant >= cfg['controller']['stagnation_patience']:
+        if method not in (*GOOGLE_METHODS,) and stagnant >= cfg['controller']['stagnation_patience']:
             stop = 'realized_risk_stagnation'
             break
     # The final execution is always retained, including at a round limit.
@@ -377,7 +384,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
             arm['attacks']['A1'] = InterventionRisk(ai, cfg['budgets'], cfg['risk_budget']).evaluate(counts)
             arm['adaptive_model'] = dict(ai.grammar.metadata)
     return {
-        'protocol': 'google-started-five-arm-comparison-v3-multibudget-concentration',
+        'protocol': 'google-started-five-arm-comparison-v4-primary-F-flexible-batch',
         'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
         'common_google_start_verified': common_start,
         'google_baseline': {'target': bootstrap_target, 'reference': bootstrap_reference,
@@ -389,7 +396,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
                                'planned_round_notification_schedule': round_targets,
                                'dynamic_round_notification_schedule':
                                [row['action']['selected'] for row in experimental['rounds']],
-                               'controls_request_same_round_sizes': True,
+                               'controls_request_same_round_sizes': False,
                               'random_only_notifies_accounts_ineligible_for_selected_rule': True,
                               'dynamic_selection_uses_updated_independent_reference_a1': bool(selection_index_cache),
                               'actual_coverage_may_differ': True,
@@ -489,7 +496,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
-                             'decision_metric': '各猜测预算对数区间加权的固定 F 保守风险与当前独立参考 A1 命中风险，加上完全相同口令 HHI；按共同 Google 起点归一化，权重见 controller.risk_weight；不是实测破解率或置信上界'}}
+                             'decision_metric': '优先最大化固定 F 攻击模型在主猜测预算下的预计命中比例下降；独立参考 A1 与完整口令 HHI 作为准入检查；未覆盖质量保守代理仅披露，不作为硬否决；并非实测破解率或置信上界'}}
     if progress:
         progress('使用 CDF 采样方法拟合三组终态，独立种子复核')
     if include_legacy:

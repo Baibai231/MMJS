@@ -120,7 +120,7 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(p.ledger()['affected'], 0)
         self.assertEqual(p.counts(), {'A': 1, 'B': 1})
 
-    def test_unknown_model_support_is_not_free_security_gain(self):
+    def test_unknown_model_support_is_disclosed_without_vetoing_primary_gain(self):
         cfg = self.cfg(100)
         p = Population(['abc']*100)
         class UnsupportedResponder:
@@ -129,7 +129,7 @@ class TestIntervention(unittest.TestCase):
         pred = predict_action(p, self.action(range(10)), self.risk(), UnsupportedResponder(), cfg, 1)
         self.assertEqual(pred['predicted_hit_gain'], .1)
         self.assertEqual(pred['predicted_guarded_gain'], 0)
-        self.assertFalse(pred['feasible'])
+        self.assertTrue(pred['feasible'])
 
     def test_composite_gain_matches_realized_objective_on_same_model(self):
         model = self.risk()
@@ -153,16 +153,17 @@ class TestIntervention(unittest.TestCase):
         with patch('policy.intervention_controller.generate_actions', return_value=[]), patch(
                 'policy.intervention_controller.select_random_action',
                 return_value=((action, prediction), [])):
-            winner, audit = select_action(population, risk, object(), self.cfg(20), 1)
+            winner, audit = select_action(population, risk, object(), self.cfg(20), 1,
+                                          validation=False)
         self.assertIs(winner[0], action)
         self.assertEqual(audit[0]['score'], .1)
         with patch('policy.intervention_controller.generate_actions', return_value=[]), patch(
                 'policy.intervention_controller.select_random_action',
                 return_value=((action, prediction), [])):
             winner, audit = select_action(population, risk, object(), self.cfg(20), 1,
-                                          target_size=3)
-        self.assertIsNone(winner)
-        self.assertEqual(audit, [])
+                                          target_size=3, validation=False)
+        self.assertIs(winner[0], action)
+        self.assertEqual(len(audit), 1)
 
     def test_prediction_isolation_and_no_feasible_stop(self):
         cfg = self.cfg(100)
@@ -183,25 +184,35 @@ class TestIntervention(unittest.TestCase):
     def test_selects_largest_sitewide_gain_not_smallest_group_efficiency(self):
         population = Population(['abc']*100)
         small = self.action(range(3))
-        large = self.action(range(20))
+        large = self.action(range(10))
         small_prediction = {'feasible': True, 'predicted_guarded_gain': .003,
                             'predicted_hhi_change': -.0001, 'score': .003}
         large_prediction = {'feasible': True, 'predicted_guarded_gain': .02,
                             'predicted_hhi_change': -.0002, 'score': .02}
+        def fake_predict(_population, action, *_args):
+            if isinstance(action, MultiAction):
+                return {'feasible': True, 'predicted_guarded_gain': .015,
+                        'predicted_hhi_change': -.00015, 'score': .015}
+            return small_prediction if action is small else large_prediction
         with patch('policy.intervention_controller.generate_actions', return_value=[small, large]), patch(
                 'policy.intervention_controller.predict_action',
-                side_effect=[small_prediction, large_prediction]):
-            winner, audit = select_action(population, self.risk(), object(), self.cfg(100), 1)
+                side_effect=fake_predict):
+            winner, audit = select_action(population, self.risk(), object(), self.cfg(100), 1,
+                                          validation=False)
         self.assertIs(winner[0], large)
-        self.assertEqual([row['score'] for row in audit], [.003, .02])
+        self.assertEqual([row['score'] for row in audit[:2]], [.003, .02])
+        self.assertTrue(all(len(set(row[0].indices)) == len(row[0].indices)
+                            for row in [(winner[0], winner[1])]))
 
     def test_rejects_tiny_candidate_when_one_prediction_has_no_gain(self):
         class VariableResponder:
             def respond(self, population, action, seed, stream):
                 new = 'abc' if stream.endswith('-1') else 'abc!'
                 return [{'index': 0, 'old': 'abc', 'new': new}]
+        cfg = self.cfg(100)
+        cfg['controller']['min_positive_trial_fraction'] = 1.
         prediction = predict_action(Population(['abc']*100), self.action([0]),
-                                    self.risk(), VariableResponder(), self.cfg(100), 1)
+                                    self.risk(), VariableResponder(), cfg, 1)
         self.assertGreater(prediction['predicted_guarded_gain'], 0)
         self.assertEqual(prediction['predicted_gain_range'][0], 0)
         self.assertFalse(prediction['feasible'])

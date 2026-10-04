@@ -30,7 +30,7 @@ class InterventionRisk:
 
 
 class CombinedInterventionRisk:
-    """Predeclared multibudget attack and exact-password concentration objective."""
+    """Fixed-F primary endpoint with adaptive-model and concentration diagnostics."""
     def __init__(self, *models, baseline_counts=None, risk_weight=.8):
         self.models = tuple(models)
         if not self.models:
@@ -56,7 +56,14 @@ class CombinedInterventionRisk:
                                            if rank <= budget)
 
     def hit(self, word):
-        return sum(self._curve_hit(model, word) for model in self.models) / len(self.models)
+        return self.models[0].hit(word)
+
+    def primary_risk(self, counts):
+        total = sum(counts.values())
+        return sum(count * self.hit(word) for word, count in counts.items()) / total
+
+    def adaptive_hit(self, word):
+        return self.models[1].hit(word) if len(self.models) > 1 else self.hit(word)
 
     def loss(self, word):
         # Unsupported F words retain full conservative loss; their migration

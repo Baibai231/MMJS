@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = 'selective-intervention-v2'
+PROTOCOL = 'selective-intervention-v3'
 DEFAULT = {
     'schema_version': PROTOCOL, 'seed': 42,
     'data': {'path': '../rockyou-withcount.txt', 'format': 'password_with_count',
@@ -20,6 +20,11 @@ DEFAULT = {
                    'candidate_pool': 'site-fragments-1-18-v1',
                    'predictable_terms': ['gitlab', 'devops'],
                    'prediction_repeats': 3, 'min_gain': 0.000001,
+                   'min_batch_fraction': .005, 'min_positive_trial_fraction': .6,
+                   'max_a1_regression': .0005,
+                   'combination_width': 6, 'validation_shortlist': 5,
+                   'validation_repeats': 5, 'lookahead_width': 2,
+                   'lookahead_rollouts': 2, 'bridge_max_first_loss': .0003,
                    'risk_weight': .8, 'candidate_shortlist': 80,
                    'target_relative_reduction': .10, 'stagnation_patience': 3,
                    'max_hhi_increase': .0001},
@@ -84,6 +89,7 @@ def validate_intervention_config(value):
         number(c[k], .000001, 1, k)
     if c['round_fraction'] > c['total_fraction']:
         raise ValueError('单轮上限不能超过累计上限')
+    number(c['min_batch_fraction'], .000001, c['round_fraction'], '最小单轮比例')
     if math.floor(d['users'] * c['round_fraction'] + 1e-9) < 1:
         raise ValueError('单轮预算不足 1 个账户，请增加账户数或单轮比例')
     if not isinstance(c['batch_fractions'], list) or not 1 <= len(c['batch_fractions']) <= 8:
@@ -91,7 +97,10 @@ def validate_intervention_config(value):
     for f in c['batch_fractions']:
         number(f, .000001, 1, '规模比例')
     for k, lo, hi in [('max_rounds', 1, 200), ('max_groups', 1, 50), ('popular_k', 1, 1000),
-                      ('prediction_repeats', 1, 30), ('stagnation_patience', 1, 100)]:
+                      ('prediction_repeats', 1, 30), ('stagnation_patience', 1, 100),
+                      ('combination_width', 1, 30), ('validation_shortlist', 1, 30),
+                      ('validation_repeats', 1, 30), ('lookahead_width', 1, 10),
+                      ('lookahead_rollouts', 1, 10)]:
         integer(c[k], lo, hi, k)
     integer(c['candidate_shortlist'], 1, 10000, '候选动作短名单')
     number(c['risk_weight'], 0, 1, '攻击风险权重')
@@ -108,6 +117,9 @@ def validate_intervention_config(value):
         raise ValueError('可预测词表无效')
     c['predictable_terms'] = sorted(set(term.lower() for term in c['predictable_terms']))
     for k in ('min_gain', 'target_relative_reduction', 'max_hhi_increase'):
+        number(c[k], 0, 1, k)
+    for k in ('min_positive_trial_fraction', 'max_a1_regression',
+              'bridge_max_first_loss'):
         number(c[k], 0, 1, k)
     number(r['nonresponse'], 0, 1, '未响应概率')
     if not isinstance(r['weights'], list) or len(r['weights']) != 3:

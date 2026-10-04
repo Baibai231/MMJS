@@ -201,12 +201,13 @@ def render_intervention_html(result, *, document=True):
     parts.append(f'<p>动态组比较热门口令、结构和跨结构账户中的局部动作，'
                   '随机组先抽取账户，再从文档第 1—18 条片段中分配修改方法。'
                   '动态组和随机组选规则时，使用固定 F 攻击模型与本轮最新独立参考群体重训的 A1 PCFG；'
-                  f'评分综合多个猜测预算下的命中风险与完全相同口令的集中度，风险权重为 {pct(cfg["controller"].get("risk_weight", .8))}。'
+                  '新控制器优先比较固定 F 模型在主猜测预算下的预计命中比例下降；'
+                  '独立参考 A1 与完整口令集中度用于准入；模型未覆盖质量计入的保守代理单独披露。'
                   'A1 只在独立参考群体上训练；逐轮 CDF 拟合参数用于事后核验分布变化。'
                    '随机账户按与风险无关的种子排序，只通知至少违反一条候选规则且被分配了合格修改方法的账户。</p>')
     parts.append('<p>动态组在相同起点、相同预测模型下，也会评价达到相同单轮人数的随机组动作。'
                  '若随机组动作不足一整轮，两组只能按实际累计通知成本比较。执行后的账户分布会分叉，'
-                 '用户响应有波动，F 与 A1 终点评估也不同于选动作时的综合目标；'
+                 '用户响应有波动，A1 终点评估也不同于选动作时的固定模型预测；'
                  '这些因素都可能使最终曲线不按当轮预测排序。结论以实际等成本曲线为准。</p>')
     parts.append('<p>第 15 条的字典词使用独立开发样本中的纯字母词作为可复现代理，'
                  '第 17 条名单随每轮热门完整口令更新，第 18 条使用独立开发样本中的完整口令。'
@@ -251,8 +252,8 @@ def render_intervention_html(result, *, document=True):
         parts.append(f'<p>随机组有 {random_already:,} 名被通知账户已符合选中的规则，计入通知成本但没有修改口令。'
                      '因此相同通知人数不代表相同实际修改人数。</p>')
     parts.append('<p class="notice">PCFG 曲线是蒙特卡洛估计，不是实际破解记录。模型未覆盖不等于安全。'
-                 '控制器把未覆盖质量计入保守风险代理，防止只因超出模型支持范围就获得收益；'
-                 '该代理不是现实风险或置信上界。后三组共用每轮与累计预算上限；'
+                 '控制器单独披露把未覆盖质量计入的保守风险代理；它不是现实风险或置信上界，'
+                 '也不单独否决 F 与 A1 均预计改善的动作。后三组共用每轮与累计预算上限；'
                  '只在曲线共同覆盖的成本区间内比较，不外推到未达到的 20% 附加覆盖。</p></section>')
     specs = chart_specs(result)
     for name, (title, series, opts) in specs.items():
@@ -315,11 +316,12 @@ def render_intervention_html(result, *, document=True):
                      '不会为了展示效果强制修改账户。</p>')
     else:
         parts.append(table(['轮次', '改谁', '怎么改', '通知 / 成功', '后续累计通知',
-                             '预计 / 实现综合目标改善'], [
+                             '预计 / 实现 F 命中下降'], [
             [r['round'], r['action']['group'], r['action']['rule'], f'{r["action"]["selected"]} / {r["changed"]}',
               pct(dynamic['trajectory'][i+1]['ledger'].get('adaptive_affected_rate',
                   dynamic['trajectory'][i+1]['ledger']['affected_rate'])),
-              f'{100*r["prediction"].get("predicted_composite_gain", r["prediction"]["predicted_guarded_gain"]):.3f} / {100*r["realized_guarded_gain"]:.3f} 分']
+              f'{100*r["prediction"].get("predicted_primary_gain", r["prediction"]["predicted_guarded_gain"]):.3f} / '
+              f'{100*(r.get("realized_primary_gain") if r.get("realized_primary_gain") is not None else r["realized_guarded_gain"]):.3f} 个百分点']
             for i, r in enumerate(dynamic['rounds'])]))
         for r in dynamic['rounds']:
             round_label = f'调整第 {r["round"]} 轮'
@@ -327,10 +329,11 @@ def render_intervention_html(result, *, document=True):
                          f'<p>{escape(r["selection_reason"])}。未响应 {r["nonresponse"]} 人，'
                          f'尝试后未完成 {r["failed_to_comply"]} 人。</p>')
             ordered = sorted(r['candidate_audit'], key=lambda x: -x['score'])[:12]
-            parts.append(table(['对象', '要求', '人数', '预计综合目标改善', '判断'], [
+            parts.append(table(['对象', '要求', '人数', '预计 F 命中下降', '判断'], [
                 [a['action']['group'], a['action']['rule'], a['action']['selected'],
-                  f'{100*a.get("predicted_composite_gain", a["predicted_guarded_gain"]):.3f} 分',
-                 '可行' if a['feasible'] else '；'.join(a['rejection_reasons'])] for a in ordered]))
+                  f'{100*a.get("predicted_primary_gain", a["predicted_guarded_gain"]):.3f} 个百分点',
+                 ('两步桥接（首轮单独可能无改善）' if a.get('bridge') else '可行') if a['feasible']
+                 else '；'.join(a['rejection_reasons'])] for a in ordered]))
             parts.append(f'<p>本轮共评价 {r["candidate_count"]} 个候选，表中显示评分最高的 12 个；完整记录见公开报告。</p></details>')
     if dynamic.get('terminal_candidate_audit'):
         parts.append('<details><summary>停止前最后一轮候选为什么未执行</summary>')

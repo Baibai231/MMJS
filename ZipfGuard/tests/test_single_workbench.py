@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from core.distributions import analyze_counts
+from experiments.intervention_config import PROTOCOL
 from web.server import Handler
 from web.intervention_interface import intervention_index_with_latest, latest_intervention_result
 
@@ -30,7 +31,7 @@ class SingleWorkbenchTests(unittest.TestCase):
             (published/run_id).mkdir(parents=True)
             (published/'latest.json').write_text(json.dumps({'run_id': run_id}), encoding='utf-8')
             with gzip.open(published/run_id/'report.json.gz', 'wt', encoding='utf-8') as handle:
-                json.dump({'schema_version': 'selective-intervention-v1-result',
+                json.dump({'schema_version': PROTOCOL + '-result',
                            'metadata': {'run_id': run_id}}, handle)
             with patch('web.intervention_interface.REPORT_ROOT', root/'empty'), patch(
                     'web.intervention_interface.PUBLISHED_ROOT', published), patch(
