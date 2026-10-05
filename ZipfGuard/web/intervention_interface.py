@@ -96,9 +96,9 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  .actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.wide{display:flex;margin:14px 0}.wide input{box-sizing:border-box;width:100%}
  #status.error{color:#b73535}button{background:#13715d}.plot-distinct{min-width:510px}
  </style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / SELECTIVE INTERVENTION</span>
- <h1>少改一部分账户，能降低多少风险？</h1>
+ <h1>少改一部分账户，口令分布能改善多少？</h1>
  <p>第三展示台 · 五组实验对照：原始分布、Google 基础策略，以及共同 Google 起点后的随机分批、初始排序分批和逐轮动态调整。</p>
- <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#coverage_F">成本与猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#distribution_cost">分布与通知成本</a><a href="#coverage_F">猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
  <p class="muted">后续动态干预从去重的 1—18 条政策片段中选动作；分布拟合统一使用 CDF 采样方法，实际频次与攻击风险分别展示。</p>
  <p class="actions"><button id="recent">加载最近完成结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在读取结果…</span></p></main>
  <div id="result" aria-live="polite"></div>
@@ -109,7 +109,7 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  <label>每轮最多影响（%）<input id="round" type="number" min="0.01" max="100" step="0.1"></label>
  <label>累计最多影响（%）<input id="total" type="number" min="0.01" max="100" step="1"></label>
  <label>未响应比例（%）<input id="nonresponse" type="number" min="0" max="100" step="1"></label>
- <label>风险代理目标下降（%）<input id="target" type="number" min="0" max="100" step="1"></label>
+ <label>拟合分布前段（%）<input id="target" type="number" min="0.01" max="100" step="0.1"></label>
  <label>随机种子<input id="seed" type="number" min="0"></label><label>蒙特卡洛采样数<input id="samples" type="number" min="100"></label>
  </div><label class="wide">本地带频次语料路径<input id="path"></label>
  <details><summary>完整配置与评估选项</summary><textarea id="config" spellcheck="false"></textarea><button id="apply">应用完整配置</button></details>
@@ -119,8 +119,8 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  const $=id=>document.getElementById(id);let cfg=null,last=null,busy=false;
  function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error)}
  async function request(url,options){const res=await fetch(url,options);const data=await res.json();if(!res.ok)throw Error(data.error||'请求失败');return data}
- function fill(value){cfg=value;$('preset').value=cfg.data.users===100000?'intervention_full':'intervention_smoke';$('users').value=cfg.data.users;$('development').value=cfg.data.development;$('round').value=cfg.controller.round_fraction*100;$('total').value=cfg.controller.total_fraction*100;$('nonresponse').value=cfg.response.nonresponse*100;$('target').value=cfg.controller.target_relative_reduction*100;$('seed').value=cfg.seed;$('samples').value=cfg.monte_carlo.samples;$('path').value=cfg.data.path;$('config').value=JSON.stringify(cfg,null,2)}
- function read(){const v=JSON.parse(JSON.stringify(cfg));v.data.users=+$('users').value;v.data.development=+$('development').value;v.data.path=$('path').value;v.controller.round_fraction=+$('round').value/100;v.controller.total_fraction=+$('total').value/100;v.response.nonresponse=+$('nonresponse').value/100;v.controller.target_relative_reduction=+$('target').value/100;v.seed=+$('seed').value;v.monte_carlo.samples=+$('samples').value;return v}
+ function fill(value){cfg=value;$('preset').value=cfg.data.users===100000?'intervention_full':'intervention_smoke';$('users').value=cfg.data.users;$('development').value=cfg.data.development;$('round').value=cfg.controller.round_fraction*100;$('total').value=cfg.controller.total_fraction*100;$('nonresponse').value=cfg.response.nonresponse*100;$('target').value=cfg.controller.distribution_top_fraction*100;$('seed').value=cfg.seed;$('samples').value=cfg.monte_carlo.samples;$('path').value=cfg.data.path;$('config').value=JSON.stringify(cfg,null,2)}
+ function read(){const v=JSON.parse(JSON.stringify(cfg));v.data.users=+$('users').value;v.data.development=+$('development').value;v.data.path=$('path').value;v.controller.round_fraction=+$('round').value/100;v.controller.total_fraction=+$('total').value/100;v.response.nonresponse=+$('nonresponse').value/100;v.controller.distribution_top_fraction=+$('target').value/100;v.seed=+$('seed').value;v.monte_carlo.samples=+$('samples').value;return v}
  function show(output){last=output;$('result').innerHTML=output?output.html:'<main><section><h2>还没有局部干预结果</h2><p>在下方选择配置，运行第一轮实验。</p></section></main>';$('download').disabled=!output}
  async function recent(){try{const data=await request('/api/intervention/latest');show(data.output);if(data.output)fill(data.output.config);status(data.output?'已加载真实运行结果':'尚无结果，可运行快速验证');return data.output}catch(e){status(e.message,true);return null}}
  $('preset').onchange=async()=>{try{fill(await request('/api/intervention/config/'+$('preset').value))}catch(e){status(e.message,true)}};

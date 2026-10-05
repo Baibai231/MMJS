@@ -113,7 +113,7 @@ def build_groups(population, risk, cfg):
             g = hot_groups.get(a.password) or structure_groups.get(features(a.password)['structure'])
             if g is not None:
                 buckets[g].append(i)
-    scores = {g: sum(risk.hit(population.accounts[i].password) for i in ids)
+    scores = {g: sum(counts[population.accounts[i].password]-1 for i in ids)
               for g, ids in buckets.items()}
     ordered = sorted((g for g in groups if scores[g] > 0), key=lambda g: (-scores[g], g.label))
     # Reserve opportunities for non-head structures as well as precise hotspots.
@@ -179,8 +179,7 @@ def generate_actions(population, risk, cfg, *, fixed=False, minimum_length=0,
             continue
         sizes = {min(cap, len(eligible), max(1, math.floor(population.total*f + 1e-9)))
                  for f in c['batch_fractions']}
-        ranked = sorted(eligible, key=lambda i: (-risk.hit(population.accounts[i].password),
-                                                  -counts[population.accounts[i].password],
+        ranked = sorted(eligible, key=lambda i: (-counts[population.accounts[i].password],
                                                   hashlib.sha256(f'{cfg["seed"]}|selection|{population.accounts[i].identifier}'.encode()).digest()))
         random_eligible = sorted(eligible, key=lambda i: random_rank[i])
         label = f'第 {fragment.number} 条：{fragment.label}'

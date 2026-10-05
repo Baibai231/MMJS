@@ -3,25 +3,27 @@ from collections import Counter
 import hashlib
 import math
 from statistics import mean
+from core.intervention_distribution import empirical_top_mass, fitted_top_mass, moved_counts, top_k
 from policy.intervention_fragments import LENGTHS, candidate_fragments
 from policy.local_actions import Action, Group, LocalRule, MultiAction, capacities, generate_actions
 from policy.open_policy import Rule
 
 
-def predict_action(population, action, risk, responder, cfg, round_id, counts=None, repeats=None):
+def predict_action(population, action, risk, responder, cfg, round_id, counts=None, repeats=None,
+                   baseline_fit=None):
     counts, n = population.counts() if counts is None else counts, population.total
-    primary_gains, guarded_gains, adaptive_gains, composite_gains = [], [], [], []
-    hhi_changes, shape_gains = [], []
+    k = top_k(population, cfg)
+    baseline_mass = empirical_top_mass(counts, k)
+    distribution_gains, hhi_changes = [], []
+    first_after = None
     repeats = repeats or cfg['controller']['prediction_repeats']
     for repeat in range(repeats):
         # Same account noise for competing candidates; separate from execution.
         rows = responder.respond(population, action, cfg['seed'], f'prediction-{round_id}-{repeat}')
-        guarded_gain = sum(risk.loss(r['old'])-risk.loss(r['new']) for r in rows)/n
-        primary_gains.append(sum(risk.hit(r['old'])-risk.hit(r['new']) for r in rows)/n)
-        adaptive_gains.append(sum((risk.adaptive_hit(r['old'])-risk.adaptive_hit(r['new'])
-                                   if hasattr(risk, 'adaptive_hit') else
-                                   risk.hit(r['old'])-risk.hit(r['new'])) for r in rows)/n)
-        guarded_gains.append(guarded_gain)
+        after_counts = moved_counts(counts, rows)
+        if first_after is None:
+            first_after = after_counts
+        distribution_gains.append(baseline_mass-empirical_top_mass(after_counts, k))
         delta = Counter()
         for row in rows:
             delta[row['old']] -= 1
@@ -29,36 +31,33 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
         hhi_delta = sum((counts.get(w, 0)+d)**2 - counts.get(w, 0)**2
                         for w, d in delta.items())/n**2
         hhi_changes.append(hhi_delta)
-        if hasattr(risk, 'baseline_hhi_excess'):
-            shape_gain = -hhi_delta/max(risk.baseline_hhi_excess, 1e-12)
-            composite_gains.append(risk.risk_weight*guarded_gain/max(risk.baseline_risk, 1e-12)
-                                   + (1-risk.risk_weight)*shape_gain)
-            shape_gains.append(shape_gain)
-        else:
-            composite_gains.append(guarded_gain)
-            shape_gains.append(-hhi_delta)
-    gain = mean(primary_gains)
+    gain = mean(distribution_gains)
     c = cfg['controller']
     reasons = []
     if gain <= c['min_gain']:
-        reasons.append('主指标 F 在目标猜测预算下预计改善不足')
-    if sum(value > 0 for value in primary_gains)/repeats < c['min_positive_trial_fraction']:
-        reasons.append('重复模拟中主指标改善不够稳定')
-    if mean(adaptive_gains) < -c['max_a1_regression']:
-        reasons.append('参考攻击模型 A1 预计恶化超过容忍量')
-    if max(hhi_changes) > c['max_hhi_increase']:
-        reasons.append('预测新分布聚集超过容忍量')
-    return {'predicted_guarded_gain': mean(guarded_gains), 'predicted_hit_gain': gain,
-            'predicted_primary_gain': gain, 'predicted_a1_gain': mean(adaptive_gains),
-            'predicted_distribution_gain': mean(shape_gains),
-            'predicted_composite_gain': mean(composite_gains),
-            'predicted_gain_range': [min(primary_gains), max(primary_gains)],
-            'positive_trial_fraction': sum(value > 0 for value in primary_gains)/repeats,
+        reasons.append('完整口令分布的前段累计占比预计改善不足')
+    if sum(value > 0 for value in distribution_gains)/repeats < c['min_positive_trial_fraction']:
+        reasons.append('重复模拟中分布改善不够稳定')
+    fitted = None
+    if baseline_fit is not None:
+        fitted = fitted_top_mass(first_after, k, cfg['seed'])
+        fitted_gain = baseline_fit['top_mass']-fitted['top_mass']
+        if fitted_gain <= c['min_gain']:
+            reasons.append('CDF 拟合后的前段累计占比没有改善')
+    else:
+        fitted_gain = None
+    return {'predicted_distribution_gain': gain,
+            'predicted_empirical_cdf_gain': gain,
+            'predicted_fitted_cdf_gain': fitted_gain,
+            'fitted_after': fitted,
+            'predicted_gain_range': [min(distribution_gains), max(distribution_gains)],
+            'positive_trial_fraction': sum(value > 0 for value in distribution_gains)/repeats,
             'prediction_repeats_used': repeats,
             'predicted_hhi_change': mean(hhi_changes),
             'max_predicted_hhi_increase': max(hhi_changes),
             'gain_per_notified_account': gain/(len(action.indices)/n),
-            'score': gain, 'feasible': not reasons,
+            'score': fitted_gain if fitted_gain is not None else gain,
+            'feasible': not reasons,
             'rejection_reasons': reasons}
 
 
@@ -102,14 +101,11 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
     c = cfg['controller']
     if round_id >= c['max_rounds'] or capacities(population, cfg) < 2*minimum:
         return None
-    before = risk.primary_risk(population.counts()) if hasattr(risk, 'primary_risk') else None
-    if before is None:
-        return None
+    k = top_k(population, cfg)
+    before = fitted_top_mass(population.counts(), k, cfg['seed'])['top_mass']
     near = sorted(((action, prediction) for action, prediction in evaluated
                    if len(action.indices) >= minimum
-                   and prediction['score'] >= -c['bridge_max_first_loss']
-                   and prediction['predicted_a1_gain'] >= -c['max_a1_regression']
-                   and prediction['max_predicted_hhi_increase'] <= c['max_hhi_increase']),
+                   and prediction['predicted_empirical_cdf_gain'] >= -c['bridge_max_first_loss']),
                   key=lambda row: row[1]['score'], reverse=True)[:c['lookahead_width']]
     options = []
     for first, prediction in near:
@@ -127,7 +123,7 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
             second_rows = responder.respond(preview, next_action, cfg['seed'],
                                             f'bridge-second-{round_id}-{trial}')
             preview.apply(second_rows)
-            totals.append(before-risk.primary_risk(preview.counts()))
+            totals.append(before-fitted_top_mass(preview.counts(), k, cfg['seed'])['top_mass'])
             next_actions.append(next_action.public())
         if len(totals) == c['lookahead_rollouts'] and min(totals) > c['min_gain']:
             extended = {**prediction, 'feasible': True, 'bridge': True,
@@ -150,39 +146,42 @@ def select_action(population, risk, responder, cfg, round_id, target_size=None,
               target_size if target_size is not None else capacities(population, cfg))
     minimum = max(1, math.floor(population.total*cfg['controller']['min_batch_fraction']+1e-9))
     candidates = [a for a in candidates if minimum <= len(a.indices) <= cap]
+    counts = population.counts()
     # Predict only the most promising structured choices; always retain every
     # random and cross-structure rule so the comparator's actions remain in scope.
     if len(candidates) > cfg['controller']['candidate_shortlist']:
         always = [a for a in candidates if a.group.kind in ('random', 'all')]
         structured = [a for a in candidates if a.group.kind not in ('random', 'all')]
-        structured.sort(key=lambda a: sum(risk.hit(population.accounts[i].password)
+        structured.sort(key=lambda a: sum(counts[population.accounts[i].password]-1
                                           for i in a.indices), reverse=True)
         candidates = always + structured[:cfg['controller']['candidate_shortlist']]
-    counts = population.counts()
     evaluated = [(a, predict_action(population, a, risk, responder, cfg, round_id, counts)) for a in candidates]
     if getattr(risk, 'models', None):
         random_winner, _ = select_random_action(population, risk, responder, cfg, round_id,
                                                 target_size=target_size)
         if random_winner is not None and minimum <= len(random_winner[0].indices) <= cap:
-            evaluated.append(random_winner)
+            evaluated.append((random_winner[0], predict_action(
+                population, random_winner[0], risk, responder, cfg, round_id, counts)))
     evaluated.extend(_combined_actions(evaluated, population, risk, responder, cfg,
                                        round_id, counts, cap, minimum))
     if validation and evaluated:
         order = sorted(range(len(evaluated)), key=lambda i: evaluated[i][1]['score'], reverse=True)
         feasible = []
+        baseline_fit = fitted_top_mass(counts, top_k(population, cfg), cfg['seed'])
         for rank, i in enumerate(order):
             if rank >= cfg['controller']['validation_shortlist'] and feasible:
                 break
             action, _ = evaluated[i]
             evaluated[i] = (action, predict_action(population, action, risk, responder, cfg,
                                                   round_id, counts,
-                                                  cfg['controller']['validation_repeats']))
+                                                  cfg['controller']['validation_repeats'],
+                                                  baseline_fit))
             if evaluated[i][1]['feasible']:
                 feasible.append(evaluated[i])
     else:
         feasible = [(a, p) for a, p in evaluated if p['feasible']]
     winner = max(feasible, key=lambda row: (row[1]['score'],
-                 -row[1]['predicted_hhi_change'], -len(row[0].indices)), default=None)
+                 row[1]['predicted_empirical_cdf_gain'], -len(row[0].indices)), default=None)
     if winner is None and allow_bridge:
         winner = _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimum)
         if winner is not None:
@@ -254,8 +253,9 @@ def select_random_action(population, risk, responder, cfg, round_id, target_size
     if sum(len(part.indices) for part in components) < minimum:
         return None, [{'action': a.public(), **p} for a, p in evaluated]
     batch = MultiAction(tuple(components))
+    baseline_fit = fitted_top_mass(counts, top_k(population, cfg), cfg['seed'])
     prediction = predict_action(population, batch, risk, responder, cfg, round_id, counts,
-                                cfg['controller']['validation_repeats'])
+                                cfg['controller']['validation_repeats'], baseline_fit)
     audit = [{'action': a.public(), **p} for a, p in evaluated]
     audit.append({'action': batch.public(), **prediction})
     return ((batch, prediction) if prediction['feasible'] else None), audit

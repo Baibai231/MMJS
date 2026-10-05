@@ -54,7 +54,7 @@ def main():
                     page.locator('#download').click()
                 assert download.value.suggested_filename == 'intervention_report.json'
                 report = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))
-                assert report['schema_version'] == 'selective-intervention-v3-result'
+                assert report['schema_version'] == 'selective-intervention-v4-result'
                 assert report['dataset']['source_rows'] > 1000000
                 comparison = report['google_round_zipf']
                 assert comparison['control']['state_sha256'] == comparison['experimental']['start_state_sha256']
@@ -65,7 +65,7 @@ def main():
                     expected[-1] += f'（{comparison["experimental"]["rounds_completed"]} 轮后停止）'
                 for removed in ('risk_cost', 'guarded_cost', 'attack_mutations'):
                     assert page.locator('#'+removed).count() == 0
-                for name in ('coverage_F', 'attack_F', 'attack_A1', 'final_distribution'):
+                for name in ('distribution_cost', 'coverage_F', 'attack_F', 'attack_A1', 'final_distribution'):
                     panel = page.locator('#'+name)
                     assert panel.locator('.legend label span').all_text_contents() == expected
                     assert panel.locator('svg > .plot-series').count() == 5
@@ -73,6 +73,7 @@ def main():
                     assert exported.status == 200
                     assert all(label in exported.text() for label in expected)
                     assert '固定 Google 分批' not in exported.text()
+                page.locator('#distribution_cost').screenshot(path=str(out/'distribution_cost.png'))
                 page.locator('#attack_A1').screenshot(path=str(out/'attack_A1.png'))
                 page.locator('#final_distribution').screenshot(path=str(out/'final_distribution.png'))
                 zipf = page.locator('#google_round_zipf .plot-distinct')
@@ -122,7 +123,7 @@ def main():
             assert not errors, errors
             summary = {'browser': browser.version, 'javascript_errors': errors,
                        'checks': ['real report', 'shared legend toggle and hover',
-                                  'four consistent five-strategy charts', 'actual-round Google-started Zipf chart', 'SVG legend export',
+                                  'five consistent five-strategy charts', 'actual-round Google-started Zipf chart', 'SVG legend export',
                                   'report download', 'mobile containment', 'background job',
                                   'invalid config clears stale results', 'cross-site rejection',
                                   'asset path boundary', 'single third workbench navigation']}

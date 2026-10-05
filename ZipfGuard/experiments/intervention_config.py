@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = 'selective-intervention-v3'
+PROTOCOL = 'selective-intervention-v4'
 DEFAULT = {
     'schema_version': PROTOCOL, 'seed': 42,
     'data': {'path': '../rockyou-withcount.txt', 'format': 'password_with_count',
@@ -25,7 +25,8 @@ DEFAULT = {
                    'combination_width': 6, 'validation_shortlist': 5,
                    'validation_repeats': 5, 'lookahead_width': 2,
                    'lookahead_rollouts': 2, 'bridge_max_first_loss': .0003,
-                   'risk_weight': .8, 'candidate_shortlist': 80,
+                   'distribution_top_fraction': .01,
+                   'candidate_shortlist': 80,
                    'target_relative_reduction': .10, 'stagnation_patience': 3,
                    'max_hhi_increase': .0001},
     'response': {'nonresponse': .15, 'weights': [.60, .25, .15], 'max_attempts': 5},
@@ -103,7 +104,7 @@ def validate_intervention_config(value):
                       ('lookahead_rollouts', 1, 10)]:
         integer(c[k], lo, hi, k)
     integer(c['candidate_shortlist'], 1, 10000, '候选动作短名单')
-    number(c['risk_weight'], 0, 1, '攻击风险权重')
+    number(c['distribution_top_fraction'], .000001, 1, '分布前段比例')
     if not isinstance(c['lengths'], list) or not 1 <= len(c['lengths']) <= 8:
         raise ValueError('长度候选无效')
     for n in c['lengths']:

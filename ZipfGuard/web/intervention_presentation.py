@@ -1,4 +1,7 @@
 """Third workbench: reuse the second workbench's plot and SVG legend exporter."""
+import numpy as np
+
+from core.cdf_sampling import frequency_sample
 from web.presentation import STYLE, escape, plot, table
 from web.study_dashboard import DASHBOARD_STYLE
 from web.cdf_fit_presentation import fit_chart_specs, render_fit_diagnostics
@@ -41,6 +44,23 @@ def google_round_zipf_series(result):
     return series
 
 
+def fitted_rank_mass_from_report(result, rank):
+    fit = next((row['fit']['sampling_fit'] for row in result['distribution_fits']['results']
+                if row['key'] == 'baseline' and row.get('fit')), None)
+    if fit is None:
+        return None
+    parameters = fit['parameters']
+    n = result['baseline']['distribution']['users']
+    seed = result['config']['seed']
+    masses = []
+    for offset in (1001, 1002, 1003):
+        uniforms = np.maximum(np.random.default_rng(seed + offset).random(n),
+                              np.finfo(float).tiny)
+        frequencies = frequency_sample(parameters['c'], parameters['s'], uniforms)
+        masses.append(float(frequencies[:rank].sum() / n))
+    return sum(masses) / len(masses)
+
+
 def chart_specs(result):
     if not result.get('google_round_zipf', {}).get('google_baseline'):
         return fit_chart_specs(result)
@@ -59,7 +79,27 @@ def chart_specs(result):
     cost_series = [(labels[0][1], [(0, initial)])]
     cost_series += [(label, [(added_cost(s), main_point(s['risk'], budget)['rate'])
                             for s in arms[key]['trajectory']]) for key, label in labels[1:]]
+    rank = result['google_round_zipf']['comparison_budget'].get('distribution_top_k')
+    distribution_series = []
+    baseline_mass = (fitted_rank_mass_from_report(result, rank)
+                     if rank and result.get('distribution_fits') else None)
+    if baseline_mass is not None:
+        google_mass = arms['google_dynamic']['distribution_goal']['start_fitted_top_mass']
+        distribution_series = [(labels[0][1], [(0, baseline_mass)])]
+        for key, label in labels[1:]:
+            arm = arms[key]
+            points = [(0, google_mass)]
+            points += [(added_cost(arm['trajectory'][i+1]),
+                        row['selection_risk_after_same_model'])
+                       for i, row in enumerate(arm['rounds'])]
+            distribution_series.append((label, points))
     specs = {
+        **({'distribution_cost': ('累计受影响账户比例—拟合分布前段占比', distribution_series,
+            dict(xlabel='Google 起点后累计通知的不同账户比例',
+                 ylabel=f'CDF 拟合曲线前 {rank:,} 位累计账户占比',
+                 x_format='percent', y_format='percent',
+                 x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1)))}
+           if distribution_series else {}),
         'coverage_F': ('累计受影响账户比例—猜测成功率', cost_series,
                         dict(xlabel='Google 起点后累计通知的不同账户比例',
                             ylabel=f'F 模型估计猜中比例（{budget:,} 次）',
@@ -125,7 +165,8 @@ def render_intervention_html(result, *, document=True):
         ('后续受影响', pct(ledger.get('adaptive_affected_rate', ledger['affected_rate'])),
          f'{ledger.get("adaptive_affected", ledger["affected"]):,} 个账户在 Google 起点后被通知'),
         ('实际修改', pct(ledger['changed_rate']), f'{ledger["changed"]:,} 个账户完成修改'),
-        ('F 累计猜中比例', pct(after['rate']), f'初始 {pct(before["rate"])} · {budget:,} 次估计猜测')]:
+        ('拟合前段累计占比', pct(dynamic.get('distribution_goal', {}).get('final_fitted_top_mass')),
+         f'固定前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位完整口令；越低越分散')]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong><small>{escape(note)}</small></div>')
     parts.append(f'</div><p>以上为 Google 起点后逐步干预方案：已完成共同起点后的 {completed} 轮干预；停止原因：{escape(dynamic["stop_label"])}。</p></section>')
     parts.append('<section id="intervention-conditions"><h2>先看懂这次比较</h2>'
@@ -137,7 +178,7 @@ def render_intervention_html(result, *, document=True):
     parts.append(table(['实验组', '要回答的问题'], [
         ['原始分布（无干预）', '原始风险有多高'],
         ['Google 基础策略', '基础策略本身改善多少'],
-        ['Google＋随机分批调整', '优先选择高风险账户是否有价值'],
+        ['Google＋随机分批调整', '优先选择影响分布的账户是否有价值'],
         ['Google＋初始排序后分批执行', '每轮重新分析分布是否有价值'],
         ['Google＋每轮重新评估的动态调整', '完整方法的结果'],
     ]))
@@ -194,20 +235,20 @@ def render_intervention_html(result, *, document=True):
         parts.append(table(['种子', '累计受影响账户', '随机组 F / A1',
                             '初始排序 F / A1', '逐轮动态 F / A1', '动态−初始排序 Δ F / A1'], rows))
         parts.append('</section>')
-    parts.append('<p>初始排序组只在 Google 起点用当时的 F 与 A1 模型排好后续账户和规则，之后不重新排序；'
-                 '动态组每轮执行后，先用独立参考群体的迁移结果更新 A1，再按更新后的风险重新选账户和规则。'
-                 '随机组的账户顺序不看口令风险，选规则时使用与动态组相同的当前风险模型。'
+    parts.append('<p>初始排序组只在 Google 起点按分布改善排好后续账户和规则，之后不重新排序；'
+                 '动态组每轮执行后，按新的完整口令分布重新选账户和规则。'
+                 '随机组的账户顺序不看口令分布，选规则时使用相同的分布评分。'
                   '三组在运行前固定每轮与累计通知预算；未用完的预算如实保留。</p>')
     parts.append(f'<p>动态组比较热门口令、结构和跨结构账户中的局部动作，'
                   '随机组先抽取账户，再从文档第 1—18 条片段中分配修改方法。'
-                  '动态组和随机组选规则时，使用固定 F 攻击模型与本轮最新独立参考群体重训的 A1 PCFG；'
-                  '新控制器优先比较固定 F 模型在主猜测预算下的预计命中比例下降；'
-                  '独立参考 A1 与完整口令集中度用于准入；模型未覆盖质量计入的保守代理单独披露。'
-                  'A1 只在独立参考群体上训练；逐轮 CDF 拟合参数用于事后核验分布变化。'
+                  '三组均先比较完整口令的排名累计分布，再用 CDF 采样拟合参数复核靠前动作。'
+                  '拟合曲线在固定前段排名处的累计占比越低，表示热门完整口令覆盖的账户越少。'
+                  '修改成功的账户还必须满足固定 F 模型的估计猜测次数严格增加；无法估计新旧次数时不批准修改。'
+                  'F 和独立参考 A1 的攻击曲线保留作事后检验，不与分布指标加权。'
                    '随机账户按与风险无关的种子排序，只通知至少违反一条候选规则且被分配了合格修改方法的账户。</p>')
     parts.append('<p>动态组在相同起点、相同预测模型下，也会评价达到相同单轮人数的随机组动作。'
                  '若随机组动作不足一整轮，两组只能按实际累计通知成本比较。执行后的账户分布会分叉，'
-                 '用户响应有波动，A1 终点评估也不同于选动作时的固定模型预测；'
+                 '用户响应有波动，攻击终点评估也不同于选动作时的分布目标；'
                  '这些因素都可能使最终曲线不按当轮预测排序。结论以实际等成本曲线为准。</p>')
     parts.append('<p>第 15 条的字典词使用独立开发样本中的纯字母词作为可复现代理，'
                  '第 17 条名单随每轮热门完整口令更新，第 18 条使用独立开发样本中的完整口令。'
@@ -230,6 +271,8 @@ def render_intervention_html(result, *, document=True):
         ['响应者：简单修补 / 片段重组 / 重选', ' / '.join(pct(x) for x in cfg['response']['weights'])],
         ['停止条件', '共同起点后最多 10 轮；无可行动作或预算不足时可提前停止'],
         ['基础要求', '四个 Google 组全站至少 8 字符；局部要求在此基础上叠加'],
+        ['分布主目标', f'CDF 拟合排名曲线前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位累计占比下降'],
+        ['个体安全门槛', '仅通过固定 F 模型可比较且新估计猜测次数严格更大的局部修改'],
         ['实验编号', result['metadata']['run_id']],
     ]))
     random_arm, frozen_arm = arms['google_random'], arms['google_frozen']
@@ -251,15 +294,22 @@ def render_intervention_html(result, *, document=True):
     if random_already:
         parts.append(f'<p>随机组有 {random_already:,} 名被通知账户已符合选中的规则，计入通知成本但没有修改口令。'
                      '因此相同通知人数不代表相同实际修改人数。</p>')
-    parts.append('<p class="notice">PCFG 曲线是蒙特卡洛估计，不是实际破解记录。模型未覆盖不等于安全。'
-                 '控制器单独披露把未覆盖质量计入的保守风险代理；它不是现实风险或置信上界，'
-                 '也不单独否决 F 与 A1 均预计改善的动作。后三组共用每轮与累计预算上限；'
+    parts.append('<p class="notice">PCFG 猜测次数和攻击曲线是模型估计，不是实际破解记录。'
+                 '无法估计猜测次数的候选修改不会被当作个人强度提升；'
+                 'Google 起点的构造迁移与后续局部强度门槛分开。后三组共用每轮与累计预算上限；'
                  '只在曲线共同覆盖的成本区间内比较，不外推到未达到的 20% 附加覆盖。</p></section>')
     specs = chart_specs(result)
+    rank = result['google_round_zipf']['comparison_budget'].get('distribution_top_k')
     for name, (title, series, opts) in specs.items():
         if name.startswith('cdf_fit_'):
             continue  # Fit diagnostics have their own explanation and tables below.
         parts.append(f'<section id="{escape(name)}"><h2>{escape(title)}</h2>')
+        if name == 'distribution_cost':
+            parts.append(f'<p>这是动作选择的主指标：把 c、s 拟合参数生成的排名累计曲线固定在前 {rank:,} 位，'
+                         '纵轴越低，表示热门完整口令覆盖的账户越少。横轴只计共同 Google 起点后的新增通知；'
+                         '原始组和 Google 基础组各只有一个点，Google 起点迁移的通知成本另列。'
+                         '后三组只在实际到达的成本范围内比较，不外推。'
+                         '这是单次模拟拟合；组间差异接近拟合误差时，不能认定某方法稳定占优。</p>')
         if name == 'coverage_F':
             parts.append(f'<p>横轴从共同 Google 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
                          '原始组和 Google 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
@@ -297,7 +347,7 @@ def render_intervention_html(result, *, document=True):
         rows = parameter_fits['rows']
         parts.append('<section id="round_parameters"><h2>动态策略每轮的分布拟合参数</h2>'
                      '<p>第 0 轮是双方共同的 Google 起点，后续各点只取实验组实际完成的轮次。'
-                     '对每轮完整口令频次分别使用相同种子的 CDF 采样方法拟合。'
+                     '对每轮完整口令频次分别使用与动作选择相同的 CDF 采样方法拟合。'
                      '实线表示 c，虚线表示 s；圆点和通向该点的线段用颜色标识轮次。'
                      '两项参数使用上下独立纵轴，以免数值量级不同掩盖变化。</p>')
         parts.append(round_parameter_html(rows, requested_rounds=result['google_round_zipf']['requested_rounds']))
@@ -307,31 +357,50 @@ def render_intervention_html(result, *, document=True):
              '—' if row['mean_max_cdf_error'] is None else f'{row["mean_max_cdf_error"]:.3%}',
              pct(row['affected_rate'])] for row in rows]))
         parts.append('<p>c、s 描述拟合后的频次形状，没有单独的“越大越安全”方向或统一合格阈值。'
-                     '拟合误差反映模型与实际分布的差距；分布参数变化只能作为辅助评价，'
-                     '安全效果仍需结合攻击命中比例和账户修改成本判断。纵轴按各自参数范围缩放，比较变化量请看表中原值。</p></section>')
+                     '控制器用二者生成的排名累计曲线比较固定前段的账户占比，不把参数直接相加。'
+                     '拟合误差反映模型与实际分布的差距；攻击命中比例和账户修改成本仍单独展示。</p></section>')
     parts.append(render_fit_diagnostics(result))
     parts.append('<section id="intervention-rounds"><h2>每轮具体做了什么</h2>')
     if not dynamic['rounds']:
-        parts.append('<p>本次没有执行动作。候选没有通过风险收益或预算检查时，系统会停止，'
+        parts.append('<p>本次没有执行动作。候选没有通过分布收益、个体强度或预算检查时，系统会停止，'
                      '不会为了展示效果强制修改账户。</p>')
+        parts.append('<h3>动态调整每轮口令强度增加的账户比例</h3>'
+                     '<p>本次动态组没有完成干预轮次，因此没有可计算的逐轮变化。</p>')
     else:
         parts.append(table(['轮次', '改谁', '怎么改', '通知 / 成功', '后续累计通知',
-                             '预计 / 实现 F 命中下降'], [
+                             '预计 / 实现拟合前段占比下降'], [
             [r['round'], r['action']['group'], r['action']['rule'], f'{r["action"]["selected"]} / {r["changed"]}',
               pct(dynamic['trajectory'][i+1]['ledger'].get('adaptive_affected_rate',
                   dynamic['trajectory'][i+1]['ledger']['affected_rate'])),
-              f'{100*r["prediction"].get("predicted_primary_gain", r["prediction"]["predicted_guarded_gain"]):.3f} / '
-              f'{100*(r.get("realized_primary_gain") if r.get("realized_primary_gain") is not None else r["realized_guarded_gain"]):.3f} 个百分点']
+              f'{100*r["prediction"].get("predicted_fitted_cdf_gain", 0):.3f} / '
+              f'{100*r.get("realized_distribution_gain", 0):.3f} 个百分点']
             for i, r in enumerate(dynamic['rounds'])]))
+        cumulative_strength = 0
+        strength_rows = []
+        for r in dynamic['rounds']:
+            improved = r.get('strength_improved', r['changed'])
+            notified = r['action']['selected']
+            cumulative_strength += improved
+            strength_rows.append([r['round'], notified, improved,
+                                  pct(improved/notified if notified else 0),
+                                  pct(improved/ledger['accounts']),
+                                  pct(cumulative_strength/ledger['accounts']),
+                                  r.get('strength_rejections', 0)])
+        parts.append('<h3>动态调整每轮口令强度增加的账户比例</h3>'
+                     '<p>只统计动态组后续局部干预。强度增加指固定 F 模型对新旧口令均给出'
+                     '估计猜测次数，且新口令严格更难猜；未响应或不能证明增加者保持旧口令。'
+                     '“被拒尝试”计口令候选次数，不是独立用户数。</p>')
+        parts.append(table(['轮次', '本轮通知', '猜测次数增加账户', '占本轮通知',
+                            '本轮占全站', '累计占全站', '未通过强度检查的候选尝试'], strength_rows))
         for r in dynamic['rounds']:
             round_label = f'调整第 {r["round"]} 轮'
             parts.append(f'<details><summary>{round_label}选择依据与候选比较</summary>'
                          f'<p>{escape(r["selection_reason"])}。未响应 {r["nonresponse"]} 人，'
                          f'尝试后未完成 {r["failed_to_comply"]} 人。</p>')
             ordered = sorted(r['candidate_audit'], key=lambda x: -x['score'])[:12]
-            parts.append(table(['对象', '要求', '人数', '预计 F 命中下降', '判断'], [
+            parts.append(table(['对象', '要求', '人数', '预计分布前段占比下降', '判断'], [
                 [a['action']['group'], a['action']['rule'], a['action']['selected'],
-                  f'{100*a.get("predicted_primary_gain", a["predicted_guarded_gain"]):.3f} 个百分点',
+                  f'{100*(a.get("predicted_fitted_cdf_gain") if a.get("predicted_fitted_cdf_gain") is not None else a.get("predicted_empirical_cdf_gain", 0)):.3f} 个百分点',
                  ('两步桥接（首轮单独可能无改善）' if a.get('bridge') else '可行') if a['feasible']
                  else '；'.join(a['rejection_reasons'])] for a in ordered]))
             parts.append(f'<p>本轮共评价 {r["candidate_count"]} 个候选，表中显示评分最高的 12 个；完整记录见公开报告。</p></details>')

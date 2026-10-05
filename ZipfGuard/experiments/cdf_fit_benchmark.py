@@ -117,7 +117,9 @@ def intervention_fit_diagnostics(report, *, compare_legacy=False):
     return {'fit_version': FIT_VERSION, 'results': results,
             'policy_comparison_valid': bool(comparison.get('google_baseline', {}).get(
                 'target', {}).get('all_accounts_compliant')),
-            'usage': 'distribution diagnostics only; decisions and attack estimates unchanged'}
+            'usage': ('fitted ranked CDF guides local action selection; attack estimates remain post-hoc'
+                      if report.get('config', {}).get('schema_version', '').endswith('-v4') else
+                      'distribution diagnostics only; decisions and attack estimates unchanged')}
 
 
 def intervention_round_parameter_diagnostics(report):
@@ -153,6 +155,9 @@ def intervention_round_parameter_diagnostics(report):
     if ('google_hold' in existing and
             rows[0]['parameters'] != existing['google_hold']['sampling_fit']['parameters']):
         raise AssertionError('逐轮图与 Google 固定对照使用了不同的起点拟合')
+    scope = ('共同 Google 起点和每轮实际终态；相同拟合方法与种子；v4 以拟合前段累计占比选动作'
+             if report.get('config', {}).get('schema_version', '').endswith('-v4') else
+             '共同 Google 起点和每轮实际终态；相同拟合种子；仅作分布形状诊断')
     return {'fit_version': FIT_VERSION, 'method': 'CDF ranked-occupancy sampling',
-            'scope': '共同 Google 起点和每轮实际终态；相同拟合种子；仅作分布形状诊断',
+            'scope': scope,
             'rows': rows}
