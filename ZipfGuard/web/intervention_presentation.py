@@ -2,6 +2,7 @@
 import numpy as np
 
 from core.cdf_sampling import frequency_sample
+from core.intervention_distribution import fitted_log_cdf_area_from_parameters
 from web.presentation import STYLE, escape, plot, table
 from web.study_dashboard import DASHBOARD_STYLE
 from web.cdf_fit_presentation import fit_chart_specs, render_fit_diagnostics
@@ -61,6 +62,16 @@ def fitted_rank_mass_from_report(result, rank):
     return sum(masses) / len(masses)
 
 
+def fitted_log_area_from_report(result):
+    fit = next((row['fit']['sampling_fit'] for row in result['distribution_fits']['results']
+                if row['key'] == 'baseline' and row.get('fit')), None)
+    if fit is None:
+        return None
+    return fitted_log_cdf_area_from_parameters(
+        fit['parameters'], result['baseline']['distribution']['users'],
+        result['config']['seed'])['score']
+
+
 def chart_specs(result):
     if not result.get('google_round_zipf', {}).get('google_baseline'):
         return fit_chart_specs(result)
@@ -81,10 +92,14 @@ def chart_specs(result):
                             for s in arms[key]['trajectory']]) for key, label in labels[1:]]
     rank = result['google_round_zipf']['comparison_budget'].get('distribution_top_k')
     distribution_series = []
-    baseline_mass = (fitted_rank_mass_from_report(result, rank)
+    area_mode = (arms['google_dynamic'].get('distribution_goal', {}).get('metric') ==
+                 'fitted_complete_log_rank_cdf_area')
+    baseline_mass = ((fitted_log_area_from_report(result) if area_mode else
+                      fitted_rank_mass_from_report(result, rank))
                      if rank and result.get('distribution_fits') else None)
     if baseline_mass is not None:
-        google_mass = arms['google_dynamic']['distribution_goal']['start_fitted_top_mass']
+        goal = arms['google_dynamic']['distribution_goal']
+        google_mass = (goal['start_fitted_log_area'] if area_mode else goal['start_fitted_top_mass'])
         distribution_series = [(labels[0][1], [(0, baseline_mass)])]
         for key, label in labels[1:]:
             arm = arms[key]
@@ -94,10 +109,12 @@ def chart_specs(result):
                        for i, row in enumerate(arm['rounds'])]
             distribution_series.append((label, points))
     specs = {
-        **({'distribution_cost': ('累计受影响账户比例—拟合分布前段占比', distribution_series,
+        **({'distribution_cost': ('累计受影响账户比例—完整分布集中度' if area_mode else
+                                  '累计受影响账户比例—拟合分布前段占比', distribution_series,
             dict(xlabel='Google 起点后累计通知的不同账户比例',
-                 ylabel=f'CDF 拟合曲线前 {rank:,} 位累计账户占比',
-                 x_format='percent', y_format='percent',
+                 ylabel='CDF 拟合累计曲线的对数排名面积（越低越分散）' if area_mode else
+                          f'CDF 拟合曲线前 {rank:,} 位累计账户占比',
+                 x_format='percent', y_format='decimal6' if area_mode else 'percent',
                  x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1)))}
            if distribution_series else {}),
         'coverage_F': ('累计受影响账户比例—猜测成功率', cost_series,
@@ -106,6 +123,23 @@ def chart_specs(result):
                             x_format='percent', y_format='percent',
                             x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1))),
     }
+    if area_mode and arms['google_dynamic']['rounds']:
+        dynamic = arms['google_dynamic']
+        start_round = max(0, len(dynamic['rounds'])-3)
+        scores = [(0, dynamic['distribution_goal']['start_fitted_log_area'])]
+        scores += [(i, row['selection_risk_after_same_model'])
+                   for i, row in enumerate(dynamic['rounds'], 1)]
+        detail = scores[start_round:]
+        values = [value for _, value in detail]
+        margin = max((max(values)-min(values))*.1, .00002)
+        specs['dynamic_distribution_detail'] = (
+            '动态组末段分布变化（局部放大）',
+            [(labels[-1][1], detail)],
+            dict(xlabel='动态调整轮次', ylabel='拟合完整累计分布面积（越低越分散）',
+                 x_ticks=[round_id for round_id, _ in detail],
+                 x_format='count', y_format='decimal6',
+                 x_domain=(detail[0][0], detail[-1][0]),
+                 y_domain=(max(0, min(values)-margin), max(values)+margin)))
     for level, title in [('F', 'F：攻击者不更新模型'), ('A1', 'A1：攻击者学习局部干预后的参考分布')]:
         if level == 'A1' and not any(a['attacks']['A1'] for a in arms.values()):
             continue
@@ -129,9 +163,15 @@ def chart_specs(result):
                  x_format='count', y_format='count', markers=False))
     # Match the second workbench: zero-based percentage axes with 12% headroom.
     for name, (_, series, opts) in specs.items():
-        if name not in ('final_distribution', 'google_round_zipf'):
+        if name not in ('final_distribution', 'google_round_zipf',
+                        'dynamic_distribution_detail'):
             ceiling = max((row[1] for _, values in series for row in values if row[1] is not None), default=0)
             opts['y_domain'] = (0, min(1, max(.01, ceiling*1.12)))
+        if name == 'distribution_cost' and area_mode:
+            values = [row[1] for _, points in series for row in points if row[1] is not None]
+            floor, ceiling = min(values), max(values)
+            margin = max((ceiling-floor)*.08, .00005)
+            opts['y_domain'] = (max(0, floor-margin), ceiling+margin)
     specs.update(fit_chart_specs(result))
     return specs
 
@@ -150,6 +190,8 @@ def render_intervention_html(result, *, document=True):
     cfg = result['config']
     labels = comparison_labels(result)
     dynamic = arms['google_dynamic']
+    area_mode = (dynamic.get('distribution_goal', {}).get('metric') ==
+                 'fitted_complete_log_rank_cdf_area')
     completed = result['google_round_zipf']['experimental']['rounds_completed']
     budget = cfg['risk_budget']
     final, ledger = dynamic['final'], dynamic['final']['ledger']
@@ -165,8 +207,11 @@ def render_intervention_html(result, *, document=True):
         ('后续受影响', pct(ledger.get('adaptive_affected_rate', ledger['affected_rate'])),
          f'{ledger.get("adaptive_affected", ledger["affected"]):,} 个账户在 Google 起点后被通知'),
         ('实际修改', pct(ledger['changed_rate']), f'{ledger["changed"]:,} 个账户完成修改'),
-        ('拟合前段累计占比', pct(dynamic.get('distribution_goal', {}).get('final_fitted_top_mass')),
-         f'固定前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位完整口令；越低越分散')]:
+        (('完整分布集中度' if area_mode else '拟合前段累计占比'),
+         (f'{dynamic["distribution_goal"]["final_fitted_log_area"]:.6f}' if area_mode else
+          pct(dynamic.get('distribution_goal', {}).get('final_fitted_top_mass'))),
+         ('拟合累计曲线对数排名面积；越低越分散' if area_mode else
+          f'固定前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位完整口令；越低越分散'))]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong><small>{escape(note)}</small></div>')
     parts.append(f'</div><p>以上为 Google 起点后逐步干预方案：已完成共同起点后的 {completed} 轮干预；停止原因：{escape(dynamic["stop_label"])}。</p></section>')
     parts.append('<section id="intervention-conditions"><h2>先看懂这次比较</h2>'
@@ -241,8 +286,9 @@ def render_intervention_html(result, *, document=True):
                   '三组在运行前固定每轮与累计通知预算；未用完的预算如实保留。</p>')
     parts.append(f'<p>动态组比较热门口令、结构和跨结构账户中的局部动作，'
                   '随机组先抽取账户，再从文档第 1—18 条片段中分配修改方法。'
-                  '三组均先比较完整口令的排名累计分布，再用 CDF 采样拟合参数复核靠前动作。'
-                  '拟合曲线在固定前段排名处的累计占比越低，表示热门完整口令覆盖的账户越少。'
+                   '三组均先比较完整口令的排名累计分布，再用 CDF 采样拟合参数复核靠前动作。'
+                   + ('拟合后的完整累计曲线在对数排名上的面积越低，表示分布越分散。' if area_mode else
+                      '拟合曲线在固定前段排名处的累计占比越低，表示热门完整口令覆盖的账户越少。') +
                   '修改成功的账户还必须满足固定 F 模型的估计猜测次数严格增加；无法估计新旧次数时不批准修改。'
                   'F 和独立参考 A1 的攻击曲线保留作事后检验，不与分布指标加权。'
                    '随机账户按与风险无关的种子排序，只通知至少违反一条候选规则且被分配了合格修改方法的账户。</p>')
@@ -271,7 +317,8 @@ def render_intervention_html(result, *, document=True):
         ['响应者：简单修补 / 片段重组 / 重选', ' / '.join(pct(x) for x in cfg['response']['weights'])],
         ['停止条件', '共同起点后最多 10 轮；无可行动作或预算不足时可提前停止'],
         ['基础要求', '四个 Google 组全站至少 8 字符；局部要求在此基础上叠加'],
-        ['分布主目标', f'CDF 拟合排名曲线前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位累计占比下降'],
+        ['分布主目标', ('CDF 拟合完整累计曲线的对数排名面积下降' if area_mode else
+                    f'CDF 拟合排名曲线前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位累计占比下降')],
         ['个体安全门槛', '仅通过固定 F 模型可比较且新估计猜测次数严格更大的局部修改'],
         ['实验编号', result['metadata']['run_id']],
     ]))
@@ -305,11 +352,18 @@ def render_intervention_html(result, *, document=True):
             continue  # Fit diagnostics have their own explanation and tables below.
         parts.append(f'<section id="{escape(name)}"><h2>{escape(title)}</h2>')
         if name == 'distribution_cost':
-            parts.append(f'<p>这是动作选择的主指标：把 c、s 拟合参数生成的排名累计曲线固定在前 {rank:,} 位，'
-                         '纵轴越低，表示热门完整口令覆盖的账户越少。横轴只计共同 Google 起点后的新增通知；'
+            parts.append(('<p>这是动作选择的主指标：用 c、s 生成完整的拟合累计曲线，计算对数排名面积。'
+                          '纵轴越低表示口令分布越分散；该分数不是猜测成功率。' if area_mode else
+                          f'<p>这是动作选择的主指标：把 c、s 拟合参数生成的排名累计曲线固定在前 {rank:,} 位，'
+                          '纵轴越低，表示热门完整口令覆盖的账户越少。') +
+                          '横轴只计共同 Google 起点后的新增通知；'
                          '原始组和 Google 基础组各只有一个点，Google 起点迁移的通知成本另列。'
                          '后三组只在实际到达的成本范围内比较，不外推。'
                          '这是单次模拟拟合；组间差异接近拟合误差时，不能认定某方法稳定占优。</p>')
+        if name == 'dynamic_distribution_detail':
+            parts.append('<p>只放大动态组最后四个实际观测点，纵轴范围与五组总图不同。'
+                         '水平线段表示本轮拟合分数没有可见变化；未执行的轮次不补点。'
+                         '精确数值见下方逐轮表。</p>')
         if name == 'coverage_F':
             parts.append(f'<p>横轴从共同 Google 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
                          '原始组和 Google 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
@@ -357,7 +411,8 @@ def render_intervention_html(result, *, document=True):
              '—' if row['mean_max_cdf_error'] is None else f'{row["mean_max_cdf_error"]:.3%}',
              pct(row['affected_rate'])] for row in rows]))
         parts.append('<p>c、s 描述拟合后的频次形状，没有单独的“越大越安全”方向或统一合格阈值。'
-                     '控制器用二者生成的排名累计曲线比较固定前段的账户占比，不把参数直接相加。'
+                      + ('控制器用二者生成的完整排名累计曲线比较对数排名面积，不把参数直接相加。' if area_mode else
+                         '控制器用二者生成的排名累计曲线比较固定前段的账户占比，不把参数直接相加。') +
                      '拟合误差反映模型与实际分布的差距；攻击命中比例和账户修改成本仍单独展示。</p></section>')
     parts.append(render_fit_diagnostics(result))
     parts.append('<section id="intervention-rounds"><h2>每轮具体做了什么</h2>')
@@ -368,12 +423,14 @@ def render_intervention_html(result, *, document=True):
                      '<p>本次动态组没有完成干预轮次，因此没有可计算的逐轮变化。</p>')
     else:
         parts.append(table(['轮次', '改谁', '怎么改', '通知 / 成功', '后续累计通知',
-                             '预计 / 实现拟合前段占比下降'], [
+                             '预计 / 实现完整分布分数下降' if area_mode else '预计 / 实现拟合前段占比下降'], [
             [r['round'], r['action']['group'], r['action']['rule'], f'{r["action"]["selected"]} / {r["changed"]}',
               pct(dynamic['trajectory'][i+1]['ledger'].get('adaptive_affected_rate',
                   dynamic['trajectory'][i+1]['ledger']['affected_rate'])),
-              f'{100*r["prediction"].get("predicted_fitted_cdf_gain", 0):.3f} / '
-              f'{100*r.get("realized_distribution_gain", 0):.3f} 个百分点']
+               (f'{r["prediction"].get("predicted_fitted_log_area_gain", 0):.6f} / '
+                f'{r.get("realized_distribution_gain", 0):.6f}' if area_mode else
+                f'{100*r["prediction"].get("predicted_fitted_cdf_gain", 0):.3f} / '
+                f'{100*r.get("realized_distribution_gain", 0):.3f} 个百分点')]
             for i, r in enumerate(dynamic['rounds'])]))
         cumulative_strength = 0
         strength_rows = []
@@ -398,9 +455,11 @@ def render_intervention_html(result, *, document=True):
                          f'<p>{escape(r["selection_reason"])}。未响应 {r["nonresponse"]} 人，'
                          f'尝试后未完成 {r["failed_to_comply"]} 人。</p>')
             ordered = sorted(r['candidate_audit'], key=lambda x: -x['score'])[:12]
-            parts.append(table(['对象', '要求', '人数', '预计分布前段占比下降', '判断'], [
+            parts.append(table(['对象', '要求', '人数',
+                                '预计完整分布分数下降' if area_mode else '预计分布前段占比下降', '判断'], [
                 [a['action']['group'], a['action']['rule'], a['action']['selected'],
-                  f'{100*(a.get("predicted_fitted_cdf_gain") if a.get("predicted_fitted_cdf_gain") is not None else a.get("predicted_empirical_cdf_gain", 0)):.3f} 个百分点',
+                  (f'{a["score"]:.6f}' if area_mode else
+                   f'{100*(a.get("predicted_fitted_cdf_gain") if a.get("predicted_fitted_cdf_gain") is not None else a.get("predicted_empirical_cdf_gain", 0)):.3f} 个百分点'),
                  ('两步桥接（首轮单独可能无改善）' if a.get('bridge') else '可行') if a['feasible']
                  else '；'.join(a['rejection_reasons'])] for a in ordered]))
             parts.append(f'<p>本轮共评价 {r["candidate_count"]} 个候选，表中显示评分最高的 12 个；完整记录见公开报告。</p></details>')

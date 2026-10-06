@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = 'selective-intervention-v4'
+PROTOCOL = 'selective-intervention-v5-full-cdf-area'
 DEFAULT = {
     'schema_version': PROTOCOL, 'seed': 42,
     'data': {'path': '../rockyou-withcount.txt', 'format': 'password_with_count',
@@ -15,12 +15,12 @@ DEFAULT = {
     'monte_carlo': {'samples': 10000, 'seed': 42},
     'pcfg': {'timeout_seconds': 180},
     'controller': {'round_fraction': .02, 'total_fraction': .20,
-                   'batch_fractions': [.005, .01, .02], 'max_rounds': 40,
+                   'batch_fractions': [.001, .002, .005, .01, .02], 'max_rounds': 40,
                    'max_groups': 12, 'popular_k': 20, 'lengths': [10, 12, 15],
                    'candidate_pool': 'site-fragments-1-18-v1',
                    'predictable_terms': ['gitlab', 'devops'],
-                   'prediction_repeats': 3, 'min_gain': 0.000001,
-                   'min_batch_fraction': .005, 'min_positive_trial_fraction': .6,
+                   'prediction_repeats': 3, 'min_gain': 0.000000000001,
+                   'min_batch_fraction': .001, 'min_positive_trial_fraction': .6,
                    'max_a1_regression': .0005,
                    'combination_width': 6, 'validation_shortlist': 5,
                    'validation_repeats': 5, 'lookahead_width': 2,

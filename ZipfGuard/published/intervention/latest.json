@@ -1,11 +1,11 @@
 {
-  "run_id": "b6923d8b6b74d938",
+  "run_id": "ef77ab5e267c09c5",
   "users": 100000,
   "google_start": true,
-  "dynamic_rounds": 5,
+  "dynamic_rounds": 8,
   "candidate_pool": "site-fragments-1-18-v1",
   "comparison_arms": 5,
-  "comparison_cost": 0.09707,
-  "protocol": "selective-intervention-v4",
-  "distribution_top_k": 926
+  "comparison_cost": 0.123,
+  "protocol": "selective-intervention-v5-full-cdf-area",
+  "distribution_metric": "fitted_complete_log_rank_cdf_area"
 }

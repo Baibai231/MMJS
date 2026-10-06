@@ -1,5 +1,5 @@
 {
-  "schema_version": "selective-intervention-v4",
+  "schema_version": "selective-intervention-v5-full-cdf-area",
   "seed": 42,
   "data": {
     "path": "../rockyou-withcount.txt",
@@ -29,6 +29,8 @@
     "round_fraction": 0.02,
     "total_fraction": 0.2,
     "batch_fractions": [
+      0.001,
+      0.002,
       0.005,
       0.01,
       0.02
@@ -42,7 +44,7 @@
       15
     ],
     "prediction_repeats": 3,
-    "min_gain": 0.000001,
+    "min_gain": 0.000000000001,
     "target_relative_reduction": 0.1,
     "stagnation_patience": 3,
     "max_hhi_increase": 0.0001

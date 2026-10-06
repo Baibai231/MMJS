@@ -224,18 +224,39 @@ class TestIntervention(unittest.TestCase):
         self.assertTrue(all(len(set(row[0].indices)) == len(row[0].indices)
                             for row in [(winner[0], winner[1])]))
 
-    def test_rejects_tiny_candidate_when_one_prediction_has_no_gain(self):
+    def test_tiny_mean_gain_is_retained_and_each_response_is_fitted(self):
         class VariableResponder:
             def respond(self, population, action, seed, stream):
                 new = 'abc' if stream.endswith('-1') else 'abc!'
                 return [{'index': 0, 'old': 'abc', 'new': new}]
         cfg = self.cfg(100)
         cfg['controller']['min_positive_trial_fraction'] = 1.
-        prediction = predict_action(Population(['abc']*100), self.action([0]),
-                                    self.risk(), VariableResponder(), cfg, 1)
+        with patch('policy.intervention_controller.fitted_log_cdf_area',
+                   side_effect=[{'score': .49}, {'score': .5}, {'score': .495}]) as fit:
+            prediction = predict_action(Population(['abc']*100), self.action([0]),
+                                        self.risk(), VariableResponder(), cfg, 1,
+                                        baseline_fit={'score': .5})
         self.assertGreater(prediction['predicted_distribution_gain'], 0)
         self.assertEqual(prediction['predicted_gain_range'][0], 0)
-        self.assertFalse(prediction['feasible'])
+        self.assertTrue(prediction['feasible'])
+        self.assertEqual(fit.call_count, 3)
+        self.assertAlmostEqual(prediction['predicted_fitted_log_area_gain'], .005)
+        self.assertEqual(prediction['fitted_gain_range'][0], 0)
+
+    def test_empirical_disagreement_is_reported_without_overriding_fitted_goal(self):
+        class ConcentratingResponder:
+            def respond(self, population, action, seed, stream):
+                return [{'index': 6, 'old': 'xyz', 'new': 'abc', 'status': 'changed'}]
+
+        population = Population(['abc']*6 + ['xyz']*4)
+        with patch('policy.intervention_controller.fitted_log_cdf_area',
+                   return_value={'score': .49}):
+            prediction = predict_action(population, self.action([6]), self.risk(),
+                                        ConcentratingResponder(), self.cfg(10), 1,
+                                        baseline_fit={'score': .5})
+        self.assertLess(prediction['predicted_empirical_log_area_gain'], 0)
+        self.assertGreater(prediction['predicted_fitted_log_area_gain'], 0)
+        self.assertTrue(prediction['feasible'])
 
     def test_feedback_recomputed_and_final_snapshot_retained(self):
         cfg = self.cfg(100)

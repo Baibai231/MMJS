@@ -98,7 +98,7 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  </style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / SELECTIVE INTERVENTION</span>
  <h1>少改一部分账户，口令分布能改善多少？</h1>
  <p>第三展示台 · 五组实验对照：原始分布、Google 基础策略，以及共同 Google 起点后的随机分批、初始排序分批和逐轮动态调整。</p>
- <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#distribution_cost">分布与通知成本</a><a href="#coverage_F">猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#distribution_cost">分布与通知成本</a><a href="#dynamic_distribution_detail">末轮放大</a><a href="#coverage_F">猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
  <p class="muted">后续动态干预从去重的 1—18 条政策片段中选动作；分布拟合统一使用 CDF 采样方法，实际频次与攻击风险分别展示。</p>
  <p class="actions"><button id="recent">加载最近完成结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在读取结果…</span></p></main>
  <div id="result" aria-live="polite"></div>
@@ -109,7 +109,7 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  <label>每轮最多影响（%）<input id="round" type="number" min="0.01" max="100" step="0.1"></label>
  <label>累计最多影响（%）<input id="total" type="number" min="0.01" max="100" step="1"></label>
  <label>未响应比例（%）<input id="nonresponse" type="number" min="0" max="100" step="1"></label>
- <label>拟合分布前段（%）<input id="target" type="number" min="0.01" max="100" step="0.1"></label>
+ <label>历史前段诊断范围（%）<input id="target" type="number" min="0.01" max="100" step="0.1"></label>
  <label>随机种子<input id="seed" type="number" min="0"></label><label>蒙特卡洛采样数<input id="samples" type="number" min="100"></label>
  </div><label class="wide">本地带频次语料路径<input id="path"></label>
  <details><summary>完整配置与评估选项</summary><textarea id="config" spellcheck="false"></textarea><button id="apply">应用完整配置</button></details>

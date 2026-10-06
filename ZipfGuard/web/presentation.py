@@ -52,6 +52,8 @@ def _curve_marker(px, py, color, shape, tooltip="", size=4):
 
 
 def _axis_value(value, style=None):
+    if style == "decimal6":
+        return f"{value:.6f}"
     if style == "power10":
         return "10" + str(int(round(math.log10(value)))).translate(str.maketrans("-0123456789", "⁻⁰¹²³⁴⁵⁶⁷⁸⁹"))
     if style == "percent":

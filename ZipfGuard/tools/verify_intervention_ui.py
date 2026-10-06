@@ -54,7 +54,7 @@ def main():
                     page.locator('#download').click()
                 assert download.value.suggested_filename == 'intervention_report.json'
                 report = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))
-                assert report['schema_version'] == 'selective-intervention-v4-result'
+                assert report['schema_version'] == 'selective-intervention-v5-full-cdf-area-result'
                 assert report['dataset']['source_rows'] > 1000000
                 comparison = report['google_round_zipf']
                 assert comparison['control']['state_sha256'] == comparison['experimental']['start_state_sha256']
@@ -73,7 +73,13 @@ def main():
                     assert exported.status == 200
                     assert all(label in exported.text() for label in expected)
                     assert '固定 Google 分批' not in exported.text()
+                detail = page.locator('#dynamic_distribution_detail')
+                assert detail.locator('svg > .plot-series').count() == 1
+                detail_svg = page.request.get(origin+detail.locator('a').get_attribute('href'))
+                assert detail_svg.status == 200
+                assert '局部放大' in detail.text_content()
                 page.locator('#distribution_cost').screenshot(path=str(out/'distribution_cost.png'))
+                detail.screenshot(path=str(out/'dynamic_distribution_detail.png'))
                 page.locator('#attack_A1').screenshot(path=str(out/'attack_A1.png'))
                 page.locator('#final_distribution').screenshot(path=str(out/'final_distribution.png'))
                 zipf = page.locator('#google_round_zipf .plot-distinct')

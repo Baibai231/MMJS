@@ -12,7 +12,7 @@ from ai.pcfg_monte_carlo import Grammar, MonteCarloIndex, VERSION
 from core.corpus import counts_hash
 from core.registration import load_registration
 from core.intervention_state import Population, distribution_summary
-from core.intervention_distribution import fitted_top_mass, top_k
+from core.intervention_distribution import fitted_log_cdf_area, fitted_top_mass, top_k
 from core.intervention_risk import (InterventionRisk, CombinedInterventionRisk,
                                     reference_mutation_ranks, evaluate_mutations)
 from experiments.intervention_config import ROOT, PROTOCOL, validate_intervention_config
@@ -161,8 +161,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
         else:
             selection_risk, selection_model_key = evaluator, None
         distribution_rank = top_k(population, cfg)
-        selection_before = fitted_top_mass(population.counts(), distribution_rank,
-                                           cfg['seed'])['top_mass']
+        selection_before = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
         primary_before = (selection_risk.primary_risk(population.counts())
                           if isinstance(selection_risk, CombinedInterventionRisk) else None)
         if method in ('one_shot', GOOGLE_FROZEN_METHOD):
@@ -216,8 +215,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             assert_google_compliant(population)
             adaptation['google_compliance'] = assert_google_compliant(reference)
         current = snapshot(population, evaluator, round_id)
-        selection_after = fitted_top_mass(population.counts(), distribution_rank,
-                                          cfg['seed'])['top_mass']
+        selection_after = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
         gain = selection_before - selection_after
         primary_after = (selection_risk.primary_risk(population.counts())
                          if isinstance(selection_risk, CombinedInterventionRisk) else None)
@@ -226,7 +224,8 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'before_state_sha256': previous['state_sha256'],
                        'after_state_sha256': current['state_sha256'],
                        'realized_guarded_gain': gain,
-                       'realized_distribution_gain': gain,
+                        'realized_distribution_gain': gain,
+                        'distribution_score_metric': 'fitted_complete_log_rank_cdf_area',
                        'distribution_top_rank': distribution_rank,
                        'realized_primary_gain': (primary_before-primary_after
                                                  if primary_before is not None else None),
@@ -242,7 +241,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'reference_replay': adaptation,
                         'selection_reason': ('先随机抽取当前可行动账户，再在相同的 18 条规则中分配预计有正收益的修改方法' if method == GOOGLE_RANDOM_METHOD
                                              else '只按 Google 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
-                                             else '先比较 CDF 采样拟合后的固定前段排名累计占比，再逐账户要求固定 F 模型的估计猜测次数严格增加' if method == GOOGLE_DYNAMIC_METHOD
+                                              else '先比较 CDF 采样拟合后的完整排名累计分布，再逐账户要求固定 F 模型的估计猜测次数严格增加' if method == GOOGLE_DYNAMIC_METHOD
                                             else '在本轮可行候选中，预计全站保守风险下降最大' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
@@ -264,9 +263,12 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
               'rounds': rounds, 'stop_reason': stop, 'stop_label': STOP_LABELS[stop],
               'terminal_candidate_audit': terminal_audit, 'target_guarded_risk': target, 'target_reached': trajectory[-1]['risk']['guarded_risk'] <= target,
               'final': trajectory[-1], 'adaptive_reference_ledger': reference.ledger(),
-              'distribution_goal': {
-                  'top_rank': top_k(initial, cfg),
-                  'start_fitted_top_mass': fitted_top_mass(initial.counts(), top_k(initial, cfg), cfg['seed'])['top_mass'],
+               'distribution_goal': {
+                   'metric': 'fitted_complete_log_rank_cdf_area',
+                   'top_rank': top_k(initial, cfg),
+                   'start_fitted_log_area': fitted_log_cdf_area(initial.counts(), cfg['seed'])['score'],
+                   'final_fitted_log_area': fitted_log_cdf_area(population.counts(), cfg['seed'])['score'],
+                   'start_fitted_top_mass': fitted_top_mass(initial.counts(), top_k(initial, cfg), cfg['seed'])['top_mass'],
                   'final_fitted_top_mass': fitted_top_mass(population.counts(), top_k(initial, cfg), cfg['seed'])['top_mass']}}
     return result, population.counts(), reference.counts()
 
@@ -506,7 +508,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
-                             'decision_metric': '以 CDF 采样拟合后的固定前段排名累计占比下降选动作；固定 F 模型估计猜测次数仅作逐账户严格改善门槛，无法比较的修改不通过；F/A1 命中率作为事后诊断，不加权参与选动作'}}
+                             'decision_metric': '以 CDF 采样拟合后的完整累计分布曲线对数排名面积下降选动作；固定 F 模型估计猜测次数仅作逐账户严格改善门槛，无法比较的修改不通过；F/A1 命中率作为事后诊断，不加权参与选动作'}}
     if progress:
         progress('使用 CDF 采样方法拟合三组终态，独立种子复核')
     if include_legacy:
