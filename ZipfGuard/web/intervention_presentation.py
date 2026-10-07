@@ -3,6 +3,7 @@ import numpy as np
 
 from core.cdf_sampling import frequency_sample
 from core.intervention_distribution import fitted_log_cdf_area_from_parameters
+from core.intervention_attack_area import curve_area
 from web.presentation import STYLE, escape, plot, table
 from web.study_dashboard import DASHBOARD_STYLE
 from web.cdf_fit_presentation import fit_chart_specs, render_fit_diagnostics
@@ -123,6 +124,15 @@ def chart_specs(result):
                             x_format='percent', y_format='percent',
                             x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1))),
     }
+    if result.get('metadata', {}).get('aggregate_attack_guard'):
+        area_series = [(labels[0][1], [(0, curve_area(base['risk']))])]
+        area_series += [(label, [(added_cost(s), curve_area(s['risk']))
+                                 for s in arms[key]['trajectory']]) for key, label in labels[1:]]
+        specs['attack_area_cost'] = ('累计通知比例—总体猜测曲线面积', area_series,
+            dict(xlabel='Google 起点后累计通知的不同账户比例',
+                 ylabel='固定 F 猜测成功曲线对数面积（越低越难猜）',
+                 x_format='percent', y_format='decimal6',
+                 x_domain=(0, min(1, maximum*1.08))))
     if area_mode and arms['google_dynamic']['rounds']:
         dynamic = arms['google_dynamic']
         start_round = max(0, len(dynamic['rounds'])-3)
@@ -190,6 +200,7 @@ def render_intervention_html(result, *, document=True):
     cfg = result['config']
     labels = comparison_labels(result)
     dynamic = arms['google_dynamic']
+    aggregate_mode = bool(result['metadata'].get('aggregate_attack_guard'))
     area_mode = (dynamic.get('distribution_goal', {}).get('metric') ==
                  'fitted_complete_log_rank_cdf_area')
     completed = result['google_round_zipf']['experimental']['rounds_completed']
@@ -214,6 +225,10 @@ def render_intervention_html(result, *, document=True):
           f'固定前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位完整口令；越低越分散'))]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong><small>{escape(note)}</small></div>')
     parts.append(f'</div><p>以上为 Google 起点后逐步干预方案：已完成共同起点后的 {completed} 轮干预；停止原因：{escape(dynamic["stop_label"])}。</p></section>')
+    if not aggregate_mode:
+        parts.append('<section class="notice"><strong>历史实验：逐账户强度门槛</strong>'
+                     '<p>以下结果仍属于原来的“每个成功修改账户都需变强”协议。'
+                     '当前新实验已改为总体 F 曲线面积门槛；旧结果不能当作新方法的实验结果。</p></section>')
     parts.append('<section id="intervention-conditions"><h2>先看懂这次比较</h2>'
                  '<p>图例支持勾选显示或隐藏曲线，悬停突出对应曲线；'
                  '重叠线使用线型与点形辅助区分。每张图保持相同方案顺序和颜色。</p>'
@@ -289,8 +304,10 @@ def render_intervention_html(result, *, document=True):
                    '三组均先比较完整口令的排名累计分布，再用 CDF 采样拟合参数复核靠前动作。'
                    + ('拟合后的完整累计曲线在对数排名上的面积越低，表示分布越分散。' if area_mode else
                       '拟合曲线在固定前段排名处的累计占比越低，表示热门完整口令覆盖的账户越少。') +
-                  '修改成功的账户还必须满足固定 F 模型的估计猜测次数严格增加；无法估计新旧次数时不批准修改。'
-                  'F 和独立参考 A1 的攻击曲线保留作事后检验，不与分布指标加权。'
+                  ('整批修改须使固定 F 猜测成功曲线的对数面积下降，且模型未覆盖比例不增加；允许个体变弱。'
+                   'F 面积作为独立准入条件，不与分布指标加权；A1 保留作事后检验。' if aggregate_mode else
+                   '修改成功的账户还必须满足固定 F 模型的估计猜测次数严格增加；无法估计新旧次数时不批准修改。'
+                   'F 和独立参考 A1 的攻击曲线保留作事后检验，不与分布指标加权。') +
                    '随机账户按与风险无关的种子排序，只通知至少违反一条候选规则且被分配了合格修改方法的账户。</p>')
     parts.append('<p>动态组在相同起点、相同预测模型下，也会评价达到相同单轮人数的随机组动作。'
                  '若随机组动作不足一整轮，两组只能按实际累计通知成本比较。执行后的账户分布会分叉，'
@@ -319,7 +336,8 @@ def render_intervention_html(result, *, document=True):
         ['基础要求', '四个 Google 组全站至少 8 字符；局部要求在此基础上叠加'],
         ['分布主目标', ('CDF 拟合完整累计曲线的对数排名面积下降' if area_mode else
                     f'CDF 拟合排名曲线前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位累计占比下降')],
-        ['个体安全门槛', '仅通过固定 F 模型可比较且新估计猜测次数严格更大的局部修改'],
+        (['总体安全门槛', '整批 F 猜测成功曲线对数面积严格下降，模型未覆盖比例不增加'] if aggregate_mode else
+         ['个体安全门槛', '仅通过固定 F 模型可比较且新估计猜测次数严格更大的局部修改']),
         ['实验编号', result['metadata']['run_id']],
     ]))
     random_arm, frozen_arm = arms['google_random'], arms['google_frozen']
@@ -343,7 +361,7 @@ def render_intervention_html(result, *, document=True):
                      '因此相同通知人数不代表相同实际修改人数。</p>')
     parts.append('<p class="notice">PCFG 猜测次数和攻击曲线是模型估计，不是实际破解记录。'
                  '无法估计猜测次数的候选修改不会被当作个人强度提升；'
-                 'Google 起点的构造迁移与后续局部强度门槛分开。后三组共用每轮与累计预算上限；'
+                 'Google 起点的构造迁移单独记账。后三组共用每轮与累计预算上限；'
                  '只在曲线共同覆盖的成本区间内比较，不外推到未达到的 20% 附加覆盖。</p></section>')
     specs = chart_specs(result)
     rank = result['google_round_zipf']['comparison_budget'].get('distribution_top_k')
@@ -364,6 +382,12 @@ def render_intervention_html(result, *, document=True):
             parts.append('<p>只放大动态组最后四个实际观测点，纵轴范围与五组总图不同。'
                          '水平线段表示本轮拟合分数没有可见变化；未执行的轮次不补点。'
                          '精确数值见下方逐轮表。</p>')
+        if name == 'attack_area_cost':
+            parts.append(f'<p>在 {cfg["budgets"][0]:,}—{cfg["budgets"][-1]:,} 次猜测范围内，'
+                         '沿现有对数横轴对 F 曲线各观测点连线做梯形积分，再除以横轴跨度。'
+                         '每个数量级等权，纵轴为归一化面积；同一账户总数下与累计猜中人数面积的比较方向一致。'
+                         '允许部分用户变弱、部分预算点命中率上升，只要求整条曲线面积下降。'
+                         '整批候选未通过执行前复核时保持旧口令，通知仍计成本；此时曲线呈水平段。</p>')
         if name == 'coverage_F':
             parts.append(f'<p>横轴从共同 Google 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
                          '原始组和 Google 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
@@ -417,7 +441,7 @@ def render_intervention_html(result, *, document=True):
     parts.append(render_fit_diagnostics(result))
     parts.append('<section id="intervention-rounds"><h2>每轮具体做了什么</h2>')
     if not dynamic['rounds']:
-        parts.append('<p>本次没有执行动作。候选没有通过分布收益、个体强度或预算检查时，系统会停止，'
+        parts.append('<p>本次没有执行动作。候选没有通过分布收益、安全门槛或预算检查时，系统会停止，'
                      '不会为了展示效果强制修改账户。</p>')
         parts.append('<h3>动态调整每轮口令强度增加的账户比例</h3>'
                      '<p>本次动态组没有完成干预轮次，因此没有可计算的逐轮变化。</p>')
@@ -438,17 +462,40 @@ def render_intervention_html(result, *, document=True):
             improved = r.get('strength_improved', r['changed'])
             notified = r['action']['selected']
             cumulative_strength += improved
-            strength_rows.append([r['round'], notified, improved,
-                                  pct(improved/notified if notified else 0),
-                                  pct(improved/ledger['accounts']),
-                                  pct(cumulative_strength/ledger['accounts']),
-                                  r.get('strength_rejections', 0)])
+            if aggregate_mode:
+                diagnostic = r['strength_diagnostics']
+                strength_rows.append([r['round'], notified, r['changed'], improved,
+                                      diagnostic['weakened'], diagnostic['equal'], diagnostic['uncomparable'],
+                                      pct(improved/notified if notified else 0),
+                                      pct(improved/ledger['accounts']), pct(cumulative_strength/ledger['accounts'])])
+            else:
+                strength_rows.append([r['round'], notified, improved,
+                                      pct(improved/notified if notified else 0),
+                                      pct(improved/ledger['accounts']),
+                                      pct(cumulative_strength/ledger['accounts']),
+                                      r.get('strength_rejections', 0)])
         parts.append('<h3>动态调整每轮口令强度增加的账户比例</h3>'
                      '<p>只统计动态组后续局部干预。强度增加指固定 F 模型对新旧口令均给出'
-                     '估计猜测次数，且新口令严格更难猜；未响应或不能证明增加者保持旧口令。'
-                     '“被拒尝试”计口令候选次数，不是独立用户数。</p>')
-        parts.append(table(['轮次', '本轮通知', '猜测次数增加账户', '占本轮通知',
-                            '本轮占全站', '累计占全站', '未通过强度检查的候选尝试'], strength_rows))
+                     '估计猜测次数，且新口令严格更难猜。' +
+                     ('变弱、持平和无法比较分别统计；个体变化仅作诊断，总体面积决定整批能否提交。</p>'
+                      if aggregate_mode else '未响应或不能证明增加者保持旧口令。'
+                      '“被拒尝试”计口令候选次数，不是独立用户数。</p>'))
+        headers = (['轮次', '通知', '成功修改', '变强', '变弱', '持平', '无法比较',
+                    '变强占通知', '变强占全站', '累计变强占全站'] if aggregate_mode else
+                   ['轮次', '本轮通知', '猜测次数增加账户', '占本轮通知',
+                    '本轮占全站', '累计占全站', '未通过强度检查的候选尝试'])
+        parts.append(table(headers, strength_rows))
+        if aggregate_mode:
+            parts.append('<h3>动态组每轮总体猜测面积复核</h3>'
+                         '<p>在模拟中先收集一批新口令提案，统一检查后再写入账户状态。'
+                         '未通过的整批修改保留旧口令，仍计通知成本；不会重抽响应直至通过。</p>')
+            parts.append(table(['轮次', '修改前面积', '提案预计下降', '实际修改后面积', '整批是否通过', '未通过原因'], [
+                [r['round'], f'{r["aggregate_attack_guard"]["before_area"]:.9f}',
+                 f'{r["aggregate_attack_guard"]["proposed_area_gain"]:.9f}',
+                 f'{r["aggregate_attack_guard"]["after_area"]:.9f}',
+                 '通过' if r['aggregate_attack_guard']['accepted'] else '未通过，保留旧口令',
+                 '；'.join(r['aggregate_attack_guard']['rejection_reasons']) or '—']
+                for r in dynamic['rounds']]))
         for r in dynamic['rounds']:
             round_label = f'调整第 {r["round"]} 轮'
             parts.append(f'<details><summary>{round_label}选择依据与候选比较</summary>'

@@ -13,6 +13,7 @@ from core.corpus import counts_hash
 from core.registration import load_registration
 from core.intervention_state import Population, distribution_summary
 from core.intervention_distribution import fitted_log_cdf_area, fitted_top_mass, top_k
+from core.intervention_attack_area import GUARD_VERSION, curve_area, guard_batch, strength_diagnostics
 from core.intervention_risk import (InterventionRisk, CombinedInterventionRisk,
                                     reference_mutation_ranks, evaluate_mutations)
 from experiments.intervention_config import ROOT, PROTOCOL, validate_intervention_config
@@ -57,9 +58,10 @@ def make_selection_risk(population, frozen_risk, cfg, index_cache, baseline_coun
 
 def snapshot(population, evaluator, round_id):
     counts = population.counts()
+    risk = evaluator.evaluate(counts)
     return {'round': round_id, 'state_sha256': population.fingerprint(),
             'account_state_sha256': population.account_fingerprint(),
-            'ledger': population.ledger(), 'risk': evaluator.evaluate(counts),
+            'ledger': population.ledger(), 'risk': risk, 'attack_log_area': curve_area(risk),
             'distribution': distribution_summary(counts),
             'google_compliance': google_compliance(population)}
 
@@ -80,33 +82,40 @@ def assert_google_compliant(population):
 
 def reference_replay(reference, action, target_total, responder, cfg, round_id):
     """Known public action, independently simulated accounts; never target outcomes."""
-    if isinstance(action, MultiAction):
-        rows = [reference_replay(reference, component, target_total, responder, cfg, round_id)
-                for component in action.components]
-        selected = sum(row['selected_reference_accounts'] for row in rows)
-        return {'eligible_reference_accounts': sum(row['eligible_reference_accounts'] for row in rows),
-                'selected_reference_accounts': selected,
-                'target_selected_fraction': len(action.indices)/target_total,
-                'reference_selected_fraction': selected/reference.total,
-                'components': rows}
-    eligible = [i for i, a in enumerate(reference.accounts)
-                 if not a.adaptive_notifications and action.group.matches(a.password)
-                and not action.rule.accepts(a.password)]
-    # Match selected fraction within the independently observed eligible group.
-    fraction = (len(action.indices)/target_total if action.group.kind == 'random'
-                else len(action.indices)/action.eligible_count)
-    take = min(len(eligible), math.floor((reference.total if action.group.kind == 'random'
-                                        else len(eligible))*fraction + .5), capacities(reference, cfg))
-    order = (random_account_order(reference, eligible, cfg['seed'], round_id)
-             if action.group.kind == 'random' else account_order(reference, eligible, cfg['seed']))
-    ids = tuple(order[:take])
-    if ids:
-        replay = Action(action.group, action.rule, action.rule_label, ids, len(eligible))
-        reference.apply(responder.respond(reference, replay, cfg['seed'], f'adaptive-reference-{round_id}'))
-    return {'eligible_reference_accounts': len(eligible), 'selected_reference_accounts': take,
-            'target_selected_fraction': len(action.indices)/target_total,
-            'reference_selected_fraction': take/reference.total,
-            'selected_fraction_within_group': fraction}
+    parts = action.components if isinstance(action, MultiAction) else (action,)
+    used, replays, ledgers = set(), [], []
+    cap = capacities(reference, cfg)
+    for part in parts:
+        eligible = [i for i, a in enumerate(reference.accounts)
+                    if not a.adaptive_notifications and i not in used
+                    and part.group.matches(a.password) and not part.rule.accepts(a.password)]
+        fraction = (len(part.indices)/target_total if part.group.kind == 'random'
+                    else len(part.indices)/part.eligible_count)
+        take = min(len(eligible), math.floor((reference.total if part.group.kind == 'random'
+                                            else len(eligible))*fraction + .5), cap-len(used))
+        order = (random_account_order(reference, eligible, cfg['seed'], round_id)
+                 if part.group.kind == 'random' else account_order(reference, eligible, cfg['seed']))
+        ids = tuple(order[:take])
+        if ids:
+            used.update(ids)
+            replays.append(Action(part.group, part.rule, part.rule_label, ids, len(eligible)))
+        ledgers.append({'eligible_reference_accounts': len(eligible), 'selected_reference_accounts': take,
+                        'target_selected_fraction': len(part.indices)/target_total,
+                        'reference_selected_fraction': take/reference.total,
+                        'selected_fraction_within_group': fraction})
+    ledger = (ledgers[0] if len(parts) == 1 else {
+        'eligible_reference_accounts': sum(row['eligible_reference_accounts'] for row in ledgers),
+        'selected_reference_accounts': len(used), 'target_selected_fraction': len(action.indices)/target_total,
+        'reference_selected_fraction': len(used)/reference.total, 'components': ledgers})
+    if replays:
+        # Evaluate compensation across all components together, never per fragment.
+        replay = replays[0] if len(replays) == 1 else MultiAction(tuple(replays))
+        outcomes = responder.respond(reference, replay, cfg['seed'], f'adaptive-reference-{round_id}')
+        if getattr(responder, 'rank_model', None) is not None:
+            outcomes, ledger['aggregate_attack_guard'] = guard_batch(
+                reference, outcomes, responder.rank_model, cfg['budgets'])
+        reference.apply(outcomes)
+    return ledger
 
 
 def run_arm(method, initial, reference_words, evaluator, responder, cfg, progress=None,
@@ -203,18 +212,21 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             raise AssertionError('局部动作不能降低 Google 最低长度要求')
         previous = trajectory[-1]
         outcomes = responder.respond(population, action, cfg['seed'], f'execution-{round_id}')
-        if getattr(responder, 'rank_model', None) is not None and any(
-                row['status'] == 'changed' and not responder.stronger(row['old'], row['new'])
-                for row in outcomes):
-            raise AssertionError('局部修改未提高固定 F 模型估计猜测次数')
         if method in GOOGLE_METHODS and any(len(row['new']) < 8 for row in outcomes):
             raise AssertionError('动态响应产生了不符合 Google 规则的口令')
+        batch_guard = None
+        if method != 'fixed_google':
+            outcomes, batch_guard = guard_batch(population, outcomes, evaluator, cfg['budgets'])
+        strength = strength_diagnostics(outcomes, evaluator)
         population.apply(outcomes)
         adaptation = reference_replay(reference, action, initial.total, responder, cfg, round_id)
         if method in GOOGLE_METHODS:
             assert_google_compliant(population)
             adaptation['google_compliance'] = assert_google_compliant(reference)
         current = snapshot(population, evaluator, round_id)
+        if batch_guard is not None:
+            batch_guard.update(before_area=previous['attack_log_area'],
+                               after_area=current['attack_log_area'])
         selection_after = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
         gain = selection_before - selection_after
         primary_after = (selection_risk.primary_risk(population.counts())
@@ -234,14 +246,15 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'selection_risk_after_same_model': selection_after,
                        'selection_model_reference_sha256': selection_model_key,
                        'changed': sum(r['status'] == 'changed' for r in outcomes),
-                       'strength_improved': sum(r['status'] == 'changed' for r in outcomes),
-                       'strength_rejections': sum(r.get('strength_rejections', 0) for r in outcomes),
+                       'strength_improved': strength['improved'],
+                       'strength_diagnostics': strength,
+                       'aggregate_attack_guard': batch_guard,
                        'nonresponse': sum(r['status'] == 'nonresponse' for r in outcomes),
                        'failed_to_comply': sum(r['status'] == 'failed_to_comply' for r in outcomes),
                        'reference_replay': adaptation,
                         'selection_reason': ('先随机抽取当前可行动账户，再在相同的 18 条规则中分配预计有正收益的修改方法' if method == GOOGLE_RANDOM_METHOD
                                              else '只按 Google 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
-                                              else '先比较 CDF 采样拟合后的完整排名累计分布，再逐账户要求固定 F 模型的估计猜测次数严格增加' if method == GOOGLE_DYNAMIC_METHOD
+                                              else '先比较 CDF 拟合完整排名累计分布，再要求整批修改后的固定 F 猜测成功曲线对数面积下降' if method == GOOGLE_DYNAMIC_METHOD
                                             else '在本轮可行候选中，预计全站保守风险下降最大' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
@@ -277,6 +290,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
                                   fixed_google=None, progress=None):
     """Give all four Google arms the exact same compliant starting state."""
     google_cfg = deepcopy(cfg)
+    google_cfg['controller']['max_rounds'] = GOOGLE_DYNAMIC_ROUNDS
     bootstrap_cfg = deepcopy(cfg)
     bootstrap_cfg['controller']['round_fraction'] = 1.
     bootstrap_cfg['controller']['total_fraction'] = 1.
@@ -394,7 +408,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
             arm['attacks']['A1'] = InterventionRisk(ai, cfg['budgets'], cfg['risk_budget']).evaluate(counts)
             arm['adaptive_model'] = dict(ai.grammar.metadata)
     return {
-        'protocol': 'google-started-five-arm-comparison-v5-fitted-cdf-rank-guard',
+        'protocol': 'google-started-five-arm-comparison-v6-population-area-guard',
         'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
         'common_google_start_verified': common_start,
         'google_baseline': {'target': bootstrap_target, 'reference': bootstrap_reference,
@@ -491,6 +505,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                       'core/registration.py', 'core/monte_carlo_attack.py',
                       'core/cdf_sampling.py', 'core/distribution_analysis.py',
                       'core/intervention_distribution.py',
+                      'core/intervention_attack_area.py',
                       'experiments/cdf_fit_benchmark.py']
     source_hashes = {f: hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in manifest_files}
     identity = {'config': cfg, 'dataset': dataset['metadata'], 'sources': source_hashes,
@@ -508,7 +523,13 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
-                             'decision_metric': '以 CDF 采样拟合后的完整累计分布曲线对数排名面积下降选动作；固定 F 模型估计猜测次数仅作逐账户严格改善门槛，无法比较的修改不通过；F/A1 命中率作为事后诊断，不加权参与选动作'}}
+                           'aggregate_attack_guard': {
+                               'protocol': GUARD_VERSION, 'model': 'fixed F',
+                               'integration': 'normalized trapezoid on log10 budget',
+                               'budgets': cfg['budgets'],
+                               'outside_support': 'population share must not increase',
+                               'execution': 'collect proposals, reject the whole batch if area does not decrease; notifications still count'},
+                           'decision_metric': '以 CDF 拟合完整分布面积下降选动作；整批修改要求固定 F 猜测成功曲线对数面积下降、模型未覆盖比例不增加；允许个别账户变弱，分布与猜测不加权'}}
     if progress:
         progress('使用 CDF 采样方法拟合三组终态，独立种子复核')
     if include_legacy:

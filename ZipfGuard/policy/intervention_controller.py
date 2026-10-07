@@ -3,6 +3,7 @@ from collections import Counter
 import hashlib
 import math
 from statistics import mean
+from core.intervention_attack_area import area_change, guard_reasons, guard_batch
 from core.intervention_distribution import (empirical_top_mass, fitted_top_mass,
     fitted_log_cdf_area, log_cdf_area, moved_counts, top_k)
 from policy.intervention_fragments import LENGTHS, candidate_fragments
@@ -17,10 +18,12 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     baseline_mass = empirical_top_mass(counts, k)
     baseline_area = log_cdf_area(counts)
     distribution_gains, area_gains, fitted_gains, hhi_changes = [], [], [], []
+    attack_changes = []
     repeats = repeats or cfg['controller']['prediction_repeats']
     for repeat in range(repeats):
         # Same account noise for competing candidates; separate from execution.
         rows = responder.respond(population, action, cfg['seed'], f'prediction-{round_id}-{repeat}')
+        attack_changes.append(area_change(risk, rows, n, cfg['budgets']))
         after_counts = moved_counts(counts, rows)
         distribution_gains.append(baseline_mass-empirical_top_mass(after_counts, k))
         area_gains.append(baseline_area-log_cdf_area(after_counts))
@@ -39,7 +42,16 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     fitted_gain = mean(fitted_gains) if fitted_gains else None
     score = fitted_gain if fitted_gain is not None else gain
     reasons = ['拟合后的全分布累计面积预计没有正收益'] if score <= c['min_gain'] else []
+    attack_change = {'gain': mean(row['gain'] for row in attack_changes),
+                     'uncovered_rate_change': mean(row['uncovered_rate_change'] for row in attack_changes)}
+    attack_reasons = guard_reasons(attack_change)
+    reasons.extend(attack_reasons)
     return {'predicted_distribution_gain': gain,
+            'predicted_F_log_area_gain': attack_change['gain'],
+            'F_area_gain_range': [min(row['gain'] for row in attack_changes),
+                                  max(row['gain'] for row in attack_changes)],
+            'predicted_uncovered_rate_change': attack_change['uncovered_rate_change'],
+            'aggregate_guard_feasible': not attack_reasons,
             'predicted_empirical_cdf_gain': mean(distribution_gains),
             'predicted_fitted_cdf_gain': fitted_gain,
             'predicted_fitted_log_area_gain': fitted_gain,
@@ -99,7 +111,7 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
         return None
     before = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
     near = sorted(((action, prediction) for action, prediction in evaluated
-                   if len(action.indices) >= minimum
+                   if len(action.indices) >= minimum and prediction.get('aggregate_guard_feasible', False)
                    and prediction['predicted_empirical_log_area_gain'] >= -c['bridge_max_first_loss']),
                   key=lambda row: row[1]['score'], reverse=True)[:c['lookahead_width']]
     options = []
@@ -109,6 +121,9 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
             preview = population.clone()
             first_rows = responder.respond(preview, first, cfg['seed'],
                                            f'bridge-first-{round_id}-{trial}')
+            first_rows, first_guard = guard_batch(preview, first_rows, risk, cfg['budgets'])
+            if not first_guard['accepted']:
+                break
             preview.apply(first_rows)
             second, _ = select_action(preview, risk, responder, cfg, round_id+1,
                                       allow_bridge=False, validation=True)
@@ -117,6 +132,9 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
             next_action, _ = second
             second_rows = responder.respond(preview, next_action, cfg['seed'],
                                             f'bridge-second-{round_id}-{trial}')
+            second_rows, second_guard = guard_batch(preview, second_rows, risk, cfg['budgets'])
+            if not second_guard['accepted']:
+                break
             preview.apply(second_rows)
             totals.append(before-fitted_log_cdf_area(preview.counts(), cfg['seed'])['score'])
             next_actions.append(next_action.public())

@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = 'selective-intervention-v5-full-cdf-area'
+PROTOCOL = 'selective-intervention-v6-population-attack-area'
 DEFAULT = {
     'schema_version': PROTOCOL, 'seed': 42,
     'data': {'path': '../rockyou-withcount.txt', 'format': 'password_with_count',
@@ -76,7 +76,7 @@ def validate_intervention_config(value):
         raise ValueError('编码无效')
     ''.encode(d['encoding'])
     bs = cfg['budgets']
-    if not isinstance(bs, list) or not bs or len(bs) > 20:
+    if not isinstance(bs, list) or len(bs) < 2 or len(bs) > 20:
         raise ValueError('攻击次数刻度无效')
     for b in bs:
         integer(b, 1, 10**18, '猜测预算')

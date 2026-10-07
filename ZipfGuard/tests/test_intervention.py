@@ -83,7 +83,7 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(p.ledger()['failed_to_comply'], 1)
         self.assertEqual(p.counts(), {'abc': 10})
 
-    def test_local_strength_guard_rejects_unproved_or_weaker_passwords(self):
+    def test_response_collects_rule_compliant_proposals_before_population_guard(self):
         cfg = self.cfg(3)
         cfg['response'].update(nonresponse=0., max_attempts=1)
         responder = InterventionResponder({'abc': 3}, cfg['response'], rank_model=self.risk())
@@ -91,10 +91,9 @@ class TestIntervention(unittest.TestCase):
         with patch('policy.intervention_response._propose', side_effect=['abc!', 'outside', 'abc']):
             rows = responder.respond(population, self.action(range(3), Rule('longer', min_length=4)), 1, 'guard')
         self.assertEqual([row['status'] for row in rows],
-                         ['changed', 'failed_to_comply', 'failed_to_comply'])
+                         ['changed', 'changed', 'failed_to_comply'])
         self.assertEqual(rows[0]['new'], 'abc!')
-        self.assertEqual(rows[1]['new'], 'abc')
-        self.assertEqual(rows[1]['strength_rejections'], 1)
+        self.assertEqual(rows[1]['new'], 'outside')
         self.assertTrue(responder.stronger('abc', rows[0]['new']))
         self.assertFalse(responder.stronger('abc', 'outside'))
 
@@ -135,7 +134,7 @@ class TestIntervention(unittest.TestCase):
         self.assertEqual(p.ledger()['affected'], 0)
         self.assertEqual(p.counts(), {'A': 1, 'B': 1})
 
-    def test_candidate_selection_uses_distribution_without_attack_queries(self):
+    def test_distribution_gain_cannot_pass_via_new_model_blind_spots(self):
         cfg = self.cfg(100)
         p = Population(['abc']*100)
         class UnsupportedResponder:
@@ -146,7 +145,8 @@ class TestIntervention(unittest.TestCase):
             pred = predict_action(p, self.action(range(10)), risk, UnsupportedResponder(), cfg, 1)
         self.assertNotIn('predicted_hit_gain', pred)
         self.assertGreater(pred['predicted_distribution_gain'], 0)
-        self.assertTrue(pred['feasible'])
+        self.assertFalse(pred['feasible'])
+        self.assertGreater(pred['predicted_uncovered_rate_change'], 0)
 
     def test_composite_gain_matches_realized_objective_on_same_model(self):
         model = self.risk()
@@ -246,9 +246,9 @@ class TestIntervention(unittest.TestCase):
     def test_empirical_disagreement_is_reported_without_overriding_fitted_goal(self):
         class ConcentratingResponder:
             def respond(self, population, action, seed, stream):
-                return [{'index': 6, 'old': 'xyz', 'new': 'abc', 'status': 'changed'}]
+                return [{'index': 6, 'old': 'abc', 'new': 'abc!', 'status': 'changed'}]
 
-        population = Population(['abc']*6 + ['xyz']*4)
+        population = Population(['abc!']*6 + ['abc']*4)
         with patch('policy.intervention_controller.fitted_log_cdf_area',
                    return_value={'score': .49}):
             prediction = predict_action(population, self.action([6]), self.risk(),

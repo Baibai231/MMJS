@@ -2,7 +2,7 @@
 from policy.open_policy import edit_distance
 from policy.user_response import _rng, _propose, weighted_pool, phrase_vocabulary
 
-RESPONSE_PROTOCOL = 'existing-accounts-finite-response-rank-guard-v2'
+RESPONSE_PROTOCOL = 'existing-accounts-finite-response-population-area-v3'
 
 
 class InterventionResponder:
@@ -14,7 +14,7 @@ class InterventionResponder:
         self.rank_model = rank_model
 
     def stronger(self, old, new):
-        """Only comparable fixed-model ranks can certify a local improvement."""
+        """Diagnostic only; response acceptance is now a population-level decision."""
         if self.rank_model is None:
             return True
         before = self.rank_model.detail(old)['guess_count']
@@ -35,7 +35,6 @@ class InterventionResponder:
                 continue
             rng = _rng(seed, f'{stream}|{account.identifier}')
             new, status, attempts = old, 'nonresponse', 0
-            strength_rejections = 0
             if rng.random() >= self.config['nonresponse']:
                 draw = rng.random()
                 w = self.config['weights']
@@ -44,12 +43,9 @@ class InterventionResponder:
                 for attempts in range(1, self.config['max_attempts'] + 1):
                     proposal = _propose(old, kind, rng, self.pool, self.vocabulary)
                     if proposal != old and action.rule.accepts(proposal):
-                        if self.stronger(old, proposal):
-                            new, status = proposal, 'changed'
-                            break
-                        strength_rejections += 1
+                        new, status = proposal, 'changed'
+                        break
             rows.append({'index': i, 'old': old, 'new': new, 'status': status,
                          'attempts': attempts,
-                         'strength_rejections': strength_rejections,
                          'edit_cost': edit_distance(old, new)/max(1, len(old), len(new)) if new != old else 0.})
         return rows

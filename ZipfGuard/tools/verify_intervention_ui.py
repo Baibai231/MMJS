@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from web.server import Handler
-from experiments.intervention_config import load_intervention_config
+from experiments.intervention_config import PROTOCOL, load_intervention_config
 from experiments.intervention_pipeline import run_intervention_pipeline
 
 
@@ -54,7 +54,7 @@ def main():
                     page.locator('#download').click()
                 assert download.value.suggested_filename == 'intervention_report.json'
                 report = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))
-                assert report['schema_version'] == 'selective-intervention-v5-full-cdf-area-result'
+                assert report['schema_version'] in {PROTOCOL+'-result', 'selective-intervention-v5-full-cdf-area-result'}
                 assert report['dataset']['source_rows'] > 1000000
                 comparison = report['google_round_zipf']
                 assert comparison['control']['state_sha256'] == comparison['experimental']['start_state_sha256']
@@ -113,6 +113,8 @@ def main():
             page.locator('#run').click()
             page.wait_for_function("document.getElementById('status').textContent === '局部干预实验完成'", timeout=180000)
             assert page.locator('#coverage_F svg[role=img]').count() == 1
+            assert page.locator('#attack_area_cost svg > .plot-series').count() == 5
+            assert '总体安全门槛' in page.locator('#result').text_content()
             assert page.locator('#attack_A1').count() == 0
             page.locator('#total').fill('0')
             page.locator('#run').click()

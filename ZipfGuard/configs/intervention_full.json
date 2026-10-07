@@ -1,5 +1,5 @@
 {
-  "schema_version": "selective-intervention-v5-full-cdf-area",
+  "schema_version": "selective-intervention-v6-population-attack-area",
   "seed": 42,
   "data": {
     "path": "../rockyou-withcount.txt",

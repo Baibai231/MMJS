@@ -10,6 +10,8 @@ from web.intervention_presentation import render_intervention_html
 from web.presentation import STYLE
 from web.study_dashboard import DASHBOARD_STYLE
 
+SUPPORTED_RESULTS = {PROTOCOL+'-result', 'selective-intervention-v5-full-cdf-area-result',
+                     'selective-intervention-v4-result'}
 JOBS, LOCK = {}, threading.Lock()
 REPORT_ROOT = ROOT/'reports'/'intervention'
 PUBLISHED_ROOT = ROOT/'published'/'intervention'
@@ -26,7 +28,7 @@ def latest_intervention_result():
     for p in paths:
         try:
             result = json.loads(p.read_text(encoding='utf-8'))
-            if result.get('schema_version') == PROTOCOL+'-result':
+            if result.get('schema_version') in SUPPORTED_RESULTS:
                 return {'output': published(result)}
         except (OSError, ValueError, KeyError):
             continue
@@ -38,7 +40,7 @@ def latest_intervention_result():
             raise ValueError('发布快照编号无效')
         with gzip.open(PUBLISHED_ROOT/run_id/'report.json.gz', 'rt', encoding='utf-8') as handle:
             result = json.load(handle)
-        if result.get('schema_version') == PROTOCOL+'-result':
+        if result.get('schema_version') in SUPPORTED_RESULTS:
             return {'output': published(result)}
     except (OSError, ValueError, KeyError):
         pass
@@ -98,8 +100,8 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  </style><body><main class="workbench-header"><span class="brand">ZIPFGUARD / SELECTIVE INTERVENTION</span>
  <h1>少改一部分账户，口令分布能改善多少？</h1>
  <p>第三展示台 · 五组实验对照：原始分布、Google 基础策略，以及共同 Google 起点后的随机分批、初始排序分批和逐轮动态调整。</p>
- <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#distribution_cost">分布与通知成本</a><a href="#dynamic_distribution_detail">末轮放大</a><a href="#coverage_F">猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
- <p class="muted">后续动态干预从去重的 1—18 条政策片段中选动作；分布拟合统一使用 CDF 采样方法，实际频次与攻击风险分别展示。</p>
+ <nav class="study-nav" aria-label="实验结果导航"><a href="#intervention-overview">结果概览</a><a href="#distribution_cost">分布与通知成本</a><a href="#dynamic_distribution_detail">末轮放大</a><a href="#attack_area_cost">总体猜测面积</a><a href="#coverage_F">猜测成功率</a><a href="#attack_F">猜测曲线</a><a href="#google_round_zipf">十轮 Zipf</a><a href="#round_parameters">逐轮参数</a><a href="#final_distribution">口令分布</a><a href="#distribution-fit">CDF 采样拟合</a><a href="#intervention-rounds">每轮任务</a><a href="#experiment-settings">实验设置</a></nav>
+ <p class="muted">后续动态干预从去重的 1—18 条政策片段中选动作；分布拟合统一使用 CDF 采样方法；新实验以分布为主，并要求整批 F 猜测曲线对数面积下降，允许部分账户变弱。</p>
  <p class="actions"><button id="recent">加载最近完成结果</button><button id="download" disabled>下载公开报告</button><span id="status" role="status">正在读取结果…</span></p></main>
  <div id="result" aria-live="polite"></div>
  <main><section id="experiment-settings"><h2>实验设置</h2><p>首先使用快速验证检查流程。所有比例以全站初始账户数为分母；Google 起点通知与后续通知分别计数，后续阶段每账户最多通知一次。</p>
@@ -119,7 +121,7 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  const $=id=>document.getElementById(id);let cfg=null,last=null,busy=false;
  function status(text,error=false){$('status').textContent=text;$('status').classList.toggle('error',error)}
  async function request(url,options){const res=await fetch(url,options);const data=await res.json();if(!res.ok)throw Error(data.error||'请求失败');return data}
- function fill(value){cfg=value;$('preset').value=cfg.data.users===100000?'intervention_full':'intervention_smoke';$('users').value=cfg.data.users;$('development').value=cfg.data.development;$('round').value=cfg.controller.round_fraction*100;$('total').value=cfg.controller.total_fraction*100;$('nonresponse').value=cfg.response.nonresponse*100;$('target').value=cfg.controller.distribution_top_fraction*100;$('seed').value=cfg.seed;$('samples').value=cfg.monte_carlo.samples;$('path').value=cfg.data.path;$('config').value=JSON.stringify(cfg,null,2)}
+ function fill(value){cfg=structuredClone(value);cfg.schema_version="__CURRENT_PROTOCOL__";$('preset').value=cfg.data.users===100000?'intervention_full':'intervention_smoke';$('users').value=cfg.data.users;$('development').value=cfg.data.development;$('round').value=cfg.controller.round_fraction*100;$('total').value=cfg.controller.total_fraction*100;$('nonresponse').value=cfg.response.nonresponse*100;$('target').value=cfg.controller.distribution_top_fraction*100;$('seed').value=cfg.seed;$('samples').value=cfg.monte_carlo.samples;$('path').value=cfg.data.path;$('config').value=JSON.stringify(cfg,null,2)}
  function read(){const v=JSON.parse(JSON.stringify(cfg));v.data.users=+$('users').value;v.data.development=+$('development').value;v.data.path=$('path').value;v.controller.round_fraction=+$('round').value/100;v.controller.total_fraction=+$('total').value/100;v.response.nonresponse=+$('nonresponse').value/100;v.controller.distribution_top_fraction=+$('target').value/100;v.seed=+$('seed').value;v.monte_carlo.samples=+$('samples').value;return v}
  function show(output){last=output;$('result').innerHTML=output?output.html:'<main><section><h2>还没有局部干预结果</h2><p>在下方选择配置，运行第一轮实验。</p></section></main>';$('download').disabled=!output}
  async function recent(){try{const data=await request('/api/intervention/latest');show(data.output);if(data.output)fill(data.output.config);status(data.output?'已加载真实运行结果':'尚无结果，可运行快速验证');return data.output}catch(e){status(e.message,true);return null}}
@@ -129,4 +131,4 @@ INTERVENTION_INDEX = ('<!doctype html><html lang="zh-CN"><meta charset="utf-8">'
  $('download').onclick=()=>{if(last){const a=document.createElement('a');a.href=last.report_url;a.download='intervention_report.json';a.click()}};
  $('run').onclick=async()=>{if(busy)return;busy=true;$('run').disabled=true;$('recent').disabled=true;show(null);status('准备运行…');try{const current=read();fill(current);const job=await request('/api/intervention/jobs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:current})});while(true){const state=await request('/api/intervention/jobs/'+job.job_id);status(state.message);if(state.status==='complete'){show(state.output);break}if(state.status==='failed')throw Error(state.message);await new Promise(resolve=>setTimeout(resolve,1500))}}catch(e){show(null);status('实验未完成：'+e.message,true)}finally{busy=false;$('run').disabled=false;$('recent').disabled=false}};
  (async()=>{try{if(!await recent())fill(await request('/api/intervention/config/intervention_smoke'))}catch(e){status(e.message,true)}})();
- </script></body></html>''')
+ </script></body></html>''').replace("__CURRENT_PROTOCOL__", PROTOCOL)
