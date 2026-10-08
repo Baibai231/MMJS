@@ -101,7 +101,8 @@ def intervention_fit_diagnostics(report, *, compare_legacy=False):
     summaries = [('baseline', '无政策', report['baseline']['distribution'])]
     # A legacy partial Google rollout is not a compliant Google baseline.
     if comparison.get('google_baseline', {}).get('target', {}).get('all_accounts_compliant'):
-        summaries += [(key, label, comparison['arms'][key]['final']['distribution'])
+        all_arms = {**comparison['arms'], **report.get('site_controls', {})}
+        summaries += [(key, label, all_arms[key]['final']['distribution'])
                       for key, label in comparison_labels(report)[1:]]
     results = []
     for key, label, summary in summaries:

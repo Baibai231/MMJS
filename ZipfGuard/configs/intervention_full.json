@@ -1,5 +1,5 @@
 {
-  "schema_version": "selective-intervention-v6-population-attack-area",
+  "schema_version": "selective-intervention-v8-area-only-full-response",
   "seed": 42,
   "data": {
     "path": "../rockyou-withcount.txt",
@@ -26,6 +26,7 @@
     "timeout_seconds": 3600
   },
   "controller": {
+    "execution_policy": "fixed-F-area-only-batch-v2",
     "round_fraction": 0.02,
     "total_fraction": 0.2,
     "batch_fractions": [
@@ -50,7 +51,8 @@
     "max_hhi_increase": 0.0001
   },
   "response": {
-    "nonresponse": 0.15,
+    "mode": "all-notified-change-v1",
+    "nonresponse": 0.0,
     "weights": [
       0.6,
       0.25,

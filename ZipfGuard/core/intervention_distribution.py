@@ -1,7 +1,7 @@
 """Distribution-only objective for Google-started local interventions.
 
-The fixed top-k rank is shared by all arms. The CDF sampling fit supplies the
-decision score; empirical top-k mass is a separate sanity check, not a weight.
+The CDF sampling fit supplies log-rank W1 to a fixed N-singleton reference.
+Empirical area/top-k mass remain screening and diagnostic quantities, not weights.
 """
 from collections import Counter
 from functools import lru_cache
@@ -10,6 +10,7 @@ import math
 import numpy as np
 
 from core.cdf_sampling import fit_cdf_sampling, frequency_sample
+from core.ideal_distribution import distance_from_area, ideal_log_area
 
 
 def top_k(population, cfg):
@@ -51,6 +52,14 @@ def fitted_log_cdf_area(counts, seed):
     # Caching repeated no-change simulations is exact and stores no passwords.
     shape = tuple(sorted(Counter(counts.values()).items()))
     return _fitted_log_cdf_area_shape(shape, seed)
+
+
+def fitted_ideal_distance(counts, seed):
+    area = fitted_log_cdf_area(counts, seed)
+    n = sum(counts.values())
+    return {**area, 'score': distance_from_area(area['score'], n),
+            'raw_log_area': area['score'], 'ideal_log_area': ideal_log_area(n),
+            'replicate_scores': [distance_from_area(s, n) for s in area['replicate_scores']]}
 
 
 @lru_cache(maxsize=512)

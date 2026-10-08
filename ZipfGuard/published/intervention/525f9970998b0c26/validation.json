@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "accounts": 100000,
+  "common_start": true,
+  "round_budget": 2000,
+  "total_budget": 20000,
+  "checks": [
+    "population",
+    "common Google start",
+    "notifications",
+    "round limit",
+    "F area-only + full successful response",
+    "endpoint A1"
+  ]
+}

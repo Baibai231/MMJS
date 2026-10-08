@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = 'selective-intervention-v6-population-attack-area'
+PROTOCOL = 'selective-intervention-v8-area-only-full-response'
 DEFAULT = {
     'schema_version': PROTOCOL, 'seed': 42,
     'data': {'path': '../rockyou-withcount.txt', 'format': 'password_with_count',
@@ -15,6 +15,7 @@ DEFAULT = {
     'monte_carlo': {'samples': 10000, 'seed': 42},
     'pcfg': {'timeout_seconds': 180},
     'controller': {'round_fraction': .02, 'total_fraction': .20,
+                   'execution_policy': 'fixed-F-area-only-batch-v2',
                    'batch_fractions': [.001, .002, .005, .01, .02], 'max_rounds': 40,
                    'max_groups': 12, 'popular_k': 20, 'lengths': [10, 12, 15],
                    'candidate_pool': 'site-fragments-1-18-v1',
@@ -29,8 +30,9 @@ DEFAULT = {
                    'candidate_shortlist': 80,
                    'target_relative_reduction': .10, 'stagnation_patience': 3,
                    'max_hhi_increase': .0001},
-    'response': {'nonresponse': .15, 'weights': [.60, .25, .15], 'max_attempts': 5},
-    'evaluation': {'adaptive': True, 'mutation_reference_limit': 10000},
+    'response': {'mode': 'all-notified-change-v1', 'nonresponse': 0.,
+                 'weights': [.60, .25, .15], 'max_attempts': 5},
+    'evaluation': {'adaptive': True, 'mutation_reference_limit': 10000, 'yahoo_control': True},
 }
 
 
@@ -112,6 +114,8 @@ def validate_intervention_config(value):
     c['lengths'] = sorted(set(c['lengths']))
     if c['candidate_pool'] != 'site-fragments-1-18-v1':
         raise ValueError('候选池版本无效')
+    if c['execution_policy'] not in ('fixed-F-area-only-batch-v2', 'fixed-F-strict-batch-v1'):
+        raise ValueError('响应接受协议无效')
     if (not isinstance(c['predictable_terms'], list) or len(c['predictable_terms']) > 50
             or any(not isinstance(term, str) or not term or len(term) > 40
                    for term in c['predictable_terms'])):
@@ -123,6 +127,12 @@ def validate_intervention_config(value):
               'bridge_max_first_loss'):
         number(c[k], 0, 1, k)
     number(r['nonresponse'], 0, 1, '未响应概率')
+    if r['mode'] not in ('all-notified-change-v1', 'finite-response-v1'):
+        raise ValueError('响应模式无效')
+    if r['mode'] == 'all-notified-change-v1' and r['nonresponse'] != 0:
+        raise ValueError('全员成功修改模式下未响应比例必须为 0')
+    if c['execution_policy'] == 'fixed-F-area-only-batch-v2' and r['mode'] != 'all-notified-change-v1':
+        raise ValueError('面积准入新协议要求所有被通知账户成功修改')
     if not isinstance(r['weights'], list) or len(r['weights']) != 3:
         raise ValueError('响应权重必须有三项')
     for w in r['weights']:
@@ -132,5 +142,7 @@ def validate_intervention_config(value):
     integer(r['max_attempts'], 1, 30, '最大尝试数')
     if type(cfg['evaluation']['adaptive']) is not bool:
         raise ValueError('适应攻击开关须为布尔值')
+    if type(cfg['evaluation']['yahoo_control']) is not bool:
+        raise ValueError('Yahoo 全站强策略开关须为布尔值')
     integer(cfg['evaluation']['mutation_reference_limit'], 1, 100000, '变换参考词条数')
     return cfg

@@ -34,6 +34,8 @@ class PopulationAreaTests(unittest.TestCase):
     def setUp(self):
         self.risk = InterventionRisk(Index(), [1, 10, 100], 100)
         self.cfg = load_intervention_config()
+        self.cfg['controller']['execution_policy'] = 'fixed-F-strict-batch-v1'
+        self.cfg['response']['mode'] = 'finite-response-v1'
         self.cfg['data']['users'] = 2
         self.cfg['budgets'] = [1, 10, 100]
         self.cfg['risk_budget'] = 100
@@ -89,7 +91,7 @@ class PopulationAreaTests(unittest.TestCase):
         class Responder:
             def respond(self, *args):
                 return [row(0, 'weakpass', 'hardpassX'), row(1, 'hardpass', 'midpassXX')]
-        with patch('policy.intervention_controller.fitted_log_cdf_area', return_value={'score': .4}):
+        with patch('policy.intervention_controller.fitted_ideal_distance', return_value={'score': .4}):
             prediction = predict_action(population, action, self.risk, Responder(), self.cfg, 1,
                                         baseline_fit={'score': .5})
         self.assertTrue(prediction['feasible'])

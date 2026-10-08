@@ -38,6 +38,8 @@ class ExactIndex:
 class TestIntervention(unittest.TestCase):
     def cfg(self, n=1000):
         c = load_intervention_config()
+        c['controller']['execution_policy'] = 'fixed-F-strict-batch-v1'
+        c['response']['mode'] = 'finite-response-v1'
         c['data']['users'] = n
         c['budgets'] = [1, 3, 1000]
         c['risk_budget'] = 3
@@ -231,7 +233,7 @@ class TestIntervention(unittest.TestCase):
                 return [{'index': 0, 'old': 'abc', 'new': new}]
         cfg = self.cfg(100)
         cfg['controller']['min_positive_trial_fraction'] = 1.
-        with patch('policy.intervention_controller.fitted_log_cdf_area',
+        with patch('policy.intervention_controller.fitted_ideal_distance',
                    side_effect=[{'score': .49}, {'score': .5}, {'score': .495}]) as fit:
             prediction = predict_action(Population(['abc']*100), self.action([0]),
                                         self.risk(), VariableResponder(), cfg, 1,
@@ -249,7 +251,7 @@ class TestIntervention(unittest.TestCase):
                 return [{'index': 6, 'old': 'abc', 'new': 'abc!', 'status': 'changed'}]
 
         population = Population(['abc!']*6 + ['abc']*4)
-        with patch('policy.intervention_controller.fitted_log_cdf_area',
+        with patch('policy.intervention_controller.fitted_ideal_distance',
                    return_value={'score': .49}):
             prediction = predict_action(population, self.action([6]), self.risk(),
                                         ConcentratingResponder(), self.cfg(10), 1,
@@ -343,8 +345,9 @@ class TestIntervention(unittest.TestCase):
         specs = chart_specs(report)
         for name in ('coverage_F', 'attack_F', 'attack_A1', 'final_distribution'):
             series = specs[name][1]
-            self.assertEqual([label for label, _ in series], [label for _, label in LABELS])
-            self.assertEqual(len(series), 5)
+            expected = LABELS[1:] if name == 'attack_A1' else LABELS
+            self.assertEqual([label for label, _ in series], [label for _, label in expected])
+            self.assertEqual(len(series), len(expected))
         self.assertNotIn('risk_cost', specs)
         self.assertNotIn('guarded_cost', specs)
         self.assertNotIn('attack_mutations', specs)

@@ -48,11 +48,11 @@ def _standalone_svg(markup, names):
 
 def svg_only(series, *, xlabel, ylabel, log=False, scatter=False,
              x_ticks=None, x_format=None, y_format=None, log_y=False, markers=True,
-             x_domain=None, y_domain=None):
+             x_domain=None, y_domain=None, reference_series=()):
     markup = plot(series, xlabel=xlabel, ylabel=ylabel, log=log,
                   scatter=scatter, distinguish=True, x_ticks=x_ticks,
                   x_format=x_format, y_format=y_format, log_y=log_y, markers=markers,
-                  x_domain=x_domain, y_domain=y_domain)
+                  x_domain=x_domain, y_domain=y_domain, reference_series=reference_series)
     return _standalone_svg(markup, [name for name, _ in series])
 
 

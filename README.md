@@ -6,7 +6,7 @@ ZipfGuard 用于研究网站口令规则如何影响口令分布、离线猜测�
 
 ## 第三展示台：局部账户干预
 
-新增 [存量账户局部干预](ZipfGuard/docs/SELECTIVE_INTERVENTION.md)，在固定账户总数下每轮选择对象、局部要求和干预人数，比较动态重算、初始一次规划与固定 Google 分批。默认单轮最多影响 2%、累计最多 20%，未响应账户保留旧口令与风险。
+新增 [存量账户局部干预](ZipfGuard/docs/SELECTIVE_INTERVENTION.md)，在固定账户总数下每轮选择对象、局部要求和干预人数。当前完整实验比较 Google 固定、动态重算、随机选人和初始一次规划等方案；单轮最多通知 2%、累计最多通知 20%。模拟中被通知账户全部成功改口令，只有固定 F 攻击曲线面积严格下降的方案才执行并计入通知。
 
 启动同一网页服务后访问 /intervention；图例、猜测预算刻度和分布图复用第二展示台。快速运行入口为 tools/run_intervention_study.py --preset intervention_smoke（在 ZipfGuard 目录中运行）。该实验使用独立协议，不替换下文的十批注册研究。
 

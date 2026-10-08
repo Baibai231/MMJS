@@ -67,7 +67,7 @@ def _axis_value(value, style=None):
 
 def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
          x_ticks=None, x_format=None, y_format=None, log_y=False, markers=True,
-         x_domain=None, y_domain=None):
+         x_domain=None, y_domain=None, reference_series=()):
     points = [(x, y) for _, values in series for x, y, *_ in values if y is not None]
     if not points:
         return "<p>没有可用数据。</p>"
@@ -111,6 +111,9 @@ def plot(series, *, xlabel, ylabel, log=False, scatter=False, distinguish=False,
         for order, i in enumerate(sorted(shared)):
             dashes[i] = patterns[order] if order < len(patterns) else f"{12+order*2} 4 2 4"
             shapes[i] = ("circle", "square", "triangle", "diamond")[order % 4]
+    for i, (name, _) in enumerate(series):
+        if name in reference_series:
+            colors[i], dashes[i] = '#333333', '8 4'
     svg = ['<svg viewBox="0 0 890 385" role="img" aria-label="' + escape(ylabel + ' / ' + xlabel) + '">']
     y_positions = (list(range(math.ceil(ymin), math.floor(ymax) + 1)) if log_y else
                    [ymin + (ymax - ymin) * i / 5 for i in range(6)])

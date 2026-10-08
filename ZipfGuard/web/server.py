@@ -122,6 +122,7 @@ from web.intervention_interface import (INTERVENTION_INDEX, PUBLISHED_ROOT,
                                         intervention_index_with_latest,
                                         start_intervention_job,
                                         intervention_job_snapshot, latest_intervention_result)
+from web.intervention_interface import intervention_activity
 from experiments.intervention_config import load_intervention_config
 LEGACY_INDEX = INDEX
 INDEX = INTERVENTION_INDEX
@@ -149,12 +150,14 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(intervention_index_with_latest().encode("utf-8"), "text/html; charset=utf-8")
             if path == "/api/intervention/latest":
                 return self._send(_json_safe(latest_intervention_result()))
+            if path == "/api/intervention/activity":
+                return self._send(_json_safe(intervention_activity()))
             if path.startswith("/api/intervention/config/"):
                 return self._send(_json_safe(load_intervention_config(path.rsplit("/", 1)[-1])))
             if path.startswith("/api/intervention/jobs/"):
                 return self._send(_json_safe(intervention_job_snapshot(path.rsplit("/", 1)[-1])))
             intervention_asset = re.fullmatch(
-                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(distribution_cost|attack_area_cost|dynamic_distribution_detail|coverage_F|attack_F|attack_A1|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_random|cdf_fit_google_frozen|cdf_fit_google_dynamic)\.svg)', path)
+                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(distribution_cost|attack_area_cost|dynamic_distribution_detail|coverage_F|attack_F|attack_A1|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_random|cdf_fit_google_frozen|cdf_fit_google_dynamic|cdf_fit_yahoo_japan)\.svg)', path)
             if intervention_asset:
                 kind, run_id, figure = intervention_asset.groups()
                 if (kind == 'report') != (figure is None):

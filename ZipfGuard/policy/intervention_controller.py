@@ -4,8 +4,9 @@ import hashlib
 import math
 from statistics import mean
 from core.intervention_attack_area import area_change, guard_reasons, guard_batch
+from core.intervention_acceptance import AREA_ONLY_POLICY, apply_response_policy
 from core.intervention_distribution import (empirical_top_mass, fitted_top_mass,
-    fitted_log_cdf_area, log_cdf_area, moved_counts, top_k)
+    fitted_ideal_distance, log_cdf_area, moved_counts, top_k)
 from policy.intervention_fragments import LENGTHS, candidate_fragments
 from policy.local_actions import Action, Group, LocalRule, MultiAction, capacities, generate_actions
 from policy.open_policy import Rule
@@ -22,14 +23,15 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     repeats = repeats or cfg['controller']['prediction_repeats']
     for repeat in range(repeats):
         # Same account noise for competing candidates; separate from execution.
-        rows = responder.respond(population, action, cfg['seed'], f'prediction-{round_id}-{repeat}')
+        response = getattr(responder, 'preview', responder.respond)
+        rows = response(population, action, cfg['seed'], f'prediction-{round_id}-{repeat}')
         attack_changes.append(area_change(risk, rows, n, cfg['budgets']))
         after_counts = moved_counts(counts, rows)
         distribution_gains.append(baseline_mass-empirical_top_mass(after_counts, k))
         area_gains.append(baseline_area-log_cdf_area(after_counts))
         if baseline_fit is not None:
             fitted_gains.append(baseline_fit['score']-
-                                fitted_log_cdf_area(after_counts, cfg['seed'])['score'])
+                                fitted_ideal_distance(after_counts, cfg['seed'])['score'])
         delta = Counter()
         for row in rows:
             delta[row['old']] -= 1
@@ -41,10 +43,13 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     c = cfg['controller']
     fitted_gain = mean(fitted_gains) if fitted_gains else None
     score = fitted_gain if fitted_gain is not None else gain
-    reasons = ['拟合后的全分布累计面积预计没有正收益'] if score <= c['min_gain'] else []
+    area_only = c['execution_policy'] == AREA_ONLY_POLICY
+    reasons = ['距理想分布的 W1 距离预计没有下降'] if score <= c['min_gain'] else []
+    trial_gains = fitted_gains if fitted_gains else area_gains
+    positive_fraction = sum(value > c['min_gain'] for value in trial_gains)/repeats
     attack_change = {'gain': mean(row['gain'] for row in attack_changes),
                      'uncovered_rate_change': mean(row['uncovered_rate_change'] for row in attack_changes)}
-    attack_reasons = guard_reasons(attack_change)
+    attack_reasons = (['固定 F 猜测成功曲线的对数面积未下降'] if attack_change['gain'] <= 1e-12 else []) if area_only else guard_reasons(attack_change)
     reasons.extend(attack_reasons)
     return {'predicted_distribution_gain': gain,
             'predicted_F_log_area_gain': attack_change['gain'],
@@ -52,6 +57,9 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
                                   max(row['gain'] for row in attack_changes)],
             'predicted_uncovered_rate_change': attack_change['uncovered_rate_change'],
             'aggregate_guard_feasible': not attack_reasons,
+            'security_gate_enforced': True,
+            'attack_diagnostic_warnings': attack_reasons,
+            'distribution_positive_trial_fraction': positive_fraction,
             'predicted_empirical_cdf_gain': mean(distribution_gains),
             'predicted_fitted_cdf_gain': fitted_gain,
             'predicted_fitted_log_area_gain': fitted_gain,
@@ -109,9 +117,10 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
     c = cfg['controller']
     if round_id >= c['max_rounds'] or capacities(population, cfg) < 2*minimum:
         return None
-    before = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
+    before = fitted_ideal_distance(population.counts(), cfg['seed'])['score']
     near = sorted(((action, prediction) for action, prediction in evaluated
-                   if len(action.indices) >= minimum and prediction.get('aggregate_guard_feasible', False)
+                   if len(action.indices) >= minimum and
+                   prediction.get('aggregate_guard_feasible', False)
                    and prediction['predicted_empirical_log_area_gain'] >= -c['bridge_max_first_loss']),
                   key=lambda row: row[1]['score'], reverse=True)[:c['lookahead_width']]
     options = []
@@ -121,7 +130,7 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
             preview = population.clone()
             first_rows = responder.respond(preview, first, cfg['seed'],
                                            f'bridge-first-{round_id}-{trial}')
-            first_rows, first_guard = guard_batch(preview, first_rows, risk, cfg['budgets'])
+            first_rows, first_guard = apply_response_policy(preview, first_rows, risk, cfg['budgets'], c['execution_policy'])
             if not first_guard['accepted']:
                 break
             preview.apply(first_rows)
@@ -132,11 +141,11 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
             next_action, _ = second
             second_rows = responder.respond(preview, next_action, cfg['seed'],
                                             f'bridge-second-{round_id}-{trial}')
-            second_rows, second_guard = guard_batch(preview, second_rows, risk, cfg['budgets'])
+            second_rows, second_guard = apply_response_policy(preview, second_rows, risk, cfg['budgets'], c['execution_policy'])
             if not second_guard['accepted']:
                 break
             preview.apply(second_rows)
-            totals.append(before-fitted_log_cdf_area(preview.counts(), cfg['seed'])['score'])
+            totals.append(before-fitted_ideal_distance(preview.counts(), cfg['seed'])['score'])
             next_actions.append(next_action.public())
         if len(totals) == c['lookahead_rollouts'] and min(totals) > c['min_gain']:
             extended = {**prediction, 'feasible': True, 'bridge': True,
@@ -180,7 +189,7 @@ def select_action(population, risk, responder, cfg, round_id, target_size=None,
     if validation and evaluated:
         order = sorted(range(len(evaluated)), key=lambda i: evaluated[i][1]['score'], reverse=True)
         feasible = []
-        baseline_fit = fitted_log_cdf_area(counts, cfg['seed'])
+        baseline_fit = fitted_ideal_distance(counts, cfg['seed'])
         for rank, i in enumerate(order):
             if rank >= cfg['controller']['validation_shortlist'] and feasible:
                 break
@@ -266,7 +275,7 @@ def select_random_action(population, risk, responder, cfg, round_id, target_size
     if sum(len(part.indices) for part in components) < minimum:
         return None, [{'action': a.public(), **p} for a, p in evaluated]
     batch = MultiAction(tuple(components))
-    baseline_fit = fitted_log_cdf_area(counts, cfg['seed'])
+    baseline_fit = fitted_ideal_distance(counts, cfg['seed'])
     prediction = predict_action(population, batch, risk, responder, cfg, round_id, counts,
                                 cfg['controller']['validation_repeats'], baseline_fit)
     audit = [{'action': a.public(), **p} for a, p in evaluated]

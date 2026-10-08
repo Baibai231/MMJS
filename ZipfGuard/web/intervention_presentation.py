@@ -4,6 +4,8 @@ import numpy as np
 from core.cdf_sampling import frequency_sample
 from core.intervention_distribution import fitted_log_cdf_area_from_parameters
 from core.intervention_attack_area import curve_area
+from core.ideal_distribution import (METRIC as DISTANCE_METRIC, IDEAL_LABEL,
+                                     ideal_frequency_curve, distance_from_area)
 from web.presentation import STYLE, escape, plot, table
 from web.study_dashboard import DASHBOARD_STYLE
 from web.cdf_fit_presentation import fit_chart_specs, render_fit_diagnostics
@@ -16,13 +18,15 @@ LABELS = [('baseline', '原始分布（无干预）'), ('google_hold', 'Google �
           ('google_dynamic', 'Google＋每轮重新评估的动态调整')]
 
 
-def comparison_labels(result):
+def comparison_labels(result, *, include_site_controls=True):
     completed = result['google_round_zipf']['experimental']['rounds_completed']
     arms = result['google_round_zipf']['arms']
     labels = [(key, label) for key, label in LABELS if key == 'baseline' or key in arms]
     if completed != 10:
         labels = [(key, f'{label}（{completed} 轮后停止）' if key == 'google_dynamic' else label)
                   for key, label in labels]
+    if include_site_controls:
+        labels += [(key, arm['label']) for key, arm in result.get('site_controls', {}).items()]
     return labels
 
 
@@ -43,6 +47,8 @@ def google_round_zipf_series(result):
     for snapshot in comparison['experimental']['snapshots']:
         series.append((f"实验组调整第 {snapshot['round']} 轮",
                        snapshot['distribution']['full_rank_frequency']))
+    if result.get('ideal_distribution'):
+        series.append((IDEAL_LABEL, ideal_frequency_curve(result['ideal_distribution']['accounts'])))
     return series
 
 
@@ -73,6 +79,58 @@ def fitted_log_area_from_report(result):
         result['config']['seed'])['score']
 
 
+def ideal_reference_html(result, labels, arms):
+    ideal = result['ideal_distribution']
+    n = ideal['accounts']
+    states = [('原始分布（无干预）', result['baseline'])]
+    states += [(label, arms[key]['final']) for key, label in labels[1:]]
+    baseline = result['baseline']['ideal_distance']['empirical']
+    rows = []
+    for label, state in states:
+        distance = state['ideal_distance']
+        fitted = distance['fitted']
+        reduction = 1-distance['empirical']/baseline if baseline > 0 else None
+        rows.append([label, f'{distance["empirical"]:.9f}',
+                     '—' if fitted is None else f'{fitted:.9f}', pct(reduction)])
+    rows.append(['理想分布（N 个不同口令，各 1 人）', '0.000000000', '不拟合', '参照'])
+    html = ('<section id="ideal_distribution_reference"><h2>如何评价距理想分布有多远</h2>'
+            f'<p>本次固定 N={n:,} 个账户，理想参照为 N 个不同的完整口令，每个仅 1 人。'
+            '统计相同完整口令的频次，不合并结构相似的口令；所有状态都使用排名 1—N 的同一支持范围。'
+            '这是一种频次分散的理想，不指定口令内容，也不代表不可被猜中。</p>'
+            '<p>把排名转换为 x=ln(r)/ln(N)，用累计账户占比 C(x) 定义 '
+            'D=∫₀¹|C(x)−C*(x)|dx。它是一维 Wasserstein-1 距离，衡量账户质量在对数排名轴上的搬运距离。'
+            '排名靠前的集中有更大影响；距离为零表示观测口令全部只出现一次。'
+            'Panaretos 与 Zemel（2019，§1.2）给出一维 W1 等于累计分布绝对差面积的公式；'
+            '固定 N 的参照和对数排名坐标是本项目明确选择的评价设定。</p>'
+            '<p>下表“实际频次距离”由全部口令频次精确计算；“CDF 拟合距离”沿用现有 c、s 采样拟合，'
+            '用于新实验的候选比较。二者分别报告，避免把拟合误差当作真实变化。'
+            '没有论文支持的统一安全合格阈值，因此报告绝对距离和相对原始差距缩小比例；'
+            '同成本下距离更低表明频次更接近理想，安全性另由 F、A1 检验。</p>')
+    html += table(['方案', '实际频次 W1 距离', 'CDF 拟合 W1 距离', '相对原始差距缩小'], rows)
+    html += ('<p>论文依据：<a href="https://doi.org/10.1146/annurev-statistics-030718-104938">'
+             'Panaretos &amp; Zemel, Statistical Aspects of Wasserstein Distances (2019)</a>；'
+             '<a href="https://www.ieee-security.org/TC/SP2012/papers/4681a538.pdf">'
+             'Bonneau, The Science of Guessing, IEEE S&amp;P (2012)</a> '
+             '提供口令猜测与均匀参照的背景，不是本项目对数排名距离公式的来源。</p></section>')
+    yahoo = result.get('site_controls', {}).get('yahoo_japan')
+    if yahoo:
+        audit = yahoo['target_audit']
+        html += ('<section id="yahoo_control"><h2>Yahoo! JAPAN 全站强策略对照</h2>'
+                 '<p>从与原始组完全相同的初始账户出发，一次应用 15—32 字符、公开半角字符集'
+                 '和已公开禁止组合的规则，不额外要求字母数字混合。'
+                 '公开说明还存在未枚举的禁止组合，因此这里只模拟可编码的公开规则。</p>'
+                 f'<p>{escape(yahoo["premise"])}。仍使用相同三类修改提案及有限尝试次数，'
+                 '失败后显式补全到合规状态；这是完成迁移的假设，不能当作实测用户行为。'
+                 'A1 在独立参考账户按同一策略迁移后的分布上训练。</p>')
+        html += table(['要求修改人数', '要求修改比例', '有限尝试后显式补全人数', '迁移后不合规人数'], [
+            [f'{audit["required_modifications"]:,}', pct(audit['required_rate']),
+             f'{audit["explicit_completions"]:,}', audit['noncompliant_remaining']]])
+        html += ('<p><a href="https://support.yahoo-net.jp/SccLogin/s/article/H000004639">'
+                 'Yahoo! JAPAN 官方规则</a>。此组只加入 F、A1 和最终分布终态比较；'
+                 '共同 Google 起点后的局部成本曲线仍比较原五组。</p></section>')
+    return html
+
+
 def chart_specs(result):
     if not result.get('google_round_zipf', {}).get('google_baseline'):
         return fit_chart_specs(result)
@@ -80,7 +138,10 @@ def chart_specs(result):
     if not arms:
         return {}
     base, cfg = result['baseline'], result['config']
-    labels = comparison_labels(result)
+    labels = comparison_labels(result, include_site_controls=False)
+    endpoint_labels = comparison_labels(result)
+    endpoint_arms = {**arms, **result.get('site_controls', {})}
+    distance_mode = bool(result.get('ideal_distribution'))
     budget = cfg['risk_budget']
     google_cost = arms['google_hold']['final']['ledger']['affected_rate']
     def added_cost(state):
@@ -93,27 +154,34 @@ def chart_specs(result):
                             for s in arms[key]['trajectory']]) for key, label in labels[1:]]
     rank = result['google_round_zipf']['comparison_budget'].get('distribution_top_k')
     distribution_series = []
-    area_mode = (arms['google_dynamic'].get('distribution_goal', {}).get('metric') ==
-                 'fitted_complete_log_rank_cdf_area')
+    area_mode = arms['google_dynamic'].get('distribution_goal', {}).get('metric') in (
+        'fitted_complete_log_rank_cdf_area', DISTANCE_METRIC)
     baseline_mass = ((fitted_log_area_from_report(result) if area_mode else
                       fitted_rank_mass_from_report(result, rank))
                      if rank and result.get('distribution_fits') else None)
     if baseline_mass is not None:
         goal = arms['google_dynamic']['distribution_goal']
-        google_mass = (goal['start_fitted_log_area'] if area_mode else goal['start_fitted_top_mass'])
+        google_mass = (goal.get('start_fitted_distance', goal.get('start_fitted_log_area'))
+                       if area_mode else goal['start_fitted_top_mass'])
+        if distance_mode:
+            baseline_mass = base['ideal_distance']['fitted']
+            google_mass = arms['google_hold']['final']['ideal_distance']['fitted']
         distribution_series = [(labels[0][1], [(0, baseline_mass)])]
         for key, label in labels[1:]:
             arm = arms[key]
             points = [(0, google_mass)]
             points += [(added_cost(arm['trajectory'][i+1]),
-                        row['selection_risk_after_same_model'])
+                        (arm['trajectory'][i+1]['ideal_distance']['fitted'] if distance_mode else
+                         row['selection_risk_after_same_model']))
                        for i, row in enumerate(arm['rounds'])]
             distribution_series.append((label, points))
     specs = {
-        **({'distribution_cost': ('累计受影响账户比例—完整分布集中度' if area_mode else
+        **({'distribution_cost': ('累计受影响账户比例—距理想分布的 W1 距离' if distance_mode else
+                                  '累计受影响账户比例—完整分布集中度' if area_mode else
                                   '累计受影响账户比例—拟合分布前段占比', distribution_series,
             dict(xlabel='Google 起点后累计通知的不同账户比例',
-                 ylabel='CDF 拟合累计曲线的对数排名面积（越低越分散）' if area_mode else
+                 ylabel='对数排名 Wasserstein-1 距离（越低越接近理想）' if distance_mode else
+                          'CDF 拟合累计曲线的对数排名面积（越低越分散）' if area_mode else
                           f'CDF 拟合曲线前 {rank:,} 位累计账户占比',
                  x_format='percent', y_format='decimal6' if area_mode else 'percent',
                  x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1)))}
@@ -130,14 +198,17 @@ def chart_specs(result):
                                  for s in arms[key]['trajectory']]) for key, label in labels[1:]]
         specs['attack_area_cost'] = ('累计通知比例—总体猜测曲线面积', area_series,
             dict(xlabel='Google 起点后累计通知的不同账户比例',
-                 ylabel='固定 F 猜测成功曲线对数面积（越低越难猜）',
+                 ylabel='固定 F 猜测成功曲线对数面积（越低估计命中越少）',
                  x_format='percent', y_format='decimal6',
                  x_domain=(0, min(1, maximum*1.08))))
     if area_mode and arms['google_dynamic']['rounds']:
         dynamic = arms['google_dynamic']
         start_round = max(0, len(dynamic['rounds'])-3)
-        scores = [(0, dynamic['distribution_goal']['start_fitted_log_area'])]
-        scores += [(i, row['selection_risk_after_same_model'])
+        scores = [(0, (dynamic['trajectory'][0]['ideal_distance']['fitted'] if distance_mode else
+                       dynamic['distribution_goal'].get('start_fitted_distance',
+                           dynamic['distribution_goal'].get('start_fitted_log_area'))))]
+        scores += [(i, (dynamic['trajectory'][i]['ideal_distance']['fitted'] if distance_mode else
+                        row['selection_risk_after_same_model']))
                    for i, row in enumerate(dynamic['rounds'], 1)]
         detail = scores[start_round:]
         values = [value for _, value in detail]
@@ -145,32 +216,39 @@ def chart_specs(result):
         specs['dynamic_distribution_detail'] = (
             '动态组末段分布变化（局部放大）',
             [(labels[-1][1], detail)],
-            dict(xlabel='动态调整轮次', ylabel='拟合完整累计分布面积（越低越分散）',
+            dict(xlabel='动态调整轮次', ylabel='距理想分布的 W1 距离' if distance_mode else
+                 '拟合完整累计分布面积（越低越分散）',
                  x_ticks=[round_id for round_id, _ in detail],
                  x_format='count', y_format='decimal6',
                  x_domain=(detail[0][0], detail[-1][0]),
                  y_domain=(max(0, min(values)-margin), max(values)+margin)))
     for level, title in [('F', 'F：攻击者不更新模型'), ('A1', 'A1：攻击者学习局部干预后的参考分布')]:
-        if level == 'A1' and not any(a['attacks']['A1'] for a in arms.values()):
+        if level == 'A1' and not any(a['attacks']['A1'] for a in endpoint_arms.values()):
             continue
-        series = [(labels[0][1], [(p['budget'], p['rate']) for p in base['risk']['minauto']])]
-        for key, label in labels[1:]:
-            ev = arms[key]['attacks'][level]
+        series = ([(labels[0][1], [(p['budget'], p['rate']) for p in base['risk']['minauto']])]
+                  if level == 'F' else [])
+        for key, label in endpoint_labels[1:]:
+            ev = endpoint_arms[key]['attacks'][level]
             if ev:
                 series.append((label, [(p['budget'], p['rate']) for p in ev['minauto']]))
         specs['attack_'+level] = (title, series,
             dict(xlabel='累计攻击次数（估计猜测预算）', ylabel='累计猜出的口令比例（全部账户）',
                  log=True, x_format='power10', y_format='percent', y_domain=(0, 1)))
     dist = [(labels[0][1], base['distribution']['full_rank_frequency'])]
-    dist += [(label, arms[key]['final']['distribution']['full_rank_frequency']) for key, label in labels[1:]]
+    dist += [(label, endpoint_arms[key]['final']['distribution']['full_rank_frequency'])
+             for key, label in endpoint_labels[1:]]
+    if distance_mode:
+        dist.append((IDEAL_LABEL, ideal_frequency_curve(base['distribution']['users'])))
     specs['final_distribution'] = ('最终口令分布', dist,
         dict(xlabel='口令排名 r', ylabel='使用该口令的人数 f(r)', log=True, log_y=True,
-             x_format='count', y_format='count', markers=False))
+             x_format='count', y_format='count', markers=False,
+             reference_series=[IDEAL_LABEL] if distance_mode else []))
     round_zipf = google_round_zipf_series(result)
     if round_zipf:
         specs['google_round_zipf'] = ('Google 固定对照与动态调整 10 轮的 Zipf 分布', round_zipf,
             dict(xlabel='口令排名 r', ylabel='使用该口令的人数 f(r)', log=True, log_y=True,
-                 x_format='count', y_format='count', markers=False))
+                 x_format='count', y_format='count', markers=False,
+                 reference_series=[IDEAL_LABEL] if distance_mode else []))
     # Match the second workbench: zero-based percentage axes with 12% headroom.
     for name, (_, series, opts) in specs.items():
         if name not in ('final_distribution', 'google_round_zipf',
@@ -199,10 +277,13 @@ def render_intervention_html(result, *, document=True):
         return '<main><section><h2>此旧报告尚未补算共同 Google 起点</h2><p>请重新运行实验。</p></section></main>'
     cfg = result['config']
     labels = comparison_labels(result)
+    endpoint_arms = {**arms, **result.get('site_controls', {})}
     dynamic = arms['google_dynamic']
     aggregate_mode = bool(result['metadata'].get('aggregate_attack_guard'))
-    area_mode = (dynamic.get('distribution_goal', {}).get('metric') ==
-                 'fitted_complete_log_rank_cdf_area')
+    area_only_mode = result['metadata'].get('aggregate_attack_guard', {}).get('protocol') == 'fixed-F-area-only-batch-v2'
+    distance_mode = bool(result.get('ideal_distribution'))
+    area_mode = dynamic.get('distribution_goal', {}).get('metric') in (
+        'fitted_complete_log_rank_cdf_area', DISTANCE_METRIC)
     completed = result['google_round_zipf']['experimental']['rounds_completed']
     budget = cfg['risk_budget']
     final, ledger = dynamic['final'], dynamic['final']['ledger']
@@ -218,17 +299,34 @@ def render_intervention_html(result, *, document=True):
         ('后续受影响', pct(ledger.get('adaptive_affected_rate', ledger['affected_rate'])),
          f'{ledger.get("adaptive_affected", ledger["affected"]):,} 个账户在 Google 起点后被通知'),
         ('实际修改', pct(ledger['changed_rate']), f'{ledger["changed"]:,} 个账户完成修改'),
-        (('完整分布集中度' if area_mode else '拟合前段累计占比'),
-         (f'{dynamic["distribution_goal"]["final_fitted_log_area"]:.6f}' if area_mode else
+        (('距理想分布的 W1 距离' if distance_mode else '完整分布集中度' if area_mode else '拟合前段累计占比'),
+         (f'{final["ideal_distance"]["fitted"]:.6f}' if distance_mode else
+          f'{dynamic["distribution_goal"]["final_fitted_log_area"]:.6f}' if area_mode else
           pct(dynamic.get('distribution_goal', {}).get('final_fitted_top_mass'))),
-         ('拟合累计曲线对数排名面积；越低越分散' if area_mode else
+         ('基于 CDF 拟合；越低越接近固定 N 单例理想' if distance_mode else
+          '拟合累计曲线对数排名面积；越低越分散' if area_mode else
           f'固定前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位完整口令；越低越分散'))]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong><small>{escape(note)}</small></div>')
     parts.append(f'</div><p>以上为 Google 起点后逐步干预方案：已完成共同起点后的 {completed} 轮干预；停止原因：{escape(dynamic["stop_label"])}。</p></section>')
     if not aggregate_mode:
         parts.append('<section class="notice"><strong>历史实验：逐账户强度门槛</strong>'
                      '<p>以下结果仍属于原来的“每个成功修改账户都需变强”协议。'
-                     '当前新实验已改为总体 F 曲线面积门槛；旧结果不能当作新方法的实验结果。</p></section>')
+                     '当前新实验采用全员成功修改与 F 面积单一准入条件；旧结果不能当作新方法的实验结果。</p></section>')
+    if area_only_mode:
+        parts.append('<section class="notice"><strong>本次实验：全员成功修改，面积下降才执行</strong>'
+                     '<p>每个被选中账户均构造不同且合规的新口令。模拟方案的固定 F 曲线面积严格下降才下发并计入通知；'
+                     '不满足条件的方案不通知、不计为执行轮次。未覆盖比例只披露，不否决方案；'
+                     '模型未覆盖不能等同于更难猜，安全效果须结合 F、A1 与覆盖情况判断。</p></section>')
+    extension = result['metadata'].get('analysis_extension')
+    if extension:
+        parts.append('<section class="notice"><strong>本次更新的结果来源</strong><p>'
+                     f'五组轨迹沿用历史 10 万账户实验 {escape(extension["parent_run_id"])}，'
+                     '没有重新执行动态选人和修改。W1 距离由这些完整分布和原有拟合结果重新计算；'
+                     '固定人数下，它与原完整对数排名累计面积只相差同一个理想参照常数。'
+                     'Yahoo! JAPAN 是在同一批原始账户上新运行的一次强策略对照，'
+                     '不代表历史动态实验已经改用当前新协议。</p></section>')
+    if distance_mode:
+        parts.append(ideal_reference_html(result, labels, endpoint_arms))
     parts.append('<section id="intervention-conditions"><h2>先看懂这次比较</h2>'
                  '<p>图例支持勾选显示或隐藏曲线，悬停突出对应曲线；'
                  '重叠线使用线型与点形辅助区分。每张图保持相同方案顺序和颜色。</p>'
@@ -302,9 +400,11 @@ def render_intervention_html(result, *, document=True):
     parts.append(f'<p>动态组比较热门口令、结构和跨结构账户中的局部动作，'
                   '随机组先抽取账户，再从文档第 1—18 条片段中分配修改方法。'
                    '三组均先比较完整口令的排名累计分布，再用 CDF 采样拟合参数复核靠前动作。'
-                   + ('拟合后的完整累计曲线在对数排名上的面积越低，表示分布越分散。' if area_mode else
+                   + ('到固定 N 单例参照的对数排名 W1 距离越低，表示分布越接近理想。' if distance_mode else
+                      '拟合后的完整累计曲线在对数排名上的面积越低，表示分布越分散。' if area_mode else
                       '拟合曲线在固定前段排名处的累计占比越低，表示热门完整口令覆盖的账户越少。') +
-                  ('整批修改须使固定 F 猜测成功曲线的对数面积下降，且模型未覆盖比例不增加；允许个体变弱。'
+                  ('所有通知账户均成功修改；唯一提交条件是固定 F 曲线对数面积下降。未覆盖比例不参与否决，A1 用于独立终态评估。' if area_only_mode else
+                   '整批修改须使固定 F 猜测成功曲线的对数面积下降，且模型未覆盖比例不增加；允许个体变弱。'
                    'F 面积作为独立准入条件，不与分布指标加权；A1 保留作事后检验。' if aggregate_mode else
                    '修改成功的账户还必须满足固定 F 模型的估计猜测次数严格增加；无法估计新旧次数时不批准修改。'
                    'F 和独立参考 A1 的攻击曲线保留作事后检验，不与分布指标加权。') +
@@ -326,17 +426,21 @@ def render_intervention_html(result, *, document=True):
                   '用户响应率和累计附加预算。下方成本图从 Google 起点开始计算后续新增通知。</p>')
     parts.append(f'<p>共同起点属于全体合规的模拟设定：有限次修改尝试后仍未合规的 '
                  f'{baseline_policy.get("explicit_length_completions", 0):,} 个账户，通过固定种子的长度补全构造合规口令。'
-                 '该构造只用于起点；后续局部干预仍保留未响应和修改失败。</p>')
+                 + ('新协议的后续局部干预同样保证合规且不同的新口令；构造补全次数另行统计，不能解释为真实用户行为。</p>' if area_only_mode else
+                    '该构造只用于起点；后续局部干预仍保留未响应和修改失败。</p>'))
     parts.append(table(['设置', '本次取值'], [
         ['后续每轮 / 累计新增通知上限', f'{pct(cfg["controller"]["round_fraction"])} / {pct(cfg["controller"]["total_fraction"])}'],
-        ['每账户最多干预', 'Google 起点一次、后续局部干预一次；已通知但未修改也计入后续成本'],
+        ['每账户最多干预', ('Google 起点一次、后续局部干预一次；后续通知人数等于成功修改人数' if area_only_mode else
+                            'Google 起点一次、后续局部干预一次；已通知但未修改也计入后续成本')],
         ['未响应概率（情景假设）', pct(cfg['response']['nonresponse'])],
         ['响应者：简单修补 / 片段重组 / 重选', ' / '.join(pct(x) for x in cfg['response']['weights'])],
         ['停止条件', '共同起点后最多 10 轮；无可行动作或预算不足时可提前停止'],
         ['基础要求', '四个 Google 组全站至少 8 字符；局部要求在此基础上叠加'],
-        ['分布主目标', ('CDF 拟合完整累计曲线的对数排名面积下降' if area_mode else
+        ['分布主目标', ('到固定 N 单例参照的对数排名 W1 距离下降' if distance_mode else
+                        'CDF 拟合完整累计曲线的对数排名面积下降' if area_mode else
                     f'CDF 拟合排名曲线前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位累计占比下降')],
-        (['总体安全门槛', '整批 F 猜测成功曲线对数面积严格下降，模型未覆盖比例不增加'] if aggregate_mode else
+        (['方案接受条件', '固定 F 曲线面积严格下降；全员修改成功，未覆盖比例只作诊断'] if area_only_mode else
+         ['总体安全门槛', '整批 F 猜测成功曲线对数面积严格下降，模型未覆盖比例不增加'] if aggregate_mode else
          ['个体安全门槛', '仅通过固定 F 模型可比较且新估计猜测次数严格更大的局部修改']),
         ['实验编号', result['metadata']['run_id']],
     ]))
@@ -370,7 +474,10 @@ def render_intervention_html(result, *, document=True):
             continue  # Fit diagnostics have their own explanation and tables below.
         parts.append(f'<section id="{escape(name)}"><h2>{escape(title)}</h2>')
         if name == 'distribution_cost':
-            parts.append(('<p>这是动作选择的主指标：用 c、s 生成完整的拟合累计曲线，计算对数排名面积。'
+            parts.append(('<p>纵轴是 CDF 拟合分布与固定 N 单例理想分布的 Wasserstein-1 距离，'
+                          '在归一化对数排名轴上计算累计曲线之间的面积；越低越接近理想。'
+                          '这不是猜测成功率，也不是排名频次图的像素距离。' if distance_mode else
+                          '<p>这是动作选择的主指标：用 c、s 生成完整的拟合累计曲线，计算对数排名面积。'
                           '纵轴越低表示口令分布越分散；该分数不是猜测成功率。' if area_mode else
                           f'<p>这是动作选择的主指标：把 c、s 拟合参数生成的排名累计曲线固定在前 {rank:,} 位，'
                           '纵轴越低，表示热门完整口令覆盖的账户越少。') +
@@ -387,7 +494,8 @@ def render_intervention_html(result, *, document=True):
                          '沿现有对数横轴对 F 曲线各观测点连线做梯形积分，再除以横轴跨度。'
                          '每个数量级等权，纵轴为归一化面积；同一账户总数下与累计猜中人数面积的比较方向一致。'
                          '允许部分用户变弱、部分预算点命中率上升，只要求整条曲线面积下降。'
-                         '整批候选未通过执行前复核时保持旧口令，通知仍计成本；此时曲线呈水平段。</p>')
+                         + ('方案面积预检未通过时不下发、不计通知；已执行轮次全员修改成功。</p>' if area_only_mode else
+                            '整批候选未通过执行前复核时保持旧口令，通知仍计成本；此时曲线呈水平段。</p>'))
         if name == 'coverage_F':
             parts.append(f'<p>横轴从共同 Google 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
                          '原始组和 Google 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
@@ -395,14 +503,22 @@ def render_intervention_html(result, *, document=True):
         if name == 'attack_A1':
             parts.append('<p>A1 只用独立开发参考群体的模拟迁移结果训练。参考群体构成不同，'
                          '实际干预比例可能与目标群体不同，见下方覆盖与参考账本。</p>')
+        if name in ('attack_F', 'attack_A1') and result.get('site_controls'):
+            parts.append('<p>Yahoo! JAPAN 是从原始数据独立进行一次全站强制合规迁移；'
+                         '其通知成本通常远高于局部预算，不能据此认定同成本下更优。'
+                         '长口令超出模型支持时，低命中比例可能来自覆盖不足，请同时查看下方覆盖表。</p>')
         if name == 'final_distribution':
             parts.append('<p>横轴为频次排名，纵轴为使用人数，两轴均为对数刻度；'
                          '曲线更分散本身不能证明更安全。</p>')
+            if distance_mode:
+                parts.append('<p>理想参照为同样 N 个账户各使用一个不同完整口令，因此 f(r)=1，'
+                             '一直延伸到排名 N；不根据每组当前不同口令数改变参照。'
+                             '曲线可能与实际分布的单例尾部重合，可通过图例单独查看。</p>')
         if name == 'google_round_zipf':
             comparison = result['google_round_zipf']
             completed = comparison['experimental']['rounds_completed']
             parts.append('<p>蓝线是双方完成全体账户的 Google 最低 8 字符迁移后的共同起点；'
-                         '固定对照从这个时点起不再调整，实验组随后根据最新分布连续决策 10 轮。'
+                         '固定对照从这个时点起不再调整，实验组随后根据最新分布最多决策 10 轮。'
                          '每条实验曲线对应一次调整后的全站分布，两轴均为对数刻度。</p>')
             parts.append(f'<p>初始 Google 迁移修改了 {pct(comparison["control"]["affected_rate"])} 的账户；'
                           '完成后全体账户均符合至少 8 字符规则；后续干预成本图从此时的零新增通知起算。</p>')
@@ -412,6 +528,9 @@ def render_intervention_html(result, *, document=True):
             elif comparison['common_google_start_verified']:
                 parts.append('<p>已核对双方起点的账户状态完全一致。图中共 11 条线：'
                              '共同起点的固定对照 1 条，加上实验组后续第 1–10 轮的 10 条分布。</p>')
+            if distance_mode:
+                parts.append(f'<p>另加入固定 N 单例理想分布参照，共 {completed+2} 条实际曲线。'
+                             '理想线是评价参照，不是另一个模拟实验或补足的轮次。</p>')
         parts.append(plot(series, distinguish=True, **opts))
         parts.append(f'<p><a href="/api/intervention/figure/{result["metadata"]["run_id"]}/{name}.svg">下载带图例 SVG</a></p>')
         if name == 'google_round_zipf':
@@ -430,12 +549,17 @@ def render_intervention_html(result, *, document=True):
                      '两项参数使用上下独立纵轴，以免数值量级不同掩盖变化。</p>')
         parts.append(round_parameter_html(rows, requested_rounds=result['google_round_zipf']['requested_rounds']))
         parts.append(f'<p><a href="/api/intervention/figure/{result["metadata"]["run_id"]}/round_parameters.svg">下载带图例 SVG</a></p>')
-        parts.append(table(['轮次', '参数 c', '参数 s', '平均最大 CDF 误差', '累计受影响账户'], [
+        parts.append(table(['轮次', '参数 c', '参数 s', '平均最大 CDF 误差', '累计受影响账户'] +
+                           (['实际频次 W1', 'CDF 拟合 W1'] if distance_mode else []), [
             [row['round'], f'{row["parameters"]["c"]:.7f}', f'{row["parameters"]["s"]:.6f}',
              '—' if row['mean_max_cdf_error'] is None else f'{row["mean_max_cdf_error"]:.3%}',
-             pct(row['affected_rate'])] for row in rows]))
+             pct(row['affected_rate'])] +
+             ([f'{dynamic["trajectory"][row["round"]]["ideal_distance"]["empirical"]:.9f}',
+               f'{dynamic["trajectory"][row["round"]]["ideal_distance"]["fitted"]:.9f}'] if distance_mode else [])
+             for row in rows]))
         parts.append('<p>c、s 描述拟合后的频次形状，没有单独的“越大越安全”方向或统一合格阈值。'
-                      + ('控制器用二者生成的完整排名累计曲线比较对数排名面积，不把参数直接相加。' if area_mode else
+                      + ('新控制器用二者生成的完整排名累计曲线比较距理想的 W1 距离，不把参数直接相加。' if distance_mode else
+                         '控制器用二者生成的完整排名累计曲线比较对数排名面积，不把参数直接相加。' if area_mode else
                          '控制器用二者生成的排名累计曲线比较固定前段的账户占比，不把参数直接相加。') +
                      '拟合误差反映模型与实际分布的差距；攻击命中比例和账户修改成本仍单独展示。</p></section>')
     parts.append(render_fit_diagnostics(result))
@@ -477,7 +601,8 @@ def render_intervention_html(result, *, document=True):
         parts.append('<h3>动态调整每轮口令强度增加的账户比例</h3>'
                      '<p>只统计动态组后续局部干预。强度增加指固定 F 模型对新旧口令均给出'
                      '估计猜测次数，且新口令严格更难猜。' +
-                     ('变弱、持平和无法比较分别统计；个体变化仅作诊断，总体面积决定整批能否提交。</p>'
+                     ('所有被通知账户都成功修改；变弱、持平和无法比较分别统计，个体变化仅作诊断。</p>' if area_only_mode else
+                      '变弱、持平和无法比较分别统计；个体变化仅作诊断，总体面积决定整批能否提交。</p>'
                       if aggregate_mode else '未响应或不能证明增加者保持旧口令。'
                       '“被拒尝试”计口令候选次数，不是独立用户数。</p>'))
         headers = (['轮次', '通知', '成功修改', '变强', '变弱', '持平', '无法比较',
@@ -488,7 +613,8 @@ def render_intervention_html(result, *, document=True):
         if aggregate_mode:
             parts.append('<h3>动态组每轮总体猜测面积复核</h3>'
                          '<p>在模拟中先收集一批新口令提案，统一检查后再写入账户状态。'
-                         '未通过的整批修改保留旧口令，仍计通知成本；不会重抽响应直至通过。</p>')
+                         + ('面积预检未通过的方案不下发、不计通知；每个候选仅用既定执行随机流检查，不重抽响应直到通过。</p>' if area_only_mode else
+                            '未通过的整批修改保留旧口令，仍计通知成本；不会重抽响应直至通过。</p>'))
             parts.append(table(['轮次', '修改前面积', '提案预计下降', '实际修改后面积', '整批是否通过', '未通过原因'], [
                 [r['round'], f'{r["aggregate_attack_guard"]["before_area"]:.9f}',
                  f'{r["aggregate_attack_guard"]["proposed_area_gain"]:.9f}',
@@ -496,6 +622,13 @@ def render_intervention_html(result, *, document=True):
                  '通过' if r['aggregate_attack_guard']['accepted'] else '未通过，保留旧口令',
                  '；'.join(r['aggregate_attack_guard']['rejection_reasons']) or '—']
                 for r in dynamic['rounds']]))
+            if area_only_mode:
+                parts.append('<p>下表披露模型未覆盖的净变化，它不参与方案否决；正值表示更多账户无法由 F 评估。</p>')
+                parts.append(table(['轮次', '成功修改', '显式规则补全', 'F 未覆盖账户净变化', '覆盖诊断'], [
+                    [r['round'], r['changed'], r.get('explicit_completions', 0),
+                     f'{r["aggregate_attack_guard"]["proposed_uncovered_rate_change"]*ledger["accounts"]:+.0f}',
+                     '；'.join(r['aggregate_attack_guard'].get('diagnostic_warnings', [])) or '—']
+                    for r in dynamic['rounds']]))
         for r in dynamic['rounds']:
             round_label = f'调整第 {r["round"]} 轮'
             parts.append(f'<details><summary>{round_label}选择依据与候选比较</summary>'
@@ -524,7 +657,7 @@ def render_intervention_html(result, *, document=True):
                      pct(baseline_point['outside_model_support_weight']/baseline_point['target_weight']),
                      pct(baseline_point['low_sample_support_weight']/baseline_point['target_weight'])])
     for key, label in labels[1:]:
-        a = arms[key]
+        a = endpoint_arms[key]
         for level in ('F', 'A1'):
             ev = a['attacks'][level]
             if ev is None:
@@ -536,9 +669,9 @@ def render_intervention_html(result, *, document=True):
     parts.append(table(['方案', '攻击层次', '估计猜中比例', '模型未覆盖比例', '低采样支持比例'], rows))
     parts.append(table(['方案', '累计通知', '实际修改', '编辑成本 / 全部账户', 'A1 参考通知比例', '停止原因'], [
         [labels[0][1], pct(0), pct(0), '0.0000', pct(0), '保持原始账户'], *[
-        [label, pct(arms[key]['final']['ledger']['affected_rate']), pct(arms[key]['final']['ledger']['changed_rate']),
-         f'{arms[key]["final"]["ledger"]["edit_cost"]:.4f}',
-         pct(arms[key]['adaptive_reference_ledger']['affected_rate']), arms[key]['stop_label']]
+        [label, pct(endpoint_arms[key]['final']['ledger']['affected_rate']), pct(endpoint_arms[key]['final']['ledger']['changed_rate']),
+         f'{endpoint_arms[key]["final"]["ledger"]["edit_cost"]:.4f}',
+         pct(endpoint_arms[key]['adaptive_reference_ledger']['affected_rate']), endpoint_arms[key]['stop_label']]
         for key, label in labels[1:]]]))
     parts.append('<p>A0 未运行：局部规则不能用于过滤全站未干预或未响应账户。'
                  '原始无干预组的 A1 与 F 相同；其他组的 A1 使用各自独立参考群体的模拟迁移训练。</p></section></main>')

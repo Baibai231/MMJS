@@ -12,8 +12,10 @@ from ai.pcfg_monte_carlo import Grammar, MonteCarloIndex, VERSION
 from core.corpus import counts_hash
 from core.registration import load_registration
 from core.intervention_state import Population, distribution_summary
-from core.intervention_distribution import fitted_log_cdf_area, fitted_top_mass, top_k
+from core.intervention_distribution import fitted_ideal_distance, fitted_top_mass, top_k
+from core.ideal_distribution import METRIC as DISTANCE_METRIC, attach_ideal_analysis
 from core.intervention_attack_area import GUARD_VERSION, curve_area, guard_batch, strength_diagnostics
+from core.intervention_acceptance import AREA_ONLY_POLICY, apply_response_policy
 from core.intervention_risk import (InterventionRisk, CombinedInterventionRisk,
                                     reference_mutation_ranks, evaluate_mutations)
 from experiments.intervention_config import ROOT, PROTOCOL, validate_intervention_config
@@ -38,6 +40,7 @@ STOP_LABELS = {'target_reached': '达到配置中的风险目标', 'budget_exhau
                'plan_exhausted': '初始计划已执行完', 'no_eligible_accounts': '没有剩余不合规账户',
                'realized_risk_stagnation': '连续多轮实现风险未改善', 'max_rounds': '达到轮数上限',
                'fixed_policy_hold': 'Google 政策保持不变'}
+STOP_LABELS['execution_plan_rejected'] = '模拟方案未通过面积预检，未下发通知'
 
 
 def make_index(counts, cfg):
@@ -112,14 +115,14 @@ def reference_replay(reference, action, target_total, responder, cfg, round_id):
         replay = replays[0] if len(replays) == 1 else MultiAction(tuple(replays))
         outcomes = responder.respond(reference, replay, cfg['seed'], f'adaptive-reference-{round_id}')
         if getattr(responder, 'rank_model', None) is not None:
-            outcomes, ledger['aggregate_attack_guard'] = guard_batch(
-                reference, outcomes, responder.rank_model, cfg['budgets'])
+            outcomes, ledger['aggregate_attack_guard'] = apply_response_policy(
+                reference, outcomes, responder.rank_model, cfg['budgets'], cfg['controller']['execution_policy'])
         reference.apply(outcomes)
     return ledger
 
 
 def run_arm(method, initial, reference_words, evaluator, responder, cfg, progress=None,
-            reference_initial=None, round_targets=None, selection_index_cache=None):
+            reference_initial=None, round_targets=None, selection_index_cache=None, checkpoint=None):
     population = initial.clone()
     reference = reference_initial.clone() if reference_initial is not None else Population(reference_words, 'adaptive-reference')
     if method in GOOGLE_METHODS:
@@ -144,6 +147,8 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
     target = first['risk']['guarded_risk']*(1-cfg['controller']['target_relative_reduction'])
     stagnant, stop = 0, 'max_rounds'
     terminal_audit = []
+    unissued_proposals = []
+    area_only = cfg['controller']['execution_policy'] == AREA_ONLY_POLICY
     round_limit = (0 if method == GOOGLE_HOLD_METHOD else
                    len(round_targets) if method in (GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD)
                    and round_targets is not None else GOOGLE_DYNAMIC_ROUNDS
@@ -170,7 +175,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
         else:
             selection_risk, selection_model_key = evaluator, None
         distribution_rank = top_k(population, cfg)
-        selection_before = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
+        selection_before = fitted_ideal_distance(population.counts(), cfg['seed'])['score']
         primary_before = (selection_risk.primary_risk(population.counts())
                           if isinstance(selection_risk, CombinedInterventionRisk) else None)
         if method in ('one_shot', GOOGLE_FROZEN_METHOD):
@@ -212,11 +217,21 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             raise AssertionError('局部动作不能降低 Google 最低长度要求')
         previous = trajectory[-1]
         outcomes = responder.respond(population, action, cfg['seed'], f'execution-{round_id}')
+        if cfg['response']['mode'] == 'all-notified-change-v1':
+            if len(outcomes) != len(action.indices) or any(row['status'] != 'changed' or row['new'] == row['old'] for row in outcomes):
+                raise AssertionError('所有被通知账户必须产生成功修改方案')
         if method in GOOGLE_METHODS and any(len(row['new']) < 8 for row in outcomes):
             raise AssertionError('动态响应产生了不符合 Google 规则的口令')
         batch_guard = None
         if method != 'fixed_google':
-            outcomes, batch_guard = guard_batch(population, outcomes, evaluator, cfg['budgets'])
+            outcomes, batch_guard = apply_response_policy(population, outcomes, evaluator, cfg['budgets'],
+                                                         cfg['controller']['execution_policy'])
+            if area_only and not batch_guard['accepted']:
+                unissued_proposals.append({'planned_round': round_id, 'action': action.public(),
+                                           'prediction': prediction, 'candidate_audit': audit,
+                                           'acceptance': batch_guard, 'notified': 0})
+                stop = 'execution_plan_rejected'
+                break
         strength = strength_diagnostics(outcomes, evaluator)
         population.apply(outcomes)
         adaptation = reference_replay(reference, action, initial.total, responder, cfg, round_id)
@@ -227,7 +242,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
         if batch_guard is not None:
             batch_guard.update(before_area=previous['attack_log_area'],
                                after_area=current['attack_log_area'])
-        selection_after = fitted_log_cdf_area(population.counts(), cfg['seed'])['score']
+        selection_after = fitted_ideal_distance(population.counts(), cfg['seed'])['score']
         gain = selection_before - selection_after
         primary_after = (selection_risk.primary_risk(population.counts())
                          if isinstance(selection_risk, CombinedInterventionRisk) else None)
@@ -237,7 +252,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'after_state_sha256': current['state_sha256'],
                        'realized_guarded_gain': gain,
                         'realized_distribution_gain': gain,
-                        'distribution_score_metric': 'fitted_complete_log_rank_cdf_area',
+                        'distribution_score_metric': DISTANCE_METRIC,
                        'distribution_top_rank': distribution_rank,
                        'realized_primary_gain': (primary_before-primary_after
                                                  if primary_before is not None else None),
@@ -246,6 +261,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'selection_risk_after_same_model': selection_after,
                        'selection_model_reference_sha256': selection_model_key,
                        'changed': sum(r['status'] == 'changed' for r in outcomes),
+                       'explicit_completions': sum(bool(r.get('explicit_completion')) for r in outcomes),
                        'strength_improved': strength['improved'],
                        'strength_diagnostics': strength,
                        'aggregate_attack_guard': batch_guard,
@@ -254,11 +270,18 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'reference_replay': adaptation,
                         'selection_reason': ('先随机抽取当前可行动账户，再在相同的 18 条规则中分配预计有正收益的修改方法' if method == GOOGLE_RANDOM_METHOD
                                              else '只按 Google 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
-                                              else '先比较 CDF 拟合完整排名累计分布，再要求整批修改后的固定 F 猜测成功曲线对数面积下降' if method == GOOGLE_DYNAMIC_METHOD
+                                              else ('按预计 W1 下降选动作；全员成功修改，固定 F 面积下降才下发方案'
+                                                    if cfg['controller']['execution_policy'] == AREA_ONLY_POLICY else
+                                                    '先比较 CDF 拟合完整排名累计分布，再要求整批修改后的固定 F 猜测成功曲线对数面积下降') if method == GOOGLE_DYNAMIC_METHOD
                                             else '在本轮可行候选中，预计全站保守风险下降最大' if method == 'dynamic'
                                             else '执行第 0 轮冻结的无重复账户计划' if method == 'one_shot'
                                             else '固定长度要求，优先选择预计命中的不合规账户')})
         trajectory.append(current)
+        if checkpoint:
+            checkpoint(method, {'method': method, 'label': method_label,
+                                'rounds': rounds, 'trajectory': trajectory,
+                                'adaptive_reference_ledger': reference.ledger(),
+                                'status': 'running'})
         if progress:
             progress(f'{method_label} · 第 {round_id} 轮完成：通知 {len(action.indices):,} 人，'
                      f'修改 {sum(r["status"] == "changed" for r in outcomes):,} 人，'
@@ -275,19 +298,22 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
     result = {'method': method, 'label': method_label, 'trajectory': trajectory,
               'rounds': rounds, 'stop_reason': stop, 'stop_label': STOP_LABELS[stop],
               'terminal_candidate_audit': terminal_audit, 'target_guarded_risk': target, 'target_reached': trajectory[-1]['risk']['guarded_risk'] <= target,
+              'unissued_proposals': unissued_proposals,
               'final': trajectory[-1], 'adaptive_reference_ledger': reference.ledger(),
                'distribution_goal': {
-                   'metric': 'fitted_complete_log_rank_cdf_area',
+                   'metric': DISTANCE_METRIC,
                    'top_rank': top_k(initial, cfg),
-                   'start_fitted_log_area': fitted_log_cdf_area(initial.counts(), cfg['seed'])['score'],
-                   'final_fitted_log_area': fitted_log_cdf_area(population.counts(), cfg['seed'])['score'],
+                   'start_fitted_distance': fitted_ideal_distance(initial.counts(), cfg['seed'])['score'],
+                   'final_fitted_distance': fitted_ideal_distance(population.counts(), cfg['seed'])['score'],
                    'start_fitted_top_mass': fitted_top_mass(initial.counts(), top_k(initial, cfg), cfg['seed'])['top_mass'],
                   'final_fitted_top_mass': fitted_top_mass(population.counts(), top_k(initial, cfg), cfg['seed'])['top_mass']}}
+    if checkpoint:
+        checkpoint(method, {**result, 'status': 'complete'})
     return result, population.counts(), reference.counts()
 
 
 def google_round_zipf_experiment(initial, reference_words, evaluator, responder, cfg,
-                                  fixed_google=None, progress=None):
+                                  fixed_google=None, progress=None, checkpoint=None):
     """Give all four Google arms the exact same compliant starting state."""
     google_cfg = deepcopy(cfg)
     google_cfg['controller']['max_rounds'] = GOOGLE_DYNAMIC_ROUNDS
@@ -304,7 +330,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
         if choices:
             action = choices[0]
             outcomes = bootstrap_responder.respond(population, action, cfg['seed'], stream)
-            completions = 0
+            completions = sum(bool(row.get('explicit_completion')) for row in outcomes)
             # The common start is defined to be fully compliant. Finite response
             # attempts can still fail with zero refusal; explicitly construct a
             # compliant completion instead of claiming those failures complied.
@@ -368,16 +394,16 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
     experimental, final_counts, final_reference = run_arm(
         GOOGLE_DYNAMIC_METHOD, google_start, reference_words, evaluator, responder,
         google_cfg, progress, reference_initial=reference_start,
-        selection_index_cache=selection_index_cache)
+        selection_index_cache=selection_index_cache, checkpoint=checkpoint)
     experimental['google_baseline'] = bootstrap_target
     random_arm, random_counts, random_reference = run_arm(
         GOOGLE_RANDOM_METHOD, google_start, reference_words, evaluator, responder,
         google_cfg, progress, reference_initial=reference_start,
-        round_targets=round_targets, selection_index_cache=selection_index_cache)
+        round_targets=round_targets, selection_index_cache=selection_index_cache, checkpoint=checkpoint)
     frozen_arm, frozen_counts, frozen_reference = run_arm(
         GOOGLE_FROZEN_METHOD, google_start, reference_words, evaluator, responder,
         google_cfg, progress, reference_initial=reference_start,
-        round_targets=round_targets, selection_index_cache=selection_index_cache)
+        round_targets=round_targets, selection_index_cache=selection_index_cache, checkpoint=checkpoint)
     control_counts = google_start.counts()
     control_reference = reference_start.counts()
     start_index = 0
@@ -408,7 +434,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
             arm['attacks']['A1'] = InterventionRisk(ai, cfg['budgets'], cfg['risk_budget']).evaluate(counts)
             arm['adaptive_model'] = dict(ai.grammar.metadata)
     return {
-        'protocol': 'google-started-five-arm-comparison-v6-population-area-guard',
+        'protocol': 'google-started-five-arm-comparison-v8-area-only-full-response',
         'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
         'common_google_start_verified': common_start,
         'google_baseline': {'target': bootstrap_target, 'reference': bootstrap_reference,
@@ -454,8 +480,9 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
 
 
 def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=None, progress=None,
-                              include_legacy=False):
+                              include_legacy=False, checkpoint=None):
     cfg = validate_intervention_config(config)
+    area_only = cfg['controller']['execution_policy'] == AREA_ONLY_POLICY
     started = time.perf_counter()
     if dataset is None:
         d = cfg['data']
@@ -496,7 +523,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
             result['attacks']['A1'] = None
         arms[method] = result
     round_zipf = google_round_zipf_experiment(initial, reference_words, evaluator, responder,
-                                              cfg, arms.get('fixed_google'), progress)
+                                              cfg, arms.get('fixed_google'), progress, checkpoint=checkpoint)
     manifest_files = ['experiments/intervention_config.py', 'experiments/intervention_pipeline.py',
                       'core/intervention_state.py', 'core/intervention_risk.py', 'policy/local_actions.py',
                       'policy/intervention_fragments.py',
@@ -505,7 +532,9 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                       'core/registration.py', 'core/monte_carlo_attack.py',
                       'core/cdf_sampling.py', 'core/distribution_analysis.py',
                       'core/intervention_distribution.py',
-                      'core/intervention_attack_area.py',
+                      'core/intervention_attack_area.py', 'core/ideal_distribution.py',
+                      'core/intervention_acceptance.py',
+                      'experiments/intervention_site_controls.py', 'policy/yahoo_japan.py',
                       'experiments/cdf_fit_benchmark.py']
     source_hashes = {f: hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in manifest_files}
     identity = {'config': cfg, 'dataset': dataset['metadata'], 'sources': source_hashes,
@@ -519,27 +548,38 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'python': platform.python_version(), 'source_hashes': source_hashes,
                            'runtime_seconds': time.perf_counter()-started,
                            'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                           'scope': '真实频次初始抽样；Google 起点；1—18 条片段候选；有限次模拟响应；PCFG 蒙特卡洛估计',
+                           'scope': ('真实频次初始抽样；Google 起点；1—18 条片段候选；全员成功修改模拟；PCFG 蒙特卡洛估计'
+                                     if area_only else '真实频次初始抽样；Google 起点；1—18 条片段候选；有限次模拟响应；PCFG 蒙特卡洛估计'),
                            'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
                            'aggregate_attack_guard': {
-                               'protocol': GUARD_VERSION, 'model': 'fixed F',
+                               'protocol': (AREA_ONLY_POLICY if cfg['controller']['execution_policy'] == AREA_ONLY_POLICY else GUARD_VERSION),
+                               'enforced': True, 'model': 'fixed F',
                                'integration': 'normalized trapezoid on log10 budget',
                                'budgets': cfg['budgets'],
-                               'outside_support': 'population share must not increase',
-                               'execution': 'collect proposals, reject the whole batch if area does not decrease; notifications still count'},
-                           'decision_metric': '以 CDF 拟合完整分布面积下降选动作；整批修改要求固定 F 猜测成功曲线对数面积下降、模型未覆盖比例不增加；允许个别账户变弱，分布与猜测不加权'}}
+                               'outside_support': ('diagnostic only; not a rejection condition' if area_only else 'population share must not increase'),
+                               'execution': ('simulate full success, issue and charge notifications only if F area decreases'
+                                             if cfg['controller']['execution_policy'] == AREA_ONLY_POLICY else
+                                             'collect proposals, reject the whole batch if area does not decrease; notifications still count')},
+                           'decision_metric': ('以预计 W1 距离下降选动作；全员成功修改方案仅要求固定 F 面积严格下降才下发；未覆盖比例只作诊断；A1 独立评价'
+                                               if cfg['controller']['execution_policy'] == AREA_ONLY_POLICY else
+                                               '以 CDF 拟合分布到固定 N 单例理想分布的对数排名 Wasserstein-1 距离下降选动作；整批修改要求固定 F 猜测成功曲线对数面积下降、模型未覆盖比例不增加；分布与猜测不加权')}}
     if progress:
-        progress('使用 CDF 采样方法拟合三组终态，独立种子复核')
+        progress('使用 CDF 采样方法拟合各组终态，独立种子复核')
     if include_legacy:
         report['legacy_arms'] = arms
+    if cfg['evaluation']['yahoo_control']:
+        from experiments.intervention_site_controls import run_yahoo_control
+        report['site_controls'] = {'yahoo_japan': run_yahoo_control(
+            initial, reference_words, evaluator, cfg, progress)}
     from experiments.cdf_fit_benchmark import (intervention_fit_diagnostics,
                                                intervention_round_parameter_diagnostics)
     report['distribution_fits'] = intervention_fit_diagnostics(report)
     if progress:
         progress('拟合 Google 起点和每轮动态调整后的分布参数')
     report['round_parameter_fits'] = intervention_round_parameter_diagnostics(report)
+    attach_ideal_analysis(report)
     report['metadata']['runtime_seconds'] = time.perf_counter()-started
     directory = Path(output_dir) if output_dir is not None else ROOT/'reports'/'intervention'/run_id
     directory.mkdir(parents=True, exist_ok=True)

@@ -67,11 +67,16 @@ def main():
                     assert page.locator('#'+removed).count() == 0
                 for name in ('distribution_cost', 'coverage_F', 'attack_F', 'attack_A1', 'final_distribution'):
                     panel = page.locator('#'+name)
-                    assert panel.locator('.legend label span').all_text_contents() == expected
-                    assert panel.locator('svg > .plot-series').count() == 5
+                    chart_expected = expected[:]
+                    if name in ('attack_F', 'attack_A1', 'final_distribution'):
+                        chart_expected += [a['label'] for a in report.get('site_controls', {}).values()]
+                    if name == 'final_distribution' and report.get('ideal_distribution'):
+                        chart_expected.append('理想分布（每个口令仅 1 人）')
+                    assert panel.locator('.legend label span').all_text_contents() == chart_expected
+                    assert panel.locator('svg > .plot-series').count() == len(chart_expected)
                     exported = page.request.get(origin+panel.locator('a').get_attribute('href'))
                     assert exported.status == 200
-                    assert all(label in exported.text() for label in expected)
+                    assert all(label in exported.text() for label in chart_expected)
                     assert '固定 Google 分批' not in exported.text()
                 detail = page.locator('#dynamic_distribution_detail')
                 assert detail.locator('svg > .plot-series').count() == 1
@@ -83,7 +88,7 @@ def main():
                 page.locator('#attack_A1').screenshot(path=str(out/'attack_A1.png'))
                 page.locator('#final_distribution').screenshot(path=str(out/'final_distribution.png'))
                 zipf = page.locator('#google_round_zipf .plot-distinct')
-                expected_lines = 1 + comparison['experimental']['rounds_completed']
+                expected_lines = 1 + comparison['experimental']['rounds_completed'] + bool(report.get('ideal_distribution'))
                 assert zipf.locator('.legend input[type="checkbox"]').count() == expected_lines
                 assert zipf.locator('svg > .plot-series').count() == expected_lines
                 last = zipf.locator(f'.series-key-{expected_lines-1} input')
@@ -94,6 +99,12 @@ def main():
                 zipf_svg = page.request.get(origin+zipf_url)
                 assert zipf_svg.status == 200 and 'Google 政策不变' in zipf_svg.text()
                 page.locator('#google_round_zipf').screenshot(path=str(out/'google_round_zipf.png'))
+                if report.get('ideal_distribution'):
+                    assert page.locator('#ideal_distribution_reference').count() == 1
+                    assert 'Panaretos' in page.locator('#ideal_distribution_reference').text_content()
+                    assert page.locator('#yahoo_control').count() == 1
+                    assert page.request.get(origin+page.locator('#distribution-fit a').last.get_attribute('href')).status == 200
+                    page.locator('#ideal_distribution_reference').screenshot(path=str(out/'ideal_reference.png'))
                 page.set_viewport_size({'width': 390, 'height': 844})
                 assert page.evaluate('document.documentElement.scrollWidth <= window.innerWidth+1')
                 page.screenshot(path=str(out/'mobile.png'))
@@ -131,7 +142,7 @@ def main():
             assert not errors, errors
             summary = {'browser': browser.version, 'javascript_errors': errors,
                        'checks': ['real report', 'shared legend toggle and hover',
-                                  'five consistent five-strategy charts', 'actual-round Google-started Zipf chart', 'SVG legend export',
+                                  'five local groups plus separate Yahoo endpoints', 'actual-round Google-started Zipf chart with ideal reference', 'SVG legend export',
                                   'report download', 'mobile containment', 'background job',
                                   'invalid config clears stale results', 'cross-site rejection',
                                   'asset path boundary', 'single third workbench navigation']}
