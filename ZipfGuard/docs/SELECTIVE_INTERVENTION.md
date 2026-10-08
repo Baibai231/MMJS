@@ -1,8 +1,10 @@
 # 第三展示台：存量账户局部干预
 
-展示入口为 <http://127.0.0.1:8770/intervention>。当前完整实验使用 `selective-intervention-v8-area-only-full-response` 协议；详细规则见[面积单一准入与全员修改协议](面积单一准入与全员修改协议.md)。本页描述已发布的十万账户实验，不将模拟响应解释为真实用户行为。
+展示入口为 <http://127.0.0.1:8770/intervention>。当前代码与运行预设使用 `selective-intervention-v9-dual-individual-threshold`，详见[双攻击个体门槛协议](双攻击个体门槛协议.md)。分布指导选群体，每个新口令必须通过固定 PCFG 与作者版 OMEN 各一百万次实际尝试检查；两组对照匹配动态组实际通知人数。两模型的命中并集按每模型预算计费，最多消耗双倍总尝试。Yahoo! 单独展示。
 
-## 实验设定
+已发布的十万账户结果仍使用旧 v8 协议，不能用来证明新个体门槛的效果。下节保留其真实实验设定，不将模拟响应解释为真实用户行为。
+
+## 历史 v8 实验设定
 
 从带频次语料抽取 100,000 个模拟目标账户和不重叠的开发记录。先将 Google 对照组迁移至全体账户满足最低 8 字符规则的共同起点，再比较 Google 固定、动态重算、随机选人、初始排序分批等方法。无政策组保留原始状态。候选规则来自 Top20 网站整理的 20 条政策；Google 起点已经满足至少 6 和至少 8 字符要求，后续默认只枚举其余 18 条。
 
@@ -12,7 +14,7 @@
 
 F 是固定训练模型下的估计；A1 在独立参考群体上重训评价。两者都需要结合模型覆盖情况阅读。A0 未在局部响应实验中运行。分布距离与攻击曲线面积用途不同，前者评价完整口令频次的分散程度，后者用于方案准入。
 
-## 已发布结果与复现
+## 历史已发布结果与新版运行
 
 最近完整实验为 `525f9970998b0c26`，协议核验结果见[验证文件](../published/intervention/525f9970998b0c26/validation.json)。动态组实际执行 6 轮；网页和报告按实际轮次展示。已发布快照位于 `published/intervention/525f9970998b0c26/`，`latest.json` 指向该实验；新机器没有本地运行报告时，网页可读取压缩公开快照。公开报告只包含汇总、审计和图表，不导出目标账户 ID 或完整口令。
 
@@ -23,4 +25,4 @@ F 是固定训练模型下的估计；A1 在独立参考群体上重训评价。
 .\.venv\Scripts\python.exe tools\run_published_intervention.py --preset intervention_full
 ```
 
-完整运行读取配置 `configs/intervention_full.json`，需要本地原始语料和训练模型。快速流程可使用 `--preset intervention_smoke`。运行状态与中间检查点保存在被忽略的 `reports/`，仅在全部核验通过后更新发布快照。
+以上完整运行命令现已读取 v9 配置 `configs/intervention_full.json`，需要本地原始语料、训练模型与 WSL 中可执行的作者版 OMEN。独立快速验证使用 `tools/run_intervention_study.py --preset intervention_smoke --output-dir reports/dual_attack_validation`，不会替换历史全量快照。运行状态与中间检查点保存在被忽略的 `reports/`，发布脚本仅在全部核验通过后更新快照。旧 v8 的详细规则见[面积单一准入与全员修改协议](面积单一准入与全员修改协议.md)。

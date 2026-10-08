@@ -123,6 +123,7 @@ from web.intervention_interface import (INTERVENTION_INDEX, PUBLISHED_ROOT,
                                         start_intervention_job,
                                         intervention_job_snapshot, latest_intervention_result)
 from web.intervention_interface import intervention_activity
+from web.intervention_interface import VALIDATION_ROOT, validation_intervention_result
 from experiments.intervention_config import load_intervention_config
 LEGACY_INDEX = INDEX
 INDEX = INTERVENTION_INDEX
@@ -141,8 +142,14 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_header('Content-Length', '0')
                 self.end_headers()
                 return
-            if path not in ('/', '/intervention') and not path.startswith('/api/intervention/'):
+            if path not in ('/', '/intervention', '/intervention/validation') and not path.startswith('/api/intervention/'):
                 return self._send(b'not found', 'text/plain; charset=utf-8', 404)
+            if path == '/intervention/validation':
+                result = validation_intervention_result()
+                if result is None:
+                    return self._send('双攻击快速验证尚未完成。'.encode('utf-8'), 'text/plain; charset=utf-8', 404)
+                from web.intervention_presentation import render_intervention_html
+                return self._send(render_intervention_html(result).encode('utf-8'), 'text/html; charset=utf-8')
             if path == "/": return self._send(intervention_index_with_latest().encode("utf-8"), "text/html; charset=utf-8")
             if path == "/open": return self._send(OPEN_INDEX.encode("utf-8"), "text/html; charset=utf-8")
             if path == "/dynamic": return self._send(DYNAMIC_INDEX.encode("utf-8"), "text/html; charset=utf-8")
@@ -157,12 +164,16 @@ class Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/intervention/jobs/"):
                 return self._send(_json_safe(intervention_job_snapshot(path.rsplit("/", 1)[-1])))
             intervention_asset = re.fullmatch(
-                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(distribution_cost|attack_area_cost|dynamic_distribution_detail|coverage_F|attack_F|attack_A1|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_random|cdf_fit_google_frozen|cdf_fit_google_dynamic|cdf_fit_yahoo_japan)\.svg)', path)
+                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(distribution_cost|attack_area_cost|dynamic_distribution_detail|coverage_F|attack_F|attack_A1|attack_markov_F|attack_markov_A1|attack_union_F|attack_union_A1|yahoo_attack_F|yahoo_attack_A1|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_random|cdf_fit_google_frozen|cdf_fit_google_dynamic|cdf_fit_yahoo_japan)\.svg)', path)
             if intervention_asset:
                 kind, run_id, figure = intervention_asset.groups()
                 if (kind == 'report') != (figure is None):
                     return self._send(b"not found", "text/plain", 404)
                 filename = ROOT / 'reports' / 'intervention' / run_id / ((figure + '.svg') if figure else 'report.json')
+                if not filename.is_file():
+                    validation = validation_intervention_result()
+                    if validation and validation['metadata']['run_id'] == run_id:
+                        filename = VALIDATION_ROOT / ((figure + '.svg') if figure else 'report.json')
                 if not filename.is_file():
                     filename = PUBLISHED_ROOT / run_id / ((figure + '.svg') if figure else 'report.json.gz')
                 if not filename.is_file():

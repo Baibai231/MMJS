@@ -15,11 +15,11 @@ from core.intervention_state import Population, distribution_summary
 from core.intervention_distribution import fitted_ideal_distance, fitted_top_mass, top_k
 from core.ideal_distribution import METRIC as DISTANCE_METRIC, attach_ideal_analysis
 from core.intervention_attack_area import GUARD_VERSION, curve_area, guard_batch, strength_diagnostics
-from core.intervention_acceptance import AREA_ONLY_POLICY, apply_response_policy
+from core.intervention_acceptance import AREA_ONLY_POLICY, INDIVIDUAL_POLICY, apply_response_policy
 from core.intervention_risk import (InterventionRisk, CombinedInterventionRisk,
                                     reference_mutation_ranks, evaluate_mutations)
 from experiments.intervention_config import ROOT, PROTOCOL, validate_intervention_config
-from policy.intervention_response import InterventionResponder, RESPONSE_PROTOCOL
+from policy.intervention_response import InterventionResponder, RESPONSE_PROTOCOL, IndividualThresholdUnavailable
 from policy.intervention_controller import (select_action, select_random_action,
                                             random_account_order, plan_once, predict_action)
 from policy.local_actions import Action, MultiAction, account_order, capacities, generate_actions
@@ -27,9 +27,9 @@ from policy.user_response import satisfy_visible_rules, _rng
 from policy.open_policy import edit_distance
 
 METHODS = [('dynamic', '动态局部干预'), ('one_shot', '初始一次规划'),
-           ('fixed_google', '固定 Google 分批')]
+           ('fixed_google', '固定 8 字符基础规则 分批')]
 GOOGLE_DYNAMIC_METHOD = 'google_dynamic'
-GOOGLE_DYNAMIC_LABEL = 'Google 起点动态调整'
+GOOGLE_DYNAMIC_LABEL = '8 字符基础规则 起点动态调整'
 GOOGLE_DYNAMIC_ROUNDS = 10
 GOOGLE_HOLD_METHOD = 'google_hold'
 GOOGLE_RANDOM_METHOD = 'google_random'
@@ -39,11 +39,14 @@ STOP_LABELS = {'target_reached': '达到配置中的风险目标', 'budget_exhau
                'no_feasible_positive_gain_action': '当前候选没有可靠的正收益动作',
                'plan_exhausted': '初始计划已执行完', 'no_eligible_accounts': '没有剩余不合规账户',
                'realized_risk_stagnation': '连续多轮实现风险未改善', 'max_rounds': '达到轮数上限',
-               'fixed_policy_hold': 'Google 政策保持不变'}
-STOP_LABELS['execution_plan_rejected'] = '模拟方案未通过面积预检，未下发通知'
+               'fixed_policy_hold': '8 字符基础规则 政策保持不变'}
+STOP_LABELS['execution_plan_rejected'] = '模拟方案未通过攻击检查，未下发通知'
 
 
 def make_index(counts, cfg):
+    if cfg['attack_models']['mode'] == 'pcfg-omen-prefix':
+        from ai.dual_attack import build_dual_index
+        return build_dual_index(counts, cfg)
     grammar = Grammar.fit(counts, runtime_root=ROOT / 'reports' / 'intervention' / 'pcfg_runtime',
                           timeout=cfg['pcfg']['timeout_seconds'])
     return MonteCarloIndex(grammar, **cfg['monte_carlo'])
@@ -79,11 +82,11 @@ def google_compliance(population):
 def assert_google_compliant(population):
     audit = google_compliance(population)
     if not audit['all_accounts_compliant']:
-        raise AssertionError('Google 起点动态实验出现低于 8 字符的口令')
+        raise AssertionError('8 字符基础规则 起点动态实验出现低于 8 字符的口令')
     return audit
 
 
-def reference_replay(reference, action, target_total, responder, cfg, round_id):
+def reference_replay(reference, action, target_total, responder, cfg, round_id, *, frozen_priority=None):
     """Known public action, independently simulated accounts; never target outcomes."""
     parts = action.components if isinstance(action, MultiAction) else (action,)
     used, replays, ledgers = set(), [], []
@@ -91,13 +94,16 @@ def reference_replay(reference, action, target_total, responder, cfg, round_id):
     for part in parts:
         eligible = [i for i, a in enumerate(reference.accounts)
                     if not a.adaptive_notifications and i not in used
-                    and part.group.matches(a.password) and not part.rule.accepts(a.password)]
+                    and part.group.matches(a.password)
+                    and (cfg['controller'].get('require_exact_target', False) or not part.rule.accepts(a.password))]
         fraction = (len(part.indices)/target_total if part.group.kind == 'random'
                     else len(part.indices)/part.eligible_count)
         take = min(len(eligible), math.floor((reference.total if part.group.kind == 'random'
                                             else len(eligible))*fraction + .5), cap-len(used))
         order = (random_account_order(reference, eligible, cfg['seed'], round_id)
                  if part.group.kind == 'random' else account_order(reference, eligible, cfg['seed']))
+        if frozen_priority is not None:
+            order.sort(key=lambda i: frozen_priority[i])
         ids = tuple(order[:take])
         if ids:
             used.update(ids)
@@ -123,15 +129,25 @@ def reference_replay(reference, action, target_total, responder, cfg, round_id):
 
 def run_arm(method, initial, reference_words, evaluator, responder, cfg, progress=None,
             reference_initial=None, round_targets=None, selection_index_cache=None, checkpoint=None):
+    if (method in (GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD) and round_targets is not None
+            and cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY):
+        cfg = deepcopy(cfg)
+        cfg['controller']['require_exact_target'] = True
     population = initial.clone()
     reference = reference_initial.clone() if reference_initial is not None else Population(reference_words, 'adaptive-reference')
     if method in GOOGLE_METHODS:
         if cfg['controller'].get('policy_floor_minimum_length', 0) < 8:
-            raise AssertionError('Google 动态实验必须保留最低长度 8')
+            raise AssertionError('8 字符基础规则 动态实验必须保留最低长度 8')
         assert_google_compliant(population)
         assert_google_compliant(reference)
     first = snapshot(population, evaluator, 0)
     trajectory, rounds = [first], []
+    frozen_reference_priority = None
+    if method == GOOGLE_FROZEN_METHOD and cfg['controller'].get('require_exact_target', False):
+        reference_counts = reference.counts()
+        order = random_account_order(reference, range(reference.total), cfg['seed'], 0)
+        order.sort(key=lambda i: -reference_counts[reference.accounts[i].password])
+        frozen_reference_priority = {i: rank for rank, i in enumerate(order)}
     if method == GOOGLE_FROZEN_METHOD:
         planning_cfg = deepcopy(cfg)
         planning_cfg['controller']['max_rounds'] = GOOGLE_DYNAMIC_ROUNDS
@@ -153,10 +169,10 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                    len(round_targets) if method in (GOOGLE_RANDOM_METHOD, GOOGLE_FROZEN_METHOD)
                    and round_targets is not None else GOOGLE_DYNAMIC_ROUNDS
                    if method in GOOGLE_METHODS else cfg['controller']['max_rounds'])
-    method_label = ('Google 政策不变' if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_LABEL
+    method_label = ('8 字符基础规则 政策不变' if method == GOOGLE_HOLD_METHOD else GOOGLE_DYNAMIC_LABEL
                     if method == GOOGLE_DYNAMIC_METHOD else
-                    'Google＋随机分批调整' if method == GOOGLE_RANDOM_METHOD else
-                    'Google＋初始排序后分批执行' if method == GOOGLE_FROZEN_METHOD else
+                    '8 字符基础规则＋随机分批调整' if method == GOOGLE_RANDOM_METHOD else
+                    '8 字符基础规则＋初始排序后分批执行' if method == GOOGLE_FROZEN_METHOD else
                     dict(METHODS)[method])
     for round_id in range(1, round_limit+1):
         if capacities(population, cfg) <= 0:
@@ -214,19 +230,25 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
             raise AssertionError('动作超出剩余硬预算')
         action_parts = action.components if isinstance(action, MultiAction) else (action,)
         if method in GOOGLE_METHODS and any(part.rule.base.min_length < 8 for part in action_parts):
-            raise AssertionError('局部动作不能降低 Google 最低长度要求')
+            raise AssertionError('局部动作不能降低 8 字符基础规则 最低长度要求')
         previous = trajectory[-1]
-        outcomes = responder.respond(population, action, cfg['seed'], f'execution-{round_id}')
+        try:
+            outcomes = responder.respond(population, action, cfg['seed'], f'execution-{round_id}')
+        except IndividualThresholdUnavailable as exc:
+            unissued_proposals.append({'planned_round': round_id, 'action': action.public(),
+                                       'reason': str(exc), 'notified': 0})
+            stop = 'execution_plan_rejected'
+            break
         if cfg['response']['mode'] == 'all-notified-change-v1':
             if len(outcomes) != len(action.indices) or any(row['status'] != 'changed' or row['new'] == row['old'] for row in outcomes):
                 raise AssertionError('所有被通知账户必须产生成功修改方案')
         if method in GOOGLE_METHODS and any(len(row['new']) < 8 for row in outcomes):
-            raise AssertionError('动态响应产生了不符合 Google 规则的口令')
+            raise AssertionError('动态响应产生了不符合 8 字符基础规则 规则的口令')
         batch_guard = None
         if method != 'fixed_google':
             outcomes, batch_guard = apply_response_policy(population, outcomes, evaluator, cfg['budgets'],
                                                          cfg['controller']['execution_policy'])
-            if area_only and not batch_guard['accepted']:
+            if cfg['controller']['execution_policy'] in (AREA_ONLY_POLICY, INDIVIDUAL_POLICY) and not batch_guard['accepted']:
                 unissued_proposals.append({'planned_round': round_id, 'action': action.public(),
                                            'prediction': prediction, 'candidate_audit': audit,
                                            'acceptance': batch_guard, 'notified': 0})
@@ -234,7 +256,8 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                 break
         strength = strength_diagnostics(outcomes, evaluator)
         population.apply(outcomes)
-        adaptation = reference_replay(reference, action, initial.total, responder, cfg, round_id)
+        adaptation = reference_replay(reference, action, initial.total, responder, cfg, round_id,
+                                      frozen_priority=frozen_reference_priority)
         if method in GOOGLE_METHODS:
             assert_google_compliant(population)
             adaptation['google_compliance'] = assert_google_compliant(reference)
@@ -262,6 +285,8 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'selection_model_reference_sha256': selection_model_key,
                        'changed': sum(r['status'] == 'changed' for r in outcomes),
                        'explicit_completions': sum(bool(r.get('explicit_completion')) for r in outcomes),
+                       'strength_rejections': sum(r.get('strength_rejections', 0) for r in outcomes),
+                       'security_completion_attempts': sum(r.get('security_completion_attempts', 0) for r in outcomes),
                        'strength_improved': strength['improved'],
                        'strength_diagnostics': strength,
                        'aggregate_attack_guard': batch_guard,
@@ -269,7 +294,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
                        'failed_to_comply': sum(r['status'] == 'failed_to_comply' for r in outcomes),
                        'reference_replay': adaptation,
                         'selection_reason': ('先随机抽取当前可行动账户，再在相同的 18 条规则中分配预计有正收益的修改方法' if method == GOOGLE_RANDOM_METHOD
-                                             else '只按 Google 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
+                                             else '只按 8 字符基础规则 起点一次性排好的账户和规则执行，不使用后续分布反馈' if method == GOOGLE_FROZEN_METHOD
                                               else ('按预计 W1 下降选动作；全员成功修改，固定 F 面积下降才下发方案'
                                                     if cfg['controller']['execution_policy'] == AREA_ONLY_POLICY else
                                                     '先比较 CDF 拟合完整排名累计分布，再要求整批修改后的固定 F 猜测成功曲线对数面积下降') if method == GOOGLE_DYNAMIC_METHOD
@@ -314,7 +339,7 @@ def run_arm(method, initial, reference_words, evaluator, responder, cfg, progres
 
 def google_round_zipf_experiment(initial, reference_words, evaluator, responder, cfg,
                                   fixed_google=None, progress=None, checkpoint=None):
-    """Give all four Google arms the exact same compliant starting state."""
+    """Give all four 8 字符基础规则 arms the exact same compliant starting state."""
     google_cfg = deepcopy(cfg)
     google_cfg['controller']['max_rounds'] = GOOGLE_DYNAMIC_ROUNDS
     bootstrap_cfg = deepcopy(cfg)
@@ -348,7 +373,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
             action, failures, completions = None, 0, 0
         short = sum(len(account.password) < 8 for account in population.accounts)
         if short:
-            raise ValueError(f'Google 起始规则未能使全部账户合规，仍有 {short} 个短口令')
+            raise ValueError(f'8 字符基础规则 起始规则未能使全部账户合规，仍有 {short} 个短口令')
         return {'eligible': action.eligible_count if action else 0,
                 'notified': len(action.indices) if action else 0,
                 'changed': population.ledger()['changed'],
@@ -357,21 +382,21 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
                 'affected_rate': population.ledger()['affected_rate'],
                 'short_passwords_remaining': short,
                 'all_accounts_compliant': short == 0,
-                'rule': 'Google 最低长度 8 字符'}
+                'rule': '8 字符基础规则 最低长度 8 字符'}
 
     bootstrap_target = apply_google_baseline(google_start, 'google-baseline-target')
     bootstrap_reference = apply_google_baseline(reference_start, 'google-baseline-reference')
     if bootstrap_target['failures'] or bootstrap_reference['failures']:
-        raise AssertionError('全量 Google 起点存在未完成的账户修改')
+        raise AssertionError('全量 8 字符基础规则 起点存在未完成的账户修改')
 
     # The configured total budget applies to the ten adaptive rounds after the
-    # Google baseline. Count the full-population Google migration separately.
+    # 8 字符基础规则 baseline. Count the full-population 8 字符基础规则 migration separately.
     google_cfg['controller']['total_fraction'] = cfg['controller']['total_fraction']
     google_cfg['controller']['policy_floor_minimum_length'] = 8
     google_cfg['controller']['distribution_top_k'] = max(
         1, math.ceil(len(google_start.counts()) * cfg['controller']['distribution_top_fraction']))
     control_snapshot = snapshot(google_start, evaluator, 0)
-    control = {'method': GOOGLE_HOLD_METHOD, 'label': 'Google 政策不变',
+    control = {'method': GOOGLE_HOLD_METHOD, 'label': '8 字符基础规则 政策不变',
                'trajectory': [control_snapshot], 'rounds': [],
                'stop_reason': 'fixed_policy_hold', 'stop_label': STOP_LABELS['fixed_policy_hold'],
                'terminal_candidate_audit': [], 'final': control_snapshot,
@@ -396,6 +421,8 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
         google_cfg, progress, reference_initial=reference_start,
         selection_index_cache=selection_index_cache, checkpoint=checkpoint)
     experimental['google_baseline'] = bootstrap_target
+    if cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY:
+        round_targets = [row['action']['selected'] for row in experimental['rounds']]
     random_arm, random_counts, random_reference = run_arm(
         GOOGLE_RANDOM_METHOD, google_start, reference_words, evaluator, responder,
         google_cfg, progress, reference_initial=reference_start,
@@ -412,7 +439,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
     if not common_start or any(arm['trajectory'][0]['account_state_sha256'] !=
                                control['final']['account_state_sha256']
                                 for arm in (random_arm, frozen_arm)):
-        raise AssertionError('四组 Google 实验的账户起点不一致')
+        raise AssertionError('四组 8 字符基础规则 实验的账户起点不一致')
     google_start_snapshot = control['final']
     train = Counter(reference_words)
     mutations = reference_mutation_ranks(train, cfg['evaluation']['mutation_reference_limit'])
@@ -438,7 +465,7 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
         'requested_rounds': GOOGLE_DYNAMIC_ROUNDS,
         'common_google_start_verified': common_start,
         'google_baseline': {'target': bootstrap_target, 'reference': bootstrap_reference,
-                            'interpretation': '全体账户先执行 Google 最低 8 字符规则；基线迁移成本单独计入覆盖率'},
+                            'interpretation': '全体账户先执行 8 字符基础规则 最低 8 字符规则；基线迁移成本单独计入覆盖率'},
         'arms': {GOOGLE_HOLD_METHOD: control, GOOGLE_RANDOM_METHOD: random_arm,
                  GOOGLE_FROZEN_METHOD: frozen_arm, GOOGLE_DYNAMIC_METHOD: experimental},
         'comparison_budget': {'per_round_fraction': cfg['controller']['round_fraction'],
@@ -447,13 +474,17 @@ def google_round_zipf_experiment(initial, reference_words, evaluator, responder,
                                'planned_round_notification_schedule': round_targets,
                                'dynamic_round_notification_schedule':
                                [row['action']['selected'] for row in experimental['rounds']],
-                               'controls_request_same_round_sizes': False,
-                              'random_only_notifies_accounts_ineligible_for_selected_rule': True,
+                               'controls_request_same_round_sizes': cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY,
+                               'matched_notification_counts': {
+                                   key: arm['final']['ledger']['adaptive_affected'] == experimental['final']['ledger']['adaptive_affected']
+                                   for key, arm in [('google_random', random_arm), ('google_frozen', frozen_arm)]},
+                              'random_only_notifies_accounts_ineligible_for_selected_rule':
+                              cfg['controller']['execution_policy'] != INDIVIDUAL_POLICY,
                               'dynamic_selection_uses_updated_independent_reference_a1': bool(selection_index_cache),
                               'actual_coverage_may_differ': True,
-                               'cost_axis': 'Google 共同起点后累计通知的不同账户比例；Google 起点迁移成本另列'},
+                               'cost_axis': '8 字符基础规则 共同起点后累计通知的不同账户比例；8 字符基础规则 起点迁移成本另列'},
         'control': {
-            'label': 'Google 政策不变',
+            'label': '8 字符基础规则 政策不变',
             'rounds_completed': len(control['rounds']),
             'state_sha256': google_start_snapshot['state_sha256'],
             'affected_rate': google_start_snapshot['ledger']['affected_rate'],
@@ -499,10 +530,15 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
     reference_words = [w for w, n in sorted(train.items()) for _ in range(n)]
     initial = Population(words)
     if progress:
-        progress('训练冻结 PCFG，建立蒙特卡洛查询索引')
+        progress('训练并准备冻结攻击索引：' + cfg['attack_models']['mode'])
     frozen_index = index if index is not None else make_index(train, cfg)
     evaluator = InterventionRisk(frozen_index, cfg['budgets'], cfg['risk_budget'])
-    responder = InterventionResponder(train, cfg['response'], rank_model=evaluator)
+    response_cfg = dict(cfg['response'])
+    if cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY:
+        response_cfg['security_threshold'] = cfg['attack_models']['threshold']
+        if not getattr(frozen_index, 'dual_attack', False):
+            raise ValueError('个体门槛运行必须提供真实双攻击前缀')
+    responder = InterventionResponder(train, response_cfg, rank_model=evaluator)
     baseline = snapshot(initial, evaluator, 0)
     mutations = reference_mutation_ranks(train, cfg['evaluation']['mutation_reference_limit'])
     arms, adaptive_fits = {}, {counts_hash(train): frozen_index}
@@ -535,7 +571,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                       'core/intervention_attack_area.py', 'core/ideal_distribution.py',
                       'core/intervention_acceptance.py',
                       'experiments/intervention_site_controls.py', 'policy/yahoo_japan.py',
-                      'experiments/cdf_fit_benchmark.py']
+                      'experiments/cdf_fit_benchmark.py', 'ai/dual_attack.py']
     source_hashes = {f: hashlib.sha256((ROOT/f).read_bytes()).hexdigest() for f in manifest_files}
     identity = {'config': cfg, 'dataset': dataset['metadata'], 'sources': source_hashes,
                 'include_legacy': include_legacy}
@@ -548,8 +584,8 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'python': platform.python_version(), 'source_hashes': source_hashes,
                            'runtime_seconds': time.perf_counter()-started,
                            'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-                           'scope': ('真实频次初始抽样；Google 起点；1—18 条片段候选；全员成功修改模拟；PCFG 蒙特卡洛估计'
-                                     if area_only else '真实频次初始抽样；Google 起点；1—18 条片段候选；有限次模拟响应；PCFG 蒙特卡洛估计'),
+                           'scope': ('真实频次初始抽样；8 字符基础规则 起点；1—18 条片段候选；全员成功修改模拟；PCFG 蒙特卡洛估计'
+                                     if area_only else '真实频次初始抽样；8 字符基础规则 起点；1—18 条片段候选；有限次模拟响应；PCFG 蒙特卡洛估计'),
                            'candidate_pool': cfg['controller']['candidate_pool'],
                            'a0_status': '未运行：局部响应状态未知时不全站套用规则掩码',
                            'adaptive_reference': '独立开发训练群体按公开群体筛选器及群体内干预比例迁移；非目标终态训练',
@@ -565,6 +601,24 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                            'decision_metric': ('以预计 W1 距离下降选动作；全员成功修改方案仅要求固定 F 面积严格下降才下发；未覆盖比例只作诊断；A1 独立评价'
                                                if cfg['controller']['execution_policy'] == AREA_ONLY_POLICY else
                                                '以 CDF 拟合分布到固定 N 单例理想分布的对数排名 Wasserstein-1 距离下降选动作；整批修改要求固定 F 猜测成功曲线对数面积下降、模型未覆盖比例不增加；分布与猜测不加权')}}
+    if cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY:
+        from ai.dual_attack import VERSION as DUAL_VERSION
+        report['metadata'].update(
+            risk_method=DUAL_VERSION, response_protocol='all-notified-dual-threshold-v1',
+            scope='8 字符共同起点；分布选群体；双攻击个体门槛；实际候选前缀',
+            attack_budget='B raw attempts per model; union <= 2B attempts; overlaps counted once',
+            attack_sources=frozen_index.metadata['sources'],
+            decision_metric='个体通过 PCFG 和 OMEN 各 B 次检查后，按预计 W1 距离下降选择群体',
+            aggregate_attack_guard={'protocol': INDIVIDUAL_POLICY, 'enforced': True,
+                                    'model': 'fixed PCFG + OMEN union',
+                                    'threshold_per_model': cfg['attack_models']['threshold'],
+                                    'outside_support': 'both models outside domain: reject',
+                                    'execution': 'individual threshold; attack area diagnostic only'})
+        round_zipf['protocol'] = 'same-start-dynamic-realized-budget-dual-individual-v1'
+        for arm in report['arms'].values():
+            for row in arm['rounds']:
+                row['selection_reason'] = ('在个体双攻击门槛约束下，按当前分布选择群体' if arm['method'] == GOOGLE_DYNAMIC_METHOD
+                                           else '使用相同个体双攻击门槛，并申请动态组实际逐轮通知预算')
     if progress:
         progress('使用 CDF 采样方法拟合各组终态，独立种子复核')
     if include_legacy:
@@ -577,7 +631,7 @@ def run_intervention_pipeline(config, *, dataset=None, index=None, output_dir=No
                                                intervention_round_parameter_diagnostics)
     report['distribution_fits'] = intervention_fit_diagnostics(report)
     if progress:
-        progress('拟合 Google 起点和每轮动态调整后的分布参数')
+        progress('拟合 8 字符基础规则 起点和每轮动态调整后的分布参数')
     report['round_parameter_fits'] = intervention_round_parameter_diagnostics(report)
     attach_ideal_analysis(report)
     report['metadata']['runtime_seconds'] = time.perf_counter()-started

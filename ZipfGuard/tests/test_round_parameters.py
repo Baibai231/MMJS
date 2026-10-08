@@ -37,7 +37,7 @@ class TestRoundParameters(unittest.TestCase):
         self.assertIn('class="parameter-c"', svg)
         self.assertIn('class="parameter-s"', svg)
         self.assertIn('stroke-dasharray="8 5"', svg)
-        self.assertIn('0 · Google 起点', svg)
+        self.assertIn('0 · 8 字符基础规则 起点', svg)
         self.assertIn('2 · 调整后', svg)
         self.assertNotIn('10 · 调整后', svg)
 

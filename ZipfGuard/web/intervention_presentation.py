@@ -12,13 +12,13 @@ from web.cdf_fit_presentation import fit_chart_specs, render_fit_diagnostics
 from web.round_parameter_presentation import round_parameter_html, round_parameter_svg
 from policy.intervention_fragments import LABELS as FRAGMENT_LABELS
 
-LABELS = [('baseline', '原始分布（无干预）'), ('google_hold', 'Google 基础策略'),
-          ('google_random', 'Google＋随机分批调整'),
-          ('google_frozen', 'Google＋初始排序后分批执行'),
-          ('google_dynamic', 'Google＋每轮重新评估的动态调整')]
+LABELS = [('baseline', '原始分布（无干预）'), ('google_hold', '8 字符基础规则'),
+          ('google_random', '8 字符基础规则＋随机分批调整'),
+          ('google_frozen', '8 字符基础规则＋初始排序后分批执行'),
+          ('google_dynamic', '8 字符基础规则＋每轮重新评估的动态调整')]
 
 
-def comparison_labels(result, *, include_site_controls=True):
+def comparison_labels(result, *, include_site_controls=False):
     completed = result['google_round_zipf']['experimental']['rounds_completed']
     arms = result['google_round_zipf']['arms']
     labels = [(key, label) for key, label in LABELS if key == 'baseline' or key in arms]
@@ -79,7 +79,7 @@ def fitted_log_area_from_report(result):
         result['config']['seed'])['score']
 
 
-def ideal_reference_html(result, labels, arms):
+def ideal_reference_html(result, labels, arms, *, include_yahoo=True):
     ideal = result['ideal_distribution']
     n = ideal['accounts']
     states = [('原始分布（无干预）', result['baseline'])]
@@ -113,7 +113,7 @@ def ideal_reference_html(result, labels, arms):
              'Bonneau, The Science of Guessing, IEEE S&amp;P (2012)</a> '
              '提供口令猜测与均匀参照的背景，不是本项目对数排名距离公式的来源。</p></section>')
     yahoo = result.get('site_controls', {}).get('yahoo_japan')
-    if yahoo:
+    if yahoo and include_yahoo:
         audit = yahoo['target_audit']
         html += ('<section id="yahoo_control"><h2>Yahoo! JAPAN 全站强策略对照</h2>'
                  '<p>从与原始组完全相同的初始账户出发，一次应用 15—32 字符、公开半角字符集'
@@ -126,8 +126,8 @@ def ideal_reference_html(result, labels, arms):
             [f'{audit["required_modifications"]:,}', pct(audit['required_rate']),
              f'{audit["explicit_completions"]:,}', audit['noncompliant_remaining']]])
         html += ('<p><a href="https://support.yahoo-net.jp/SccLogin/s/article/H000004639">'
-                 'Yahoo! JAPAN 官方规则</a>。此组只加入 F、A1 和最终分布终态比较；'
-                 '共同 Google 起点后的局部成本曲线仍比较原五组。</p></section>')
+                 'Yahoo! JAPAN 官方规则</a>。此组的攻击结果单独展示，'
+                 '不加入共同起点后的局部干预排名。</p></section>')
     return html
 
 
@@ -143,6 +143,7 @@ def chart_specs(result):
     endpoint_arms = {**arms, **result.get('site_controls', {})}
     distance_mode = bool(result.get('ideal_distribution'))
     budget = cfg['risk_budget']
+    dual = bool(base['risk'].get('attack_curves'))
     google_cost = arms['google_hold']['final']['ledger']['affected_rate']
     def added_cost(state):
         ledger = state['ledger']
@@ -179,7 +180,7 @@ def chart_specs(result):
         **({'distribution_cost': ('累计受影响账户比例—距理想分布的 W1 距离' if distance_mode else
                                   '累计受影响账户比例—完整分布集中度' if area_mode else
                                   '累计受影响账户比例—拟合分布前段占比', distribution_series,
-            dict(xlabel='Google 起点后累计通知的不同账户比例',
+            dict(xlabel='8 字符基础规则 起点后累计通知的不同账户比例',
                  ylabel='对数排名 Wasserstein-1 距离（越低越接近理想）' if distance_mode else
                           'CDF 拟合累计曲线的对数排名面积（越低越分散）' if area_mode else
                           f'CDF 拟合曲线前 {rank:,} 位累计账户占比',
@@ -187,8 +188,9 @@ def chart_specs(result):
                  x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1)))}
            if distribution_series else {}),
         'coverage_F': ('累计受影响账户比例—猜测成功率', cost_series,
-                        dict(xlabel='Google 起点后累计通知的不同账户比例',
-                            ylabel=f'F 模型估计猜中比例（{budget:,} 次）',
+                        dict(xlabel='8 字符基础规则 起点后累计通知的不同账户比例',
+                            ylabel=(f'固定 F 联合命中比例（每模型 {budget:,} 次）' if dual else
+                                    f'F 模型估计猜中比例（{budget:,} 次）'),
                             x_format='percent', y_format='percent',
                             x_domain=(0, min(1, maximum*1.08)), y_domain=(0, 1))),
     }
@@ -197,8 +199,9 @@ def chart_specs(result):
         area_series += [(label, [(added_cost(s), curve_area(s['risk']))
                                  for s in arms[key]['trajectory']]) for key, label in labels[1:]]
         specs['attack_area_cost'] = ('累计通知比例—总体猜测曲线面积', area_series,
-            dict(xlabel='Google 起点后累计通知的不同账户比例',
-                 ylabel='固定 F 猜测成功曲线对数面积（越低估计命中越少）',
+            dict(xlabel='8 字符基础规则 起点后累计通知的不同账户比例',
+                 ylabel=('固定 F 联合曲线对数面积（仅作诊断）' if dual else
+                         '固定 F 猜测成功曲线对数面积（越低估计命中越少）'),
                  x_format='percent', y_format='decimal6',
                  x_domain=(0, min(1, maximum*1.08))))
     if area_mode and arms['google_dynamic']['rounds']:
@@ -234,6 +237,31 @@ def chart_specs(result):
         specs['attack_'+level] = (title, series,
             dict(xlabel='累计攻击次数（估计猜测预算）', ylabel='累计猜出的口令比例（全部账户）',
                  log=True, x_format='power10', y_format='percent', y_domain=(0, 1)))
+        if base['risk'].get('attack_curves'):
+            for attacker, label in [('pcfg', 'PCFG'), ('markov', '马尔可夫 OMEN'), ('union', 'PCFG ∪ OMEN 联合攻击')]:
+                attack_series = [(labels[0][1], [(p['budget'], p['rate'])
+                                  for p in base['risk']['attack_curves'][attacker]['minauto']])]
+                for key, method_label in endpoint_labels[1:]:
+                    ev = endpoint_arms[key]['attacks'][level]
+                    if ev:
+                        attack_series.append((method_label, [(p['budget'], p['rate'])
+                                             for p in ev['attack_curves'][attacker]['minauto']]))
+                name = 'attack_'+level if attacker == 'pcfg' else 'attack_'+attacker+'_'+level
+                specs[name] = (level+'：'+label, attack_series,
+                    dict(xlabel='每模型实际尝试预算 B（联合总尝试 ≤ 2B）' if attacker == 'union' else '该模型实际尝试预算 B',
+                         ylabel='命中账户比例（全部账户）', log=True, x_format='power10',
+                         y_format='percent', y_domain=(0, 1)))
+    yahoo = result.get('site_controls', {}).get('yahoo_japan')
+    if yahoo:
+        for level in ('F', 'A1'):
+            ev = yahoo['attacks'].get(level)
+            if ev:
+                curves = ev.get('attack_curves', {'pcfg': ev})
+                yseries = [(label, [(p['budget'], p['rate']) for p in curves[key]['minauto']])
+                           for key, label in [('pcfg', 'PCFG'), ('markov', 'OMEN'), ('union', 'PCFG ∪ OMEN')] if key in curves]
+                specs['yahoo_attack_'+level] = ('Yahoo! JAPAN 独立全站对照 · '+level, yseries,
+                    dict(xlabel='每模型尝试预算 B；联合最多 2B' if base['risk'].get('attack_curves') else '估计猜测预算',
+                         ylabel='命中账户比例', log=True, x_format='power10', y_format='percent', y_domain=(0, 1)))
     dist = [(labels[0][1], base['distribution']['full_rank_frequency'])]
     dist += [(label, endpoint_arms[key]['final']['distribution']['full_rank_frequency'])
              for key, label in endpoint_labels[1:]]
@@ -245,7 +273,8 @@ def chart_specs(result):
              reference_series=[IDEAL_LABEL] if distance_mode else []))
     round_zipf = google_round_zipf_series(result)
     if round_zipf:
-        specs['google_round_zipf'] = ('Google 固定对照与动态调整 10 轮的 Zipf 分布', round_zipf,
+        rounds = len(arms['google_dynamic']['rounds'])
+        specs['google_round_zipf'] = (f'8 字符基础规则固定对照与动态调整 {rounds} 轮的 Zipf 分布', round_zipf,
             dict(xlabel='口令排名 r', ylabel='使用该口令的人数 f(r)', log=True, log_y=True,
                  x_format='count', y_format='count', markers=False,
                  reference_series=[IDEAL_LABEL] if distance_mode else []))
@@ -265,16 +294,19 @@ def chart_specs(result):
 
 
 def render_intervention_html(result, *, document=True):
+    if result.get('baseline', {}).get('risk', {}).get('attack_curves'):
+        from web.dual_intervention_presentation import render_dual_report
+        return render_dual_report(result, document=document)
     if not result.get('google_round_zipf', {}).get('google_baseline'):
-        body = ('<main><section id="intervention-overview"><h2>历史实验需要重算 Google 起点</h2>'
-                '<p>这份报告只对首批账户执行 Google 要求，不能作为全站 Google 起点的对照。'
+        body = ('<main><section id="intervention-overview"><h2>历史实验需要重算 8 字符基础规则 起点</h2>'
+                '<p>这份报告只对首批账户执行 8 字符基础规则 要求，不能作为全站 8 字符基础规则 起点的对照。'
                 '旧政策比较暂不展示；保留同一批账户的原始分布，使用当前 CDF 采样方法拟合。'
                 '原始实验数据完整保留。</p></section>'+render_fit_diagnostics(result)+'</main>')
         return ('<!doctype html><html lang="zh-CN"><meta charset="utf-8"><style>'+STYLE+
                 DASHBOARD_STYLE+'</style><body>'+body+'</body></html>') if document else body
     arms = result.get('google_round_zipf', {}).get('arms')
     if not arms:
-        return '<main><section><h2>此旧报告尚未补算共同 Google 起点</h2><p>请重新运行实验。</p></section></main>'
+        return '<main><section><h2>此旧报告尚未补算共同 8 字符基础规则 起点</h2><p>请重新运行实验。</p></section></main>'
     cfg = result['config']
     labels = comparison_labels(result)
     endpoint_arms = {**arms, **result.get('site_controls', {})}
@@ -292,12 +324,12 @@ def render_intervention_html(result, *, document=True):
     parts = ['<main class="intervention-report"><section class="study-overview" id="intervention-overview">',
              '<span class="eyebrow">第三展示台 · 存量账户局部干预</span>',
              '<h2>改谁、怎么改、改多少</h2>',
-             '<p>五组使用相同初始账户。后三组从同一个 Google 合规状态出发，'
+             '<p>五组使用相同初始账户。后三组从同一个 8 字符基础规则 合规状态出发，'
              '共享 18 条候选规则、用户响应假设和攻击评估。</p><div class="metrics">']
     for label, value, note in [
         ('模拟账户', f'{ledger["accounts"]:,}', '本次各组使用相同初始账户'),
         ('后续受影响', pct(ledger.get('adaptive_affected_rate', ledger['affected_rate'])),
-         f'{ledger.get("adaptive_affected", ledger["affected"]):,} 个账户在 Google 起点后被通知'),
+         f'{ledger.get("adaptive_affected", ledger["affected"]):,} 个账户在 8 字符基础规则 起点后被通知'),
         ('实际修改', pct(ledger['changed_rate']), f'{ledger["changed"]:,} 个账户完成修改'),
         (('距理想分布的 W1 距离' if distance_mode else '完整分布集中度' if area_mode else '拟合前段累计占比'),
          (f'{final["ideal_distance"]["fitted"]:.6f}' if distance_mode else
@@ -307,7 +339,7 @@ def render_intervention_html(result, *, document=True):
           '拟合累计曲线对数排名面积；越低越分散' if area_mode else
           f'固定前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位完整口令；越低越分散'))]:
         parts.append(f'<div class="metric">{escape(label)}<strong>{escape(value)}</strong><small>{escape(note)}</small></div>')
-    parts.append(f'</div><p>以上为 Google 起点后逐步干预方案：已完成共同起点后的 {completed} 轮干预；停止原因：{escape(dynamic["stop_label"])}。</p></section>')
+    parts.append(f'</div><p>以上为 8 字符基础规则 起点后逐步干预方案：已完成共同起点后的 {completed} 轮干预；停止原因：{escape(dynamic["stop_label"])}。</p></section>')
     if not aggregate_mode:
         parts.append('<section class="notice"><strong>历史实验：逐账户强度门槛</strong>'
                      '<p>以下结果仍属于原来的“每个成功修改账户都需变强”协议。'
@@ -330,15 +362,15 @@ def render_intervention_html(result, *, document=True):
     parts.append('<section id="intervention-conditions"><h2>先看懂这次比较</h2>'
                  '<p>图例支持勾选显示或隐藏曲线，悬停突出对应曲线；'
                  '重叠线使用线型与点形辅助区分。每张图保持相同方案顺序和颜色。</p>'
-                 '<p>原始组保留原口令；另外四组先把全体账户迁移到满足 Google 最低 8 字符要求的同一状态。'
-                 'Google 基础组此后不再调整；随机组先抽人再选规则；初始排序组只在起点规划一次；'
+                 '<p>原始组保留原口令；另外四组先把全体账户迁移到满足 8 字符基础规则 最低 8 字符要求的同一状态。'
+                 '8 字符基础规则 基础组此后不再调整；随机组先抽人再选规则；初始排序组只在起点规划一次；'
                  '完整动态组每轮重新分析分布。</p>')
     parts.append(table(['实验组', '要回答的问题'], [
         ['原始分布（无干预）', '原始风险有多高'],
-        ['Google 基础策略', '基础策略本身改善多少'],
-        ['Google＋随机分批调整', '优先选择影响分布的账户是否有价值'],
-        ['Google＋初始排序后分批执行', '每轮重新分析分布是否有价值'],
-        ['Google＋每轮重新评估的动态调整', '完整方法的结果'],
+        ['8 字符基础规则 基础策略', '基础策略本身改善多少'],
+        ['8 字符基础规则＋随机分批调整', '优先选择影响分布的账户是否有价值'],
+        ['8 字符基础规则＋初始排序后分批执行', '每轮重新分析分布是否有价值'],
+        ['8 字符基础规则＋每轮重新评估的动态调整', '完整方法的结果'],
     ]))
     replications = result.get('paired_replications')
     if replications and replications.get('protocol') == 'cost-matched-F-v1' and replications.get('runs'):
@@ -357,7 +389,7 @@ def render_intervention_html(result, *, document=True):
                      pct(means['google_dynamic']['F']), pp(means['dynamic_minus_random']['F']),
                      pp(means['dynamic_minus_frozen']['F'])])
         parts.append('<section id="paired-replications"><h2>配对随机种子复验</h2>'
-                     f'<p>三个 10 万账户实验分别用种子 42、43、44；每行的后三组共享该种子的 Google 起点。'
+                     f'<p>三个 10 万账户实验分别用种子 42、43、44；每行的后三组共享该种子的 8 字符基础规则 起点。'
                      f'下表统一在后续通知 {pct(replications["comparison_cost"])} 账户时比较固定 F 模型'
                      '在主猜测预算下的估计命中比例。轮次之间按相邻观测点线性插值，'
                      '未达到该成本的种子不纳入比较。Δ 为动态组减对照组，负值表示动态组更低。'
@@ -387,13 +419,13 @@ def render_intervention_html(result, *, document=True):
                      f'{pp(means["dynamic_minus_frozen"]["A1"])}'])
         parts.append('<section id="paired-replications"><h2>配对随机种子复验</h2>'
                      f'<p>下方单次曲线对应种子 {cfg["seed"]}；表格列出三个种子的配对结果。'
-                      '每行使用同一随机种子下的共同 Google 起点和相同逐轮通知上限；各组可能提前停止或未用满预算。'
+                      '每行使用同一随机种子下的共同 8 字符基础规则 起点和相同逐轮通知上限；各组可能提前停止或未用满预算。'
                      'Δ 为动态组减初始排序组，负值表示动态组估计风险更低；这是模拟点估计，'
                      '种子数量较少，不代表统计显著性。</p>')
         parts.append(table(['种子', '累计受影响账户', '随机组 F / A1',
                             '初始排序 F / A1', '逐轮动态 F / A1', '动态−初始排序 Δ F / A1'], rows))
         parts.append('</section>')
-    parts.append('<p>初始排序组只在 Google 起点按分布改善排好后续账户和规则，之后不重新排序；'
+    parts.append('<p>初始排序组只在 8 字符基础规则 起点按分布改善排好后续账户和规则，之后不重新排序；'
                  '动态组每轮执行后，按新的完整口令分布重新选账户和规则。'
                  '随机组的账户顺序不看口令分布，选规则时使用相同的分布评分。'
                   '三组在运行前固定每轮与累计通知预算；未用完的预算如实保留。</p>')
@@ -420,22 +452,22 @@ def render_intervention_html(result, *, document=True):
                  ''.join(f'<li>{escape(FRAGMENT_LABELS[n])}</li>' for n in FRAGMENT_LABELS) +
                  '</ol></details>')
     baseline_policy = result['google_round_zipf']['google_baseline']['target']
-    parts.append(f'<p>Google 起点有 {baseline_policy["eligible"]:,} 个账户原口令短于 8 字符，'
+    parts.append(f'<p>8 字符基础规则 起点有 {baseline_policy["eligible"]:,} 个账户原口令短于 8 字符，'
                  f'均在起始迁移阶段改为符合规则的口令（占 {pct(baseline_policy["affected_rate"])}）。'
-                 '为构造严格符合 Google 长度规则的起点，起始迁移按全部账户完成处理；之后三组分批干预使用相同的通知上限、'
-                  '用户响应率和累计附加预算。下方成本图从 Google 起点开始计算后续新增通知。</p>')
+                 '为构造严格符合 8 字符基础规则 长度规则的起点，起始迁移按全部账户完成处理；之后三组分批干预使用相同的通知上限、'
+                  '用户响应率和累计附加预算。下方成本图从 8 字符基础规则 起点开始计算后续新增通知。</p>')
     parts.append(f'<p>共同起点属于全体合规的模拟设定：有限次修改尝试后仍未合规的 '
                  f'{baseline_policy.get("explicit_length_completions", 0):,} 个账户，通过固定种子的长度补全构造合规口令。'
                  + ('新协议的后续局部干预同样保证合规且不同的新口令；构造补全次数另行统计，不能解释为真实用户行为。</p>' if area_only_mode else
                     '该构造只用于起点；后续局部干预仍保留未响应和修改失败。</p>'))
     parts.append(table(['设置', '本次取值'], [
         ['后续每轮 / 累计新增通知上限', f'{pct(cfg["controller"]["round_fraction"])} / {pct(cfg["controller"]["total_fraction"])}'],
-        ['每账户最多干预', ('Google 起点一次、后续局部干预一次；后续通知人数等于成功修改人数' if area_only_mode else
-                            'Google 起点一次、后续局部干预一次；已通知但未修改也计入后续成本')],
+        ['每账户最多干预', ('8 字符基础规则 起点一次、后续局部干预一次；后续通知人数等于成功修改人数' if area_only_mode else
+                            '8 字符基础规则 起点一次、后续局部干预一次；已通知但未修改也计入后续成本')],
         ['未响应概率（情景假设）', pct(cfg['response']['nonresponse'])],
         ['响应者：简单修补 / 片段重组 / 重选', ' / '.join(pct(x) for x in cfg['response']['weights'])],
         ['停止条件', '共同起点后最多 10 轮；无可行动作或预算不足时可提前停止'],
-        ['基础要求', '四个 Google 组全站至少 8 字符；局部要求在此基础上叠加'],
+        ['基础要求', '四个 8 字符基础规则 组全站至少 8 字符；局部要求在此基础上叠加'],
         ['分布主目标', ('到固定 N 单例参照的对数排名 W1 距离下降' if distance_mode else
                         'CDF 拟合完整累计曲线的对数排名面积下降' if area_mode else
                     f'CDF 拟合排名曲线前 {result["google_round_zipf"]["comparison_budget"].get("distribution_top_k", "—")} 位累计占比下降')],
@@ -453,19 +485,19 @@ def render_intervention_html(result, *, document=True):
     if same_schedule:
         parts.append(f'<p class="notice">本次后三组每轮通知人数相同，后续各组均通知 '
                       f'{pct(ledger.get("adaptive_affected_rate", ledger["affected_rate"]))} 的账户。'
-                      'Google 起点的通知另行统计；20% 是后续通知预算上限。</p>')
+                      '8 字符基础规则 起点的通知另行统计；20% 是后续通知预算上限。</p>')
     if all(left['state_sha256'] == right['state_sha256'] for left, right in
            zip(frozen_arm['trajectory'], dynamic['trajectory'])) and len(frozen_arm['trajectory']) == len(dynamic['trajectory']):
         parts.append('<p class="notice">本次初始排序组与逐轮动态组的每轮账户状态、F 和 A1 终值完全重合。'
                       '本次未观察到逐轮重新分析相对初始排序的额外收益；与随机组选人的效果须按共同实际成本比较。'
-                     '冻结组只在共同 Google 起点规划账户和规则；相同轨迹不是重新规划的结果。</p>')
+                     '冻结组只在共同 8 字符基础规则 起点规划账户和规则；相同轨迹不是重新规划的结果。</p>')
     random_already = random_arm['final']['ledger'].get('already_compliant', 0)
     if random_already:
         parts.append(f'<p>随机组有 {random_already:,} 名被通知账户已符合选中的规则，计入通知成本但没有修改口令。'
                      '因此相同通知人数不代表相同实际修改人数。</p>')
     parts.append('<p class="notice">PCFG 猜测次数和攻击曲线是模型估计，不是实际破解记录。'
                  '无法估计猜测次数的候选修改不会被当作个人强度提升；'
-                 'Google 起点的构造迁移单独记账。后三组共用每轮与累计预算上限；'
+                 '8 字符基础规则 起点的构造迁移单独记账。后三组共用每轮与累计预算上限；'
                  '只在曲线共同覆盖的成本区间内比较，不外推到未达到的 20% 附加覆盖。</p></section>')
     specs = chart_specs(result)
     rank = result['google_round_zipf']['comparison_budget'].get('distribution_top_k')
@@ -481,8 +513,8 @@ def render_intervention_html(result, *, document=True):
                           '纵轴越低表示口令分布越分散；该分数不是猜测成功率。' if area_mode else
                           f'<p>这是动作选择的主指标：把 c、s 拟合参数生成的排名累计曲线固定在前 {rank:,} 位，'
                           '纵轴越低，表示热门完整口令覆盖的账户越少。') +
-                          '横轴只计共同 Google 起点后的新增通知；'
-                         '原始组和 Google 基础组各只有一个点，Google 起点迁移的通知成本另列。'
+                          '横轴只计共同 8 字符基础规则 起点后的新增通知；'
+                         '原始组和 8 字符基础规则 基础组各只有一个点，8 字符基础规则 起点迁移的通知成本另列。'
                          '后三组只在实际到达的成本范围内比较，不外推。'
                          '这是单次模拟拟合；组间差异接近拟合误差时，不能认定某方法稳定占优。</p>')
         if name == 'dynamic_distribution_detail':
@@ -497,8 +529,8 @@ def render_intervention_html(result, *, document=True):
                          + ('方案面积预检未通过时不下发、不计通知；已执行轮次全员修改成功。</p>' if area_only_mode else
                             '整批候选未通过执行前复核时保持旧口令，通知仍计成本；此时曲线呈水平段。</p>'))
         if name == 'coverage_F':
-            parts.append(f'<p>横轴从共同 Google 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
-                         '原始组和 Google 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
+            parts.append(f'<p>横轴从共同 8 字符基础规则 起点开始，统计后续被通知的不同账户，纵轴是固定 F 攻击模型在 {budget:,} 次猜测下的估计命中比例。'
+                         '原始组和 8 字符基础规则 基础组各只有一个真实成本点；后三组曲线连接实际轮次观测。'
                          '相同横轴位置才能比较方法差异，未到达的成本不作外推。</p>')
         if name == 'attack_A1':
             parts.append('<p>A1 只用独立开发参考群体的模拟迁移结果训练。参考群体构成不同，'
@@ -517,10 +549,10 @@ def render_intervention_html(result, *, document=True):
         if name == 'google_round_zipf':
             comparison = result['google_round_zipf']
             completed = comparison['experimental']['rounds_completed']
-            parts.append('<p>蓝线是双方完成全体账户的 Google 最低 8 字符迁移后的共同起点；'
+            parts.append('<p>蓝线是双方完成全体账户的 8 字符基础规则 最低 8 字符迁移后的共同起点；'
                          '固定对照从这个时点起不再调整，实验组随后根据最新分布最多决策 10 轮。'
                          '每条实验曲线对应一次调整后的全站分布，两轴均为对数刻度。</p>')
-            parts.append(f'<p>初始 Google 迁移修改了 {pct(comparison["control"]["affected_rate"])} 的账户；'
+            parts.append(f'<p>初始 8 字符基础规则 迁移修改了 {pct(comparison["control"]["affected_rate"])} 的账户；'
                           '完成后全体账户均符合至少 8 字符规则；后续干预成本图从此时的零新增通知起算。</p>')
             if completed != comparison['requested_rounds']:
                 parts.append(f'<p class="notice">本次实验请求 {comparison["requested_rounds"]} 轮，实际完成 {completed} 轮；'
@@ -543,7 +575,7 @@ def render_intervention_html(result, *, document=True):
     if parameter_fits and parameter_fits.get('rows'):
         rows = parameter_fits['rows']
         parts.append('<section id="round_parameters"><h2>动态策略每轮的分布拟合参数</h2>'
-                     '<p>第 0 轮是双方共同的 Google 起点，后续各点只取实验组实际完成的轮次。'
+                     '<p>第 0 轮是双方共同的 8 字符基础规则 起点，后续各点只取实验组实际完成的轮次。'
                      '对每轮完整口令频次分别使用与动作选择相同的 CDF 采样方法拟合。'
                      '实线表示 c，虚线表示 s；圆点和通向该点的线段用颜色标识轮次。'
                      '两项参数使用上下独立纵轴，以免数值量级不同掩盖变化。</p>')

@@ -38,6 +38,7 @@ class ExactIndex:
 class TestIntervention(unittest.TestCase):
     def cfg(self, n=1000):
         c = load_intervention_config()
+        c['attack_models']['mode'] = 'pcfg-mc'
         c['controller']['execution_policy'] = 'fixed-F-strict-batch-v1'
         c['response']['mode'] = 'finite-response-v1'
         c['data']['users'] = n
@@ -477,13 +478,13 @@ class TestIntervention(unittest.TestCase):
             html = render_intervention_html(report)
             self.assertIn('plot-distinct', html)
             self.assertIn('input type="checkbox"', html)
-            self.assertIn('Google 固定对照与动态调整 10 轮的 Zipf 分布', html)
+            self.assertIn(f'8 字符基础规则固定对照与动态调整 {len(report["arms"]["google_dynamic"]["rounds"])} 轮的 Zipf 分布', html)
             self.assertIn('10³', html)
             self.assertIn('未运行', html)
             self.assertNotIn('"abc"', html)
             svg = (Path(directory)/'coverage_F.svg').read_text(encoding='utf-8')
             self.assertIn('aria-label="图例"', svg)
-            self.assertIn('Google 基础策略', svg)
+            self.assertIn('8 字符基础规则', svg)
             self.assertNotIn('初始一次规划', svg)
             self.assertTrue((Path(directory)/'report.json.sha256').is_file())
             self.assertEqual(hashlib.sha256((Path(directory)/'report.json').read_bytes()).hexdigest(),

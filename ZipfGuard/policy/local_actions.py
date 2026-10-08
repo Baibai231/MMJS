@@ -137,7 +137,7 @@ def generate_actions(population, risk, cfg, *, fixed=False, minimum_length=0,
         order = account_order(population, ids, cfg['seed'])
         order.sort(key=lambda i: -risk.hit(population.accounts[i].password))
         return [Action(Group('all', '', '固定长度要求的不合规账户'), rule,
-                       '固定 Google 规则子集：至少 8 字符', tuple(order[:cap]), len(ids))] if ids else []
+                       '固定 8 字符基础规则 规则子集：至少 8 字符', tuple(order[:cap]), len(ids))] if ids else []
     groups, hot = build_groups(population, risk, cfg)
     actions = []
     fragments = candidate_fragments(

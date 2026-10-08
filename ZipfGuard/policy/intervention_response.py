@@ -1,4 +1,4 @@
-"""Versioned, attack-blind simulated response for existing accounts."""
+"""Versioned simulated response with optional observed-prefix strength checks."""
 import re
 from policy.open_policy import edit_distance
 from policy.user_response import (_rng, _propose, weighted_pool, phrase_vocabulary,
@@ -6,6 +6,10 @@ from policy.user_response import (_rng, _propose, weighted_pool, phrase_vocabula
 from policy.intervention_fragments import KEYBOARD, TRIPLE, sequence_four
 
 RESPONSE_PROTOCOL = 'existing-accounts-all-notified-success-v4'
+
+
+class IndividualThresholdUnavailable(ValueError):
+    """No certified proposal; the candidate must not issue notifications."""
 
 
 def complete_local_rule(old, proposal, rule, rng):
@@ -85,6 +89,31 @@ class InterventionResponder:
     def preview(self, population, action, seed, stream):
         return self.respond(population, action, seed, stream, record_edit_cost=False)
 
+    def _secure(self, word):
+        threshold = self.config.get('security_threshold', 0)
+        return not threshold or (self.rank_model is not None and
+                                 self.rank_model.passes_threshold(word, threshold))
+
+    def _secure_completion(self, old, proposal, rule, rng):
+        proposal = complete_local_rule(old, proposal, rule, rng)
+        if self._secure(proposal):
+            return proposal, 1
+        base = getattr(rule, 'base', rule)
+        # The alphabet is learned exclusively from development records. Never
+        # escape model support by inserting an unseen character or extreme length.
+        alphabet = self.rank_model.index.metadata['markov']['alphabet']
+        minimum = max(8, getattr(base, 'min_length', 0))
+        maximum = min(19, getattr(base, 'max_length', None) or 19)
+        if minimum > maximum or not alphabet:
+            raise IndividualThresholdUnavailable('规则与当前攻击验证范围无可构造交集')
+        length = min(maximum, max(12, minimum))
+        for attempt in range(2, 130):
+            candidate = ''.join(rng.choice(alphabet) for _ in range(length))
+            candidate = complete_local_rule(old, candidate, rule, rng)
+            if candidate != old and rule.accepts(candidate) and self._secure(candidate):
+                return candidate, attempt
+        raise IndividualThresholdUnavailable('固定次数内无法构造通过双攻击门槛的新口令；方案不下发')
+
     def respond(self, population, action, seed, stream, *, record_edit_cost=True):
         if hasattr(action, 'components'):
             return [row for component in action.components
@@ -100,18 +129,28 @@ class InterventionResponder:
                 kind = 'repair' if draw < weights[0] else 'segment' if draw < weights[0]+weights[1] else 'reselect'
                 proposal = old
                 completed = False
+                strength_rejections = 0
+                completion_attempts = 0
                 for attempts in range(1, self.config['max_attempts']+1):
                     proposal = _propose(old, kind, rng, self.pool, self.vocabulary)
                     if proposal != old and action.rule.accepts(proposal):
-                        break
+                        if self._secure(proposal):
+                            break
+                        strength_rejections += 1
                 else:
-                    proposal = complete_local_rule(old, proposal, action.rule, rng)
+                    if self.config.get('security_threshold', 0):
+                        proposal, completion_attempts = self._secure_completion(old, proposal, action.rule, rng)
+                    else:
+                        proposal = complete_local_rule(old, proposal, action.rule, rng)
                     completed = True
                 if proposal == old or not action.rule.accepts(proposal):
                     raise AssertionError('全员修改模式产生了未成功或不合规的修改')
                 rows.append({'index': i, 'old': old, 'new': proposal, 'status': 'changed',
                              'attempts': attempts, 'response_kind': kind,
                              'explicit_completion': completed,
+                             'strength_rejections': strength_rejections,
+                             'security_completion_attempts': completion_attempts,
+                             'individual_threshold_passed': bool(self.config.get('security_threshold', 0)),
                              'edit_cost': (edit_distance(old, proposal)/max(1, len(old), len(proposal)) if record_edit_cost else 0.)})
                 continue
             if action.rule.accepts(old):

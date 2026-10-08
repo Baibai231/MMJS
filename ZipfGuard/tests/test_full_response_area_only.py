@@ -17,6 +17,8 @@ from tests.test_intervention_attack_area import Index, row
 class FullResponseAreaOnlyTests(unittest.TestCase):
     def setUp(self):
         self.cfg = load_intervention_config()
+        self.cfg['controller']['execution_policy'] = AREA_ONLY_POLICY
+        self.cfg['attack_models']['mode'] = 'pcfg-mc'
         self.risk = InterventionRisk(Index(), [1, 10, 100], 100)
 
     def test_only_area_decides_even_when_uncovered_mass_increases(self):

@@ -4,7 +4,8 @@ import hashlib
 import math
 from statistics import mean
 from core.intervention_attack_area import area_change, guard_reasons, guard_batch
-from core.intervention_acceptance import AREA_ONLY_POLICY, apply_response_policy
+from core.intervention_acceptance import AREA_ONLY_POLICY, INDIVIDUAL_POLICY, apply_response_policy
+from policy.intervention_response import IndividualThresholdUnavailable
 from core.intervention_distribution import (empirical_top_mass, fitted_top_mass,
     fitted_ideal_distance, log_cdf_area, moved_counts, top_k)
 from policy.intervention_fragments import LENGTHS, candidate_fragments
@@ -19,13 +20,21 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     baseline_mass = empirical_top_mass(counts, k)
     baseline_area = log_cdf_area(counts)
     distribution_gains, area_gains, fitted_gains, hhi_changes = [], [], [], []
-    attack_changes = []
+    attack_changes, individual_reasons = [], []
     repeats = repeats or cfg['controller']['prediction_repeats']
     for repeat in range(repeats):
         # Same account noise for competing candidates; separate from execution.
         response = getattr(responder, 'preview', responder.respond)
-        rows = response(population, action, cfg['seed'], f'prediction-{round_id}-{repeat}')
+        try:
+            rows = response(population, action, cfg['seed'], f'prediction-{round_id}-{repeat}')
+        except IndividualThresholdUnavailable as exc:
+            return {'score': -1., 'feasible': False, 'aggregate_guard_feasible': False,
+                    'security_gate_enforced': True, 'predicted_empirical_log_area_gain': -1.,
+                    'rejection_reasons': [str(exc)], 'predicted_distribution_gain': 0.}
         attack_changes.append(area_change(risk, rows, n, cfg['budgets']))
+        if cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY:
+            _, audit = apply_response_policy(population, rows, risk, cfg['budgets'], INDIVIDUAL_POLICY)
+            individual_reasons.extend(audit['rejection_reasons'])
         after_counts = moved_counts(counts, rows)
         distribution_gains.append(baseline_mass-empirical_top_mass(after_counts, k))
         area_gains.append(baseline_area-log_cdf_area(after_counts))
@@ -44,12 +53,18 @@ def predict_action(population, action, risk, responder, cfg, round_id, counts=No
     fitted_gain = mean(fitted_gains) if fitted_gains else None
     score = fitted_gain if fitted_gain is not None else gain
     area_only = c['execution_policy'] == AREA_ONLY_POLICY
-    reasons = ['距理想分布的 W1 距离预计没有下降'] if score <= c['min_gain'] else []
+    reasons = (['距理想分布的 W1 距离预计没有下降']
+               if score <= c['min_gain'] and not c.get('require_exact_target', False) else [])
     trial_gains = fitted_gains if fitted_gains else area_gains
     positive_fraction = sum(value > c['min_gain'] for value in trial_gains)/repeats
     attack_change = {'gain': mean(row['gain'] for row in attack_changes),
                      'uncovered_rate_change': mean(row['uncovered_rate_change'] for row in attack_changes)}
-    attack_reasons = (['固定 F 猜测成功曲线的对数面积未下降'] if attack_change['gain'] <= 1e-12 else []) if area_only else guard_reasons(attack_change)
+    if c['execution_policy'] == INDIVIDUAL_POLICY:
+        # Every preview proposal has already passed the same individual check.
+        # Repeat a batch audit so injected/custom responders cannot skip it.
+        attack_reasons = sorted(set(individual_reasons))
+    else:
+        attack_reasons = (['固定 F 猜测成功曲线的对数面积未下降'] if attack_change['gain'] <= 1e-12 else []) if area_only else guard_reasons(attack_change)
     reasons.extend(attack_reasons)
     return {'predicted_distribution_gain': gain,
             'predicted_F_log_area_gain': attack_change['gain'],
@@ -160,6 +175,8 @@ def _bridge_action(population, evaluated, risk, responder, cfg, round_id, minimu
 
 def select_action(population, risk, responder, cfg, round_id, target_size=None,
                   *, allow_bridge=True, validation=True):
+    if target_size is not None and cfg['controller'].get('require_exact_target', False):
+        return select_matched_action(population, risk, responder, cfg, round_id, target_size, random=False)
     candidates = generate_actions(population, risk, cfg,
                                   minimum_length=cfg['controller'].get('policy_floor_minimum_length', 0),
                                   catalog_reference=getattr(responder, 'reference', None),
@@ -186,6 +203,8 @@ def select_action(population, risk, responder, cfg, round_id, target_size=None,
                 population, random_winner[0], risk, responder, cfg, round_id, counts)))
     evaluated.extend(_combined_actions(evaluated, population, risk, responder, cfg,
                                        round_id, counts, cap, minimum))
+    if target_size is not None and cfg['controller'].get('require_exact_target', False):
+        evaluated = [(a, p) for a, p in evaluated if len(a.indices) == target_size]
     if validation and evaluated:
         order = sorted(range(len(evaluated)), key=lambda i: evaluated[i][1]['score'], reverse=True)
         feasible = []
@@ -220,6 +239,8 @@ def random_account_order(population, indices, seed, round_id):
 
 def select_random_action(population, risk, responder, cfg, round_id, target_size=None):
     """Draw a fixed actionable cohort, then assign its members local rules."""
+    if target_size is not None and cfg['controller'].get('require_exact_target', False):
+        return select_matched_action(population, risk, responder, cfg, round_id, target_size, random=True)
     available = [i for i, a in enumerate(population.accounts) if not a.adaptive_notifications]
     take = capacities(population, cfg)
     if target_size is not None:
@@ -275,12 +296,51 @@ def select_random_action(population, risk, responder, cfg, round_id, target_size
     if sum(len(part.indices) for part in components) < minimum:
         return None, [{'action': a.public(), **p} for a, p in evaluated]
     batch = MultiAction(tuple(components))
+    if target_size is not None and cfg['controller'].get('require_exact_target', False) and len(batch.indices) != target_size:
+        return None, [{'action': a.public(), **p} for a, p in evaluated]
     baseline_fit = fitted_ideal_distance(counts, cfg['seed'])
     prediction = predict_action(population, batch, risk, responder, cfg, round_id, counts,
                                 cfg['controller']['validation_repeats'], baseline_fit)
     audit = [{'action': a.public(), **p} for a, p in evaluated]
     audit.append({'action': batch.public(), **prediction})
     return ((batch, prediction) if prediction['feasible'] else None), audit
+
+
+def select_matched_action(population, risk, responder, cfg, round_id, size, *, random):
+    """Spend the prescribed dynamic budget; never discard users to improve results.
+
+Frozen planning calls this on unchanged original passwords with reserved IDs.
+Random accounts are selected before any password-dependent rule comparison.
+    """
+    available = [i for i, a in enumerate(population.accounts) if not a.adaptive_notifications]
+    if size > capacities(population, cfg) or size > len(available):
+        return None, []
+    counts = population.counts()
+    order = random_account_order(population, available, cfg['seed'], round_id)
+    if not random:
+        order.sort(key=lambda i: -counts[population.accounts[i].password])
+    ids = tuple(order[:size])
+    group = Group('random' if random else 'all', '', '随机预算账户' if random else '起点频次排序预算账户')
+    hot = frozenset(w for w in sorted(counts, key=lambda w: (-counts[w], w))[:cfg['controller']['popular_k']])
+    fragments = candidate_fragments(hot=hot, development=responder.reference,
+                                   predictable_terms=cfg['controller']['predictable_terms'])
+    evaluated = []
+    for fragment in fragments:
+        if fragment.number in LENGTHS and LENGTHS[fragment.number] not in cfg['controller']['lengths']:
+            continue
+        rule = LocalRule(Rule(f'fragment-{fragment.number}',
+                              min_length=max(cfg['controller'].get('policy_floor_minimum_length', 8),
+                                             LENGTHS.get(fragment.number, 0))), fragment=fragment)
+        action = Action(group, rule, f'第 {fragment.number} 条：{fragment.label}', ids, len(available))
+        evaluated.append((action, predict_action(population, action, risk, responder, cfg, round_id, counts)))
+    ordered = sorted((pair for pair in evaluated if pair[1]['aggregate_guard_feasible']),
+                     key=lambda pair: pair[1]['score'], reverse=True)
+    baseline_fit = fitted_ideal_distance(counts, cfg['seed'])
+    finalists = [(a, predict_action(population, a, risk, responder, cfg, round_id, counts,
+                                    cfg['controller']['validation_repeats'], baseline_fit))
+                 for a, _ in ordered[:cfg['controller']['validation_shortlist']]]
+    winner = max((pair for pair in finalists if pair[1]['feasible']), key=lambda pair: pair[1]['score'], default=None)
+    return winner, [{'action': a.public(), **p} for a, p in evaluated + finalists]
 
 
 def plan_once(initial, risk, responder, cfg, round_targets=None):

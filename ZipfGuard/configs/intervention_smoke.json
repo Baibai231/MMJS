@@ -1,5 +1,5 @@
 {
-  "schema_version": "selective-intervention-v8-area-only-full-response",
+  "schema_version": "selective-intervention-v9-dual-individual-threshold",
   "seed": 42,
   "data": {
     "path": "../rockyou-withcount.txt",
@@ -18,6 +18,8 @@
     1000000
   ],
   "risk_budget": 1000000,
+  "attack_models": {"mode": "pcfg-omen-prefix", "threshold": 1000000, "order": 3,
+                    "timeout_seconds": 3600, "wsl_distribution": "Ubuntu-20.04"},
   "monte_carlo": {
     "samples": 10000,
     "seed": 42
@@ -26,7 +28,7 @@
     "timeout_seconds": 180
   },
   "controller": {
-    "execution_policy": "fixed-F-area-only-batch-v2",
+    "execution_policy": "dual-F-individual-threshold-v1",
     "round_fraction": 0.02,
     "total_fraction": 0.2,
     "batch_fractions": [

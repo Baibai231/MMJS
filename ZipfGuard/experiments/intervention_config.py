@@ -5,7 +5,7 @@ import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTOCOL = 'selective-intervention-v8-area-only-full-response'
+PROTOCOL = 'selective-intervention-v9-dual-individual-threshold'
 DEFAULT = {
     'schema_version': PROTOCOL, 'seed': 42,
     'data': {'path': '../rockyou-withcount.txt', 'format': 'password_with_count',
@@ -14,8 +14,10 @@ DEFAULT = {
     'risk_budget': 1000000,
     'monte_carlo': {'samples': 10000, 'seed': 42},
     'pcfg': {'timeout_seconds': 180},
+    'attack_models': {'mode': 'pcfg-omen-prefix', 'threshold': 1000000, 'order': 3,
+                      'timeout_seconds': 3600, 'wsl_distribution': 'Ubuntu-20.04'},
     'controller': {'round_fraction': .02, 'total_fraction': .20,
-                   'execution_policy': 'fixed-F-area-only-batch-v2',
+                   'execution_policy': 'dual-F-individual-threshold-v1',
                    'batch_fractions': [.001, .002, .005, .01, .02], 'max_rounds': 40,
                    'max_groups': 12, 'popular_k': 20, 'lengths': [10, 12, 15],
                    'candidate_pool': 'site-fragments-1-18-v1',
@@ -114,8 +116,24 @@ def validate_intervention_config(value):
     c['lengths'] = sorted(set(c['lengths']))
     if c['candidate_pool'] != 'site-fragments-1-18-v1':
         raise ValueError('候选池版本无效')
-    if c['execution_policy'] not in ('fixed-F-area-only-batch-v2', 'fixed-F-strict-batch-v1'):
+    if c['execution_policy'] not in ('fixed-F-area-only-batch-v2', 'fixed-F-strict-batch-v1',
+                                    'dual-F-individual-threshold-v1'):
         raise ValueError('响应接受协议无效')
+    a = cfg['attack_models']
+    if a['mode'] not in ('pcfg-mc', 'pcfg-omen-prefix'):
+        raise ValueError('攻击模型配置无效')
+    integer(a['threshold'], 1, 1000000, '个体攻击门槛')
+    integer(a['order'], 2, 3, 'OMEN 阶数')
+    integer(a['timeout_seconds'], 1, 7200, 'OMEN 超时')
+    if not isinstance(a['wsl_distribution'], str) or not a['wsl_distribution']:
+        raise ValueError('WSL 发行版无效')
+    if a['mode'] == 'pcfg-omen-prefix' and max(bs) > 1000000:
+        raise ValueError('实际候选前缀目前最多每模型 100 万次')
+    if c['execution_policy'] == 'dual-F-individual-threshold-v1':
+        if a['mode'] != 'pcfg-omen-prefix' or a['threshold'] != cfg['risk_budget']:
+            raise ValueError('个体门槛必须使用双攻击实际前缀并与主评估预算一致')
+        if r['mode'] != 'all-notified-change-v1':
+            raise ValueError('个体门槛要求全员成功修改模式')
     if (not isinstance(c['predictable_terms'], list) or len(c['predictable_terms']) > 50
             or any(not isinstance(term, str) or not term or len(term) > 40
                    for term in c['predictable_terms'])):

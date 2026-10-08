@@ -45,9 +45,9 @@ def area_change(risk, rows, total, budgets):
         if not count:
             continue
         rank = model.detail(word)['guess_count']
-        if rank is None:
+        if rank is None and model.detail(word)['status'] == 'outside_model_support':
             unknown_delta += count
-        else:
+        elif rank is not None:
             area_delta += count*sum(w for w, b in zip(weights, budgets) if rank <= b)
     return {'gain': -area_delta/total, 'uncovered_rate_change': unknown_delta/total}
 
@@ -86,8 +86,19 @@ def strength_diagnostics(rows, risk):
     for row in rows:
         if row['status'] != 'changed':
             continue
-        before = model.detail(row['old'])['guess_count']
-        after = model.detail(row['new'])['guess_count']
+        old_detail, new_detail = model.detail(row['old']), model.detail(row['new'])
+        before = old_detail['guess_count']
+        after = new_detail['guess_count']
+        if (before is not None and after is None and
+                new_detail.get('status') == 'beyond_tested_budget' and
+                new_detail.get('rank_lower_bound', 0) > before):
+            counts['improved'] += 1
+            continue
+        if (after is not None and before is None and
+                old_detail.get('status') == 'beyond_tested_budget' and
+                old_detail.get('rank_lower_bound', 0) > after):
+            counts['weakened'] += 1
+            continue
         key = ('uncomparable' if before is None or after is None else
                'improved' if after > before else 'weakened' if after < before else 'equal')
         counts[key] += 1

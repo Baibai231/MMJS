@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 from experiments.intervention_config import load_intervention_config
 from experiments.intervention_pipeline import run_intervention_pipeline
 from core.ideal_distribution import METRIC
-from core.intervention_acceptance import AREA_ONLY_POLICY
+from core.intervention_acceptance import AREA_ONLY_POLICY, INDIVIDUAL_POLICY
 
 
 def save_json(path, value):
@@ -30,10 +30,18 @@ def audit_report(report):
     n = cfg['data']['users']
     comparison = report['google_round_zipf']
     area_only = cfg['controller']['execution_policy'] == AREA_ONLY_POLICY
+    individual = cfg['controller']['execution_policy'] == INDIVIDUAL_POLICY
     assert comparison['common_google_start_verified']
     start = report['arms']['google_hold']['final']['account_state_sha256']
     round_cap = math.floor(n * cfg['controller']['round_fraction'] + 1e-9)
     total_cap = math.floor(n * cfg['controller']['total_fraction'] + 1e-9)
+    if individual:
+        dynamic_schedule = [r['action']['selected'] for r in report['arms']['google_dynamic']['rounds']]
+        assert comparison['comparison_budget']['planned_round_notification_schedule'] == dynamic_schedule
+        for key in ('google_random', 'google_frozen'):
+            control_schedule = [r['action']['selected'] for r in report['arms'][key]['rounds']]
+            matched = comparison['comparison_budget']['matched_notification_counts'][key]
+            assert matched == (control_schedule == dynamic_schedule)
     for key, arm in report['arms'].items():
         assert arm['final']['ledger']['accounts'] == n
         assert arm['trajectory'][0]['account_state_sha256'] == start
@@ -45,21 +53,27 @@ def audit_report(report):
             assert current['ledger']['adaptive_notification_events'] - previous['ledger']['adaptive_notification_events'] <= round_cap
             guard = row['aggregate_attack_guard']
             if guard['accepted']:
-                assert guard['before_area'] - guard['after_area'] > 1e-12
-                if not area_only:
+                if individual:
+                    assert guard['individual_passed'] == guard['individual_total'] == row['changed']
+                    assert guard['threshold_per_model'] == cfg['attack_models']['threshold']
+                else:
+                    assert guard['before_area'] - guard['after_area'] > 1e-12
+                if not area_only and not individual:
                     assert guard['proposed_uncovered_rate_change'] <= 1e-12
             else:
                 assert row['changed'] == 0
                 assert abs(guard['before_area'] - guard['after_area']) <= 1e-12
-            if area_only:
+            if area_only or individual:
                 assert guard['accepted']
                 assert row['changed'] == row['action']['selected']
                 assert row['nonresponse'] == row['failed_to_comply'] == 0
         assert arm['attacks']['A1'] is not None
     return {'passed': True, 'accounts': n, 'common_start': True,
             'round_budget': round_cap, 'total_budget': total_cap,
-            'checks': ['population', 'common Google start', 'notifications', 'round limit',
-                       'F area-only + full successful response' if area_only else 'atomic F guard', 'endpoint A1']}
+            'checks': ['population', 'common eight-character start', 'notifications', 'round limit',
+                       'individual PCFG + OMEN threshold' if individual else
+                       'F area-only + full successful response' if area_only else 'atomic F guard', 'endpoint A1'],
+            'notification_matching': comparison['comparison_budget'].get('matched_notification_counts')}
 
 
 def publish(report):

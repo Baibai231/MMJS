@@ -18,7 +18,7 @@ def round_parameter_svg(rows, *, requested_rounds=10):
     x_max = max(1, requested_rounds, rows[-1]['round'])
     x_at = lambda rnd: 95 + 745 * rnd / x_max
     pieces = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 610" '
-              'role="img" aria-label="共同 Google 起点及逐轮 CDF 采样拟合参数 c 和 s">',
+              'role="img" aria-label="共同 8 字符基础规则 起点及逐轮 CDF 采样拟合参数 c 和 s">',
               '<style>text{font-family:system-ui,sans-serif;fill:#20304a}'
               '.tick{font-size:11px;fill:#607087}.caption{font-size:13px}</style>']
     for key, label, top, dash in [('c', '参数 c（实线）', 65, ''),
@@ -72,7 +72,7 @@ def round_parameter_svg(rows, *, requested_rounds=10):
     for rnd in range(x_max+1):
         x = x_at(rnd)
         pieces.append(f'<text x="{x:.2f}" y="446" text-anchor="middle" class="tick">{rnd}</text>')
-    pieces.append('<text x="465" y="468" text-anchor="middle" class="caption">Google 起点后的动态调整轮次（0 = 共同起点）</text>')
+    pieces.append('<text x="465" y="468" text-anchor="middle" class="caption">8 字符基础规则 起点后的动态调整轮次（0 = 共同起点）</text>')
     pieces.append('<g aria-label="参数线型图例" class="caption">'
                   '<path d="M95 493H130" stroke="#475569" stroke-width="2.7"/>'
                   '<text x="139" y="498">c：实线</text>'
@@ -83,7 +83,7 @@ def round_parameter_svg(rows, *, requested_rounds=10):
         rnd = row['round']
         col, line = rnd % 6, rnd // 6
         x, y = 103+133*col, 530+27*line
-        label = '0 · Google 起点' if rnd == 0 else f'{rnd} · 调整后'
+        label = '0 · 8 字符基础规则 起点' if rnd == 0 else f'{rnd} · 调整后'
         pieces.append(f'<g aria-label="{escape(label)}"><circle cx="{x}" cy="{y-4}" r="5"'
                       f' fill="{ROUND_COLORS[rnd]}"/><text x="{x+11}" y="{y}" font-size="12">'
                       f'{escape(label)}</text></g>')
