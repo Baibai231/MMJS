@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "accounts": 100000,
+  "common_start": true,
+  "round_budget": 2000,
+  "total_budget": 20000,
+  "checks": [
+    "population",
+    "common eight-character start",
+    "notifications",
+    "round limit",
+    "individual PCFG + OMEN threshold",
+    "endpoint A1"
+  ],
+  "notification_matching": {
+    "google_random": true,
+    "google_frozen": true
+  }
+}

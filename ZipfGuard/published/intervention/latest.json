@@ -1,17 +1,17 @@
 {
-  "run_id": "525f9970998b0c26",
+  "run_id": "3a83057341104cfc",
   "users": 100000,
   "google_start": true,
   "dynamic_rounds": 6,
   "candidate_pool": "site-fragments-1-18-v1",
   "comparison_arms": 5,
   "endpoint_arms": 6,
-  "protocol": "selective-intervention-v8-area-only-full-response",
+  "protocol": "selective-intervention-v9-dual-individual-threshold",
   "analysis_metric": "fitted_log_rank_wasserstein1",
   "dynamic_execution_reused": false,
   "site_controls": [
     "yahoo_japan"
   ],
-  "created_at": "2026-10-08T07:49:47Z",
+  "created_at": "2026-10-08T16:34:17Z",
   "validated": true
 }
