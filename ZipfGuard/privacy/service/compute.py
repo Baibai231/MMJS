@@ -54,18 +54,18 @@ class Computer:
         for shape in SHAPES if include_shape else []:
             pattern = [dict(L=1,U=2,D=3,S=4)[kind] for kind,n in re.findall(r'([LUDS])(\d+)',shape) for _ in range(int(n))]
             pattern += [0]*(WIDTH-len(pattern))
-            matches.append(self.equal(code,pattern))
+            matches.append(self.same_password(code,pattern))
         shape = self.sec(len(SHAPES))-self.mpc.sum([v*(len(SHAPES)-i) for i,v in enumerate(matches)])
         return {'valid':valid, 'length':self.mpc.sum(nz), 'nz':nz, 'low':low, 'up':up,
                 'digit':digit, 'symbol':symbol, 'lowered':lowered, 'shape':shape}
 
     def public_word(self, chars, word):
         raw = list(word.encode('ascii'))
-        return self.equal(chars, raw+[0]*(WIDTH-len(raw))) if len(raw)<=WIDTH else self.sec(0)
+        return self.same_password(chars, raw+[0]*(WIDTH-len(raw))) if len(raw)<=WIDTH else self.sec(0)
 
     def contains(self, chars, word):
         raw = list(word.encode('ascii'))
-        return self.any(self.equal(chars[i:i+len(raw)],raw) for i in range(WIDTH-len(raw)+1))
+        return self.any(self.same_password(chars[i:i+len(raw)],raw) for i in range(WIDTH-len(raw)+1))
 
     def fragment(self, number, chars, meta, bank=()):
         m = self.mpc
@@ -130,6 +130,66 @@ class Computer:
                 spectra.append(item[1]); group.append((item[2:],item[1]>0))
             banks.append(group)
         return counts+spectra,banks
+
+
+    def same_password(self, a, b):
+        # Four padded ASCII characters fit in 28 bits, within SecInt(32).
+        # Radix 128 is injective on 0..126; no probabilistic fingerprint.
+        def packed(row):
+            return [sum(row[i+k]*(128**k) for k in range(min(4, len(row)-i)))
+                    for i in range(0, len(row), 4)]
+        return self.equal(packed(a), packed(b))
+
+    async def compact_add(self, groups, chars, amount):
+        """Update a secret histogram without opening its matching position."""
+        matches = [self.same_password(chars, row) for row, _ in groups]
+        first = []
+        seen = self.sec(0)
+        for match in matches:
+            first.append(match*(1-seen))
+            seen = seen + match - seen*match
+        updated = [(row, weight+amount*match) for (row, weight),match in zip(groups,first)]
+        if amount == 1:
+            # Zero-weight duplicates remain secret; no occurrence bit is opened.
+            updated.append((chars, 1-seen))
+        await self.mpc.gather([weight for _,weight in updated])
+        return updated
+
+    async def compact_snapshot(self, groups, rank_limit=3):
+        """Exact secret counts on a client-prepared synthetic histogram.
+
+        The local fixture generator supplies unique rows and secret weights;
+        subsequent ordinary transactions update this same secret histogram.
+        This preparation is restricted to LOCAL synthetic demo installations.
+        No group identity, weight, match or winning index is opened.
+        """
+        m=self.mpc
+        n=len(groups)
+        rows=[row for row,_ in groups]
+        metas=[]
+        for i,row in enumerate(rows):
+            metas.append(self.characterize(row))
+            if i%4==3:await m.gather([meta['shape'] for meta in metas[-4:]])
+        await m.gather([meta['shape'] for meta in metas])
+        counts=[]; spectra=[]; banks=[]
+        for s in range(len(SHAPES)+1):
+            masses=[weight*(meta['shape']==s) for (_,weight),meta in zip(groups,metas)]
+            counts.append(m.sum(masses))
+            scores=[mass*(n+1)+(n-i)*(mass>0) for i,mass in enumerate(masses)]
+            group=[]
+            for _ in range(rank_limit):
+                if not n:
+                    spectra.append(self.sec(0));group.append(([self.sec(0)]*WIDTH,self.sec(0)))
+                    continue
+                winner=m.max([[score,self.sec(i)] for i,score in enumerate(scores)],key=lambda x:x[0])
+                unit=m.unit_vector(winner[1],n)
+                mass=m.in_prod(masses,unit)*(winner[0]>0)
+                chars=[m.in_prod([row[k] for row in rows],unit) for k in range(WIDTH)]
+                spectra.append(mass);group.append((chars,mass>0))
+                scores=[score*(1-flag) for score,flag in zip(scores,unit)]
+                await m.gather(mass)
+            banks.append(group)
+        return counts+spectra,banks,metas
 
     async def noisy(self, vector, epsilon, sensitivity):
         # Each independent party supplies its own exact-rational discrete Laplace

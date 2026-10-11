@@ -222,7 +222,7 @@ class Business:
             claims=self.session(request);state=self.store.get('site','state')
             return {'identity':claims['sub'],'role':claims['role'],'site':self.cfg['site'],'name':self.cfg['name'],**state,
                   'legacy_reserved':len(self.cfg.get('reserved_legacy_accounts',[])),'migration_pending':sum(1 for a in self.cfg.get('reserved_legacy_accounts',[]) if a not in state['accounts']),
-                  'epsilon_cap':self.cfg['epsilon_cap'],'task_cap':self.cfg['task_cap'],'events':self.store.events(100),
+                  'epsilon_cap':self.cfg['epsilon_cap'],'task_cap':self.cfg['task_cap'],'round_task_cap':self.cfg.get('round_task_cap',100),'events':self.store.events(100),
                   'jobs':{key:{k:v for k,v in job.items() if k not in {'params','actor','context'}} for key,job in self.store.list('jobs').items()},'settings':self.store.get('settings','current',{'retention_days':90,'scheduled_release':False})}
 
         @app.post('/jobs')
@@ -232,6 +232,8 @@ class Business:
             body=await request.json()
             if set(body)!={'op','params','account','policy_version','account_version'} or body['op'] not in ADMIN_OPS:
                 raise HTTPException(400,'作业参数无效')
+            if body['op']=='assign_plan' and type(body.get('params',{}).get('quota')) is int and body['params']['quota']>self.cfg.get('round_task_cap',10000):
+                raise HTTPException(400,'超出本站单轮分配上限')
             from services.common.contracts import Context
             nonce=secrets.token_hex(32)
             try:Context(site=self.cfg['site'],nonce=nonce,client_key='0'*64,**body)

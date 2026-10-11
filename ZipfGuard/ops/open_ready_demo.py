@@ -47,7 +47,7 @@ def main():
         import httpx
         from playwright.sync_api import sync_playwright
         from ops.tool import run
-        if not (runtime/'processes.json').exists():run('start',runtime)
+        run('start',runtime)
         with httpx.Client(verify=cfg['ca'],trust_env=False,timeout=4) as http:
             deadline=time.time()+50
             while time.time()<deadline:
@@ -99,12 +99,21 @@ def main():
             # This public synthetic fixture is entered only into the extension.
             # It is never passed to the administrator page or business service.
             user_logged_in=False
-            with httpx.Client(verify=cfg['ca'],trust_env=False,timeout=4) as http:
-                version=http.get(cfg['user_api']+'/account-version/integration-smoke').json()['version']
+            demo_account='integration-smoke';demo_password=None
+            fixture=runtime/'population-1000-client/client-state.json'
+            if fixture.is_file():
+                client=json.loads(fixture.read_text('utf-8'))
+                business_state=store.get('site','state')
+                pending=[a for a,row in business_state['accounts'].items()
+                         if a in client['accounts'] and row.get('task') and row['task']['status']=='pending']
+                if pending:
+                    demo_account=sorted(pending)[0];demo_password=client['accounts'][demo_account]['password']
+            with httpx.Client(verify=cfg['ca'],trust_env=False,timeout=30) as http:
+                version=http.get(cfg['user_api']+'/account-version/'+demo_account).json()['version']
             if version:
                 user.get_by_role('button',name='私密登录',exact=True).click()
-                user.locator('#account').fill('integration-smoke')
-                user.locator('#password').fill('Updated-Smoke-Password-92' if version>1 else 'Unique-Sample-Password-37')
+                user.locator('#account').fill(demo_account)
+                user.locator('#password').fill(demo_password or ('Updated-Smoke-Password-92' if version>1 else 'Unique-Sample-Password-37'))
                 user.get_by_role('button',name='私密登录',exact=True).last.click()
                 try:
                     user.get_by_text('操作完成',exact=True).wait_for(timeout=60000)
@@ -143,6 +152,10 @@ def main():
             report('closed')
     except Exception as exc:
         report('error',error=type(exc).__name__,message=str(exc)[:240])
+        if os.name=='nt':
+            ctypes.windll.user32.MessageBoxW(None,
+                '展示启动失败：'+str(exc)[:240]+'\n\n详细记录：'+str(runtime/'ready-demo-launch.error.log'),
+                'ZipfGuard 展示启动失败',0x10)
         raise
     finally:
         if mutex:

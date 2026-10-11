@@ -43,7 +43,7 @@ class Node:
         self.routes()
 
     def public_state(self):
-        return {k:v for k,v in self.state.items() if k not in {'accounts','snapshots'}} | {
+        return {k:v for k,v in self.state.items() if k not in {'accounts','snapshots','synthetic_compact'}} | {
             'accounts':{a:{k:v for k,v in row.items() if k!='shares'} for a,row in self.state['accounts'].items()},
             'snapshots':list(self.state['snapshots'])}
 
@@ -185,6 +185,23 @@ class Node:
             bank.append((self.computer.load_chars(entry['chars']),self.computer.load_chars([entry['active']])[0]))
         return bank
 
+
+    def load_demo_groups(self, state):
+        compact=state.get('synthetic_compact')
+        if not self.cfg.get('local_demo') or not compact:return None
+        if compact['data_epoch']!=state.get('data_epoch',0):
+            raise ValueError('synthetic histogram epoch mismatch')
+        c=self.computer
+        return [(c.load_chars(item['shares']),c.load_chars([item['weight']])[0])
+                for item in compact['groups']]
+
+    async def save_demo_groups(self, state, groups):
+        c=self.computer
+        state['synthetic_compact']['groups']=[{'shares':await c.save_chars(row),
+                                              'weight':(await c.save_chars([weight]))[0]}
+                                             for row,weight in groups]
+        state['synthetic_compact']['data_epoch']=state.get('data_epoch',0)
+
     async def execute(self,context,fields,digest):
         c=self.computer; op=context['op']; a=context['account']; params=context['params']
         old=self.state; state=copy.deepcopy(old); accounts=state['accounts']; row=accounts.get(a)
@@ -253,25 +270,49 @@ class Node:
                 self.store.put('budget','epsilon',used+epsilon,conn)
             self.ledger()
             state['epsilon_spent']=used+epsilon
-            rows=[c.load_chars(accounts[key]['shares']) for key in sorted(accounts)]
-            vector,banks=await c.snapshot(rows)
+            groups=self.load_demo_groups(state)
+            if groups is not None and not state['synthetic_compact'].get('normalized'):
+                count=state['synthetic_compact']['fixture_groups']
+                initial=groups[:count]
+                for chars,weight in groups[count:]:
+                    initial=await c.compact_add(initial,chars,1)
+                groups=initial
+                state['synthetic_compact']['normalized']=True
+                await self.save_demo_groups(state,groups)
+            rows=[c.load_chars(accounts[key]['shares']) for key in sorted(accounts)] if groups is None else [r for r,w in groups]
+            if groups is None:
+                vector,banks=await c.snapshot(rows)
+                weights=[c.sec(1)]*len(rows)
+                metas=None
+            else:
+                vector,banks,metas=await c.compact_snapshot(groups)
+                weights=[w for r,w in groups]
+                if not await mpc.output(mpc.sum(weights)==len(accounts)):
+                    raise ValueError('synthetic population mismatch')
             await mpc.gather(vector)  # Local shares only; keep HTTP ingress responsive.
             # 4-sensitivity counts+conditional spectra use 80% budget.
             noisy=await c.noisy(vector,epsilon*.8,4)
             # 17 fixed fragment counts have sensitivity 1 each. The hot count
             # is a fixed-prefix spectrum sum, sensitivity <=2. Total <=19.
             # use remaining 20%; extra coordinates never reuse sensitivity 4.
-            metas=[c.characterize(r,include_shape=False) for r in rows]
+            if metas is None:metas=[c.characterize(r,include_shape=False) for r in rows]
             hot=[entry for group in banks for entry in group]
             violations=[]
             for n in range(1,19):
-                violation=mpc.sum(vector[len(SHAPES)+1:]) if n==17 else mpc.sum([1-c.fragment(n,r,meta,hot) for r,meta in zip(rows,metas)])
+                if n==17:
+                    violation=mpc.sum(vector[len(SHAPES)+1:])
+                else:
+                    parts=[]
+                    for i,(r,meta,weight) in enumerate(zip(rows,metas,weights)):
+                        parts.append(weight*(1-c.fragment(n,r,meta,hot)))
+                        if i%4==3:await mpc.gather(parts[-4:])
+                    violation=mpc.sum(parts)
                 violations.append(violation)
                 await mpc.gather(violation)  # Nothing is opened or returned here.
             noisy_rules=await c.noisy(violations,epsilon*.2,19)
             from policy.privacy_joint_profile import simplex_projection,decreasing_projection
             dimension=len(SHAPES)+1
-            counts=simplex_projection(noisy[:dimension],len(rows)).tolist()
+            counts=simplex_projection(noisy[:dimension],len(accounts)).tolist()
             spectra=[]
             for s in range(dimension):
                 line=decreasing_projection(noisy[dimension+3*s:dimension+3*s+3])
@@ -281,11 +322,12 @@ class Node:
             for group in banks:
                 saved.append([{'chars':await c.save_chars(chars),'active':(await c.save_chars([active]))[0]} for chars,active in group])
             state['snapshots'][snapshot]={'banks':saved,'epoch':state['epoch']}
-            public={'snapshot':snapshot,'population':len(rows),'counts':counts,'spectra':spectra,
+            public={'snapshot':snapshot,'population':len(accounts),'counts':counts,'spectra':spectra,
                     'shapes':SHAPES+['OTHER'],'shape_version':SHAPE_VERSION,'epsilon':epsilon,
-                    'epsilon_spent':state['epsilon_spent'],'fragment_violations':[max(0,min(len(rows),v)) for v in noisy_rules],
+                    'epsilon_spent':state['epsilon_spent'],'fragment_violations':[max(0,min(len(accounts),v)) for v in noisy_rules],
                     'stage':stage,'population_epoch':state.get('data_epoch',0),
-                    'noise':'three independent discrete Laplace contributions','prediction':'DP estimates; no future user response model'}
+                    'noise':'three independent discrete Laplace contributions','prediction':'DP estimates; no future user response model',
+                    'input_mode':'local synthetic client-prepared secret histogram' if groups is not None else 'per-account secret inputs'}
             state['releases'][snapshot]=public; outcome='published'; changed=True
         elif op in {'apply_policy','rollback_policy'}:
             policy=Policy.model_validate(params['policy']).model_dump() if op=='apply_policy' else copy.deepcopy(state['policies'].get(str(params['version'])))
@@ -297,7 +339,7 @@ class Node:
             public={'policy':policy,'policy_version':state['policy_version']}
         elif op=='assign_plan':
             quota=int(params['quota']); cap=int(params['total_cap'])
-            if quota<1 or cap>self.cfg['task_cap'] or cap<state['task_used']: return state,'task_budget_exhausted',{},False
+            if quota<1 or quota>self.cfg.get('round_task_cap',10000) or cap>self.cfg['task_cap'] or cap<state['task_used']: return state,'task_budget_exhausted',{},False
             policy=Policy(snapshot=params.get('snapshot'),positions=params.get('positions',[]),shapes=params.get('shapes',[]),fragments=params.get('fragments',[])).model_dump()
             bank=await self.load_bank(policy)
             assigned=[]
@@ -324,7 +366,14 @@ class Node:
             outcome='cancel_requested'; public={'job':params['job']}
         if changed:
             state['epoch']+=1
-            if op in {'register','migrate','change','recover','delete'}:state['data_epoch']=state.get('data_epoch',0)+1
+            if op in {'register','migrate','change','recover','delete'}:
+                groups=self.load_demo_groups(old)
+                if groups is not None:
+                    if op in {'change','recover','delete'}:
+                        groups=await c.compact_add(groups,c.load_chars(old['accounts'][a]['shares']),-1)
+                    if op!='delete':groups=await c.compact_add(groups,secret['new'],1)
+                state['data_epoch']=state.get('data_epoch',0)+1
+                if groups is not None:await self.save_demo_groups(state,groups)
         return state,outcome,public,changed
 
     async def recover(self):
@@ -345,7 +394,7 @@ class Node:
             receipt_quorum(decision['events'],self.cfg['node_keys'],{'site':self.cfg['site'],'nonce':nonce,'phase':'prepare'})
             prepared=self.store.get('prepared',nonce)
             if decision['epoch']>self.state['epoch']:
-                if not prepared: raise ValueError('missing local prepared shares; restore own latest backup')
+                if not prepared or 'state' not in prepared: raise ValueError('missing local prepared shares; restore own latest backup')
                 self.state=prepared['state']
                 self.store.put('state','current',self.state)
             self.store.put('decisions',nonce,decision)
@@ -356,6 +405,8 @@ class Node:
                 if pending:
                     self.store.put('completed',nonce,{'binding':pending['binding'],'event':event})
                     self.store.remove('pending',nonce);self.store.remove('running',nonce)
+            if prepared and self.store.get('completed',nonce) and decision['epoch']<=self.state['epoch']:
+                self.store.put('prepared',nonce,{'receipt':prepared['receipt'],'committed_epoch':decision['epoch']})
         spent=self.store.get('budget','epsilon',0)
         self.state['epsilon_spent']=max(spent,self.state['epsilon_spent'])
         self.state['task_used']=max(self.state['task_used'],json.loads(self.ledger_path.read_text('utf-8')).get('task_used',0))
@@ -390,7 +441,9 @@ class Node:
                     'context_digest':fingerprint_public(context),'request_digest':digest,'outcome':outcome,
                     'committed':changed,'epoch':state['epoch'],'policy_version':state['policy_version'],'result':public}
             prepare={**result,'phase':'prepare'}
-            prepared={'state':state,'receipt':result}
+            # Only mutating requests need staged shares for crash recovery.
+            prepared={'receipt':result,'committed_epoch':state['epoch']}
+            if changed: prepared['state']=state
             self.store.put('prepared',nonce,prepared)
             self.local_fault('after_prepare',nonce)
             signed={'party':self.pid,'receipt':prepare,'signature':self.key.sign(canonical(prepare)).hex()}
@@ -406,6 +459,8 @@ class Node:
             with self.store.transaction() as conn:
                 self.store.put('state','current',state,conn)
                 self.store.put('completed',nonce,{'binding':request['binding'],'event':event},conn)
+                # Current shares and the completed receipt are now durable together.
+                self.store.put('prepared',nonce,{'receipt':result,'committed_epoch':state['epoch']},conn)
                 self.store.remove('pending',nonce,conn); self.store.remove('running',nonce,conn)
                 self.store.append('operation',{'nonce':nonce,'op':context['op'],'outcome':outcome,'seconds':time.perf_counter()-started},conn)
             self.state=state
