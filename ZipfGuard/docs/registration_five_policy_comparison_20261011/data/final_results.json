@@ -1,0 +1,308 @@
+{
+  "graded": {
+    "arm": "graded",
+    "seed": 11,
+    "status": "complete",
+    "cost": {
+      "initial_users": 100000,
+      "completed_users": 100000,
+      "pending_users": 0,
+      "modification_rate": 0.55668,
+      "mean_extra_submissions": 0.72875,
+      "more_than_three_fraction": 0.00245,
+      "mean_edit_distance": 1.85482,
+      "incremental_modification_rate": 0.17594,
+      "incremental_mean_extra_submissions": 0.20005,
+      "incremental_more_than_three_fraction": 0.00030999999999999995,
+      "common_base_modification_rate": 0.52422,
+      "common_base_mean_extra_submissions": 0.5287,
+      "completion_rate": 1.0,
+      "p90_extra_submissions": 2,
+      "policy_updates": 2
+    },
+    "eligibility_failures": [],
+    "actual_attacks": {
+      "union_equal_total_B": {
+        "estimated": false,
+        "points": [
+          {
+            "budget": 1000,
+            "per_model_budget": 500,
+            "max_total_attempts": 1000,
+            "hits": 877,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.00877
+          },
+          {
+            "budget": 10000,
+            "per_model_budget": 5000,
+            "max_total_attempts": 10000,
+            "hits": 1839,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.01839
+          },
+          {
+            "budget": 100000,
+            "per_model_budget": 50000,
+            "max_total_attempts": 100000,
+            "hits": 5737,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.05737
+          },
+          {
+            "budget": 1000000,
+            "per_model_budget": 500000,
+            "max_total_attempts": 1000000,
+            "hits": 13608,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.13608
+          }
+        ]
+      }
+    }
+  },
+  "schechter_strong": {
+    "arm": "schechter_strong",
+    "seed": 11,
+    "status": "complete",
+    "cost": {
+      "initial_users": 100000,
+      "completed_users": 100000,
+      "pending_users": 0,
+      "modification_rate": 0.55089,
+      "mean_extra_submissions": 0.71376,
+      "more_than_three_fraction": 0.00539,
+      "mean_edit_distance": 0.0,
+      "incremental_modification_rate": 0.15523,
+      "incremental_mean_extra_submissions": 0.18506,
+      "incremental_more_than_three_fraction": 0.00286,
+      "common_base_modification_rate": 0.52422,
+      "common_base_mean_extra_submissions": 0.5287,
+      "completion_rate": 1.0
+    },
+    "eligibility_failures": [],
+    "actual_attacks": {
+      "union_equal_total_B": {
+        "estimated": false,
+        "points": [
+          {
+            "budget": 1000,
+            "per_model_budget": 500,
+            "max_total_attempts": 1000,
+            "hits": 718,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.00718
+          },
+          {
+            "budget": 10000,
+            "per_model_budget": 5000,
+            "max_total_attempts": 10000,
+            "hits": 2562,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.02562
+          },
+          {
+            "budget": 100000,
+            "per_model_budget": 50000,
+            "max_total_attempts": 100000,
+            "hits": 9827,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.09827
+          },
+          {
+            "budget": 1000000,
+            "per_model_budget": 500000,
+            "max_total_attempts": 1000000,
+            "hits": 18469,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.18469
+          }
+        ]
+      }
+    }
+  },
+  "malone": {
+    "arm": "malone",
+    "seed": 11,
+    "status": "complete",
+    "cost": {
+      "initial_users": 100000,
+      "completed_users": 100000,
+      "pending_users": 0,
+      "modification_rate": 0.53166,
+      "mean_extra_submissions": 0.61692,
+      "more_than_three_fraction": 0.00222,
+      "mean_edit_distance": 0.0,
+      "incremental_modification_rate": 0.07649,
+      "incremental_mean_extra_submissions": 0.08822,
+      "incremental_more_than_three_fraction": 0.00113,
+      "common_base_modification_rate": 0.52422,
+      "common_base_mean_extra_submissions": 0.5287,
+      "completion_rate": 1.0
+    },
+    "eligibility_failures": [],
+    "actual_attacks": {
+      "union_equal_total_B": {
+        "estimated": false,
+        "points": [
+          {
+            "budget": 1000,
+            "per_model_budget": 500,
+            "max_total_attempts": 1000,
+            "hits": 1807,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.01807
+          },
+          {
+            "budget": 10000,
+            "per_model_budget": 5000,
+            "max_total_attempts": 10000,
+            "hits": 6116,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.06116
+          },
+          {
+            "budget": 100000,
+            "per_model_budget": 50000,
+            "max_total_attempts": 100000,
+            "hits": 15361,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.15361
+          },
+          {
+            "budget": 1000000,
+            "per_model_budget": 500000,
+            "max_total_attempts": 1000000,
+            "hits": 23954,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.23954
+          }
+        ]
+      }
+    }
+  },
+  "segreti_struct_m_nohint": {
+    "arm": "segreti_struct_m_nohint",
+    "seed": 11,
+    "status": "complete",
+    "cost": {
+      "initial_users": 100000,
+      "completed_users": 100000,
+      "pending_users": 0,
+      "modification_rate": 0.93086,
+      "mean_extra_submissions": 2.34574,
+      "more_than_three_fraction": 0.17305,
+      "mean_edit_distance": 0.0,
+      "incremental_modification_rate": 0.9002,
+      "incremental_mean_extra_submissions": 1.81704,
+      "incremental_more_than_three_fraction": 0.11429,
+      "common_base_modification_rate": 0.52422,
+      "common_base_mean_extra_submissions": 0.5287,
+      "completion_rate": 1.0
+    },
+    "eligibility_failures": [
+      "modification_rate",
+      "mean_extra_submissions",
+      "more_than_three_fraction"
+    ],
+    "actual_attacks": {
+      "union_equal_total_B": {
+        "estimated": false,
+        "points": [
+          {
+            "budget": 1000,
+            "per_model_budget": 500,
+            "max_total_attempts": 1000,
+            "hits": 709,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.00709
+          },
+          {
+            "budget": 10000,
+            "per_model_budget": 5000,
+            "max_total_attempts": 10000,
+            "hits": 1232,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.01232
+          },
+          {
+            "budget": 100000,
+            "per_model_budget": 50000,
+            "max_total_attempts": 100000,
+            "hits": 3881,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.03881
+          },
+          {
+            "budget": 1000000,
+            "per_model_budget": 500000,
+            "max_total_attempts": 1000000,
+            "hits": 7733,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.07733
+          }
+        ]
+      }
+    }
+  },
+  "github_core": {
+    "arm": "github_core",
+    "seed": 11,
+    "status": "complete",
+    "cost": {
+      "initial_users": 100000,
+      "completed_users": 100000,
+      "pending_users": 0,
+      "modification_rate": 0.76668,
+      "mean_extra_submissions": 1.26579,
+      "more_than_three_fraction": 0.06702,
+      "mean_edit_distance": 0.0,
+      "incremental_modification_rate": 0.00755,
+      "incremental_mean_extra_submissions": 0.0,
+      "incremental_more_than_three_fraction": 0.0,
+      "common_base_modification_rate": 0.76902,
+      "common_base_mean_extra_submissions": 1.27581,
+      "completion_rate": 1.0
+    },
+    "eligibility_failures": [],
+    "actual_attacks": {
+      "union_equal_total_B": {
+        "estimated": false,
+        "points": [
+          {
+            "budget": 1000,
+            "per_model_budget": 500,
+            "max_total_attempts": 1000,
+            "hits": 6257,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.06257
+          },
+          {
+            "budget": 10000,
+            "per_model_budget": 5000,
+            "max_total_attempts": 10000,
+            "hits": 13138,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.13138
+          },
+          {
+            "budget": 100000,
+            "per_model_budget": 50000,
+            "max_total_attempts": 100000,
+            "hits": 20652,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.20652
+          },
+          {
+            "budget": 1000000,
+            "per_model_budget": 500000,
+            "max_total_attempts": 1000000,
+            "hits": 27073,
+            "initial_users": 100000,
+            "rate_per_initial_user": 0.27073
+          }
+        ]
+      }
+    }
+  }
+}

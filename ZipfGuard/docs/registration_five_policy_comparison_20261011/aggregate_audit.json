@@ -1,0 +1,58 @@
+{
+  "status": "passed",
+  "expected_original_trajectories": 10,
+  "included_figure_trajectories": 5,
+  "original_audit_sha256": "95d7d27b62726bffb24e51e4bff956d9733a4e519eab8555ce01ddc4692ab4ab",
+  "recounts": [
+    {
+      "seed": 11,
+      "arm": "graded",
+      "union_recount_matches": true,
+      "result_sha256": "030a63230ae1f98ced6d9af77644a9e3998e12a5a2f20feb89dd6b02f8f8eea6",
+      "prefix_hashes": {
+        "pcfg": "1095cc2b1eacb68494c7ef9f2bdaa6e84fa94e862f7dd3c16df48cad2f8dec0a",
+        "omen": "d829d8197b432bb8c65c7b639050212e61e4107a74e2c82d8cdbbf09abde1302"
+      }
+    },
+    {
+      "seed": 11,
+      "arm": "schechter_strong",
+      "union_recount_matches": true,
+      "result_sha256": "acc1a71ff25099f50fd5c2ab2378422eb21558cee633c2f1d97daa37440749be",
+      "prefix_hashes": {
+        "pcfg": "fe93308a71e6317da924beebef646263aa78d9e27bb56128bcb38eff7aba9a8f",
+        "omen": "db77456604a9e5a20a1a062faf4ce8bf5d8159e12b89342205137eb5b09f4a52"
+      }
+    },
+    {
+      "seed": 11,
+      "arm": "malone",
+      "union_recount_matches": true,
+      "result_sha256": "b1dcf89b0f81fa00b4185f684b07eba93d8b6f6feb37312c0fabbf90235af2aa",
+      "prefix_hashes": {
+        "pcfg": "e3a8451da73bf2e12f752a818ad2c5540fbaefd4f63953e62a25f70ca82c8469",
+        "omen": "3885ef933ea345a99a68534528b3bf5146cf1f42c9628f16ca9e53b20838a5c8"
+      }
+    },
+    {
+      "seed": 11,
+      "arm": "segreti_struct_m_nohint",
+      "union_recount_matches": true,
+      "result_sha256": "2a23d566dd0a40bade0ff567e5a11cc97705671d1993b4bd65ea920f5b2d8f26",
+      "prefix_hashes": {
+        "pcfg": "4c9a5491cc26ac338a1d7924a16d357bfabf5fa11defdf8fc8d2950aca116938",
+        "omen": "ef51e9c5603f171c8f5f84b026f9e64c91e1638d8ffbdf49b2f3896689a2544a"
+      }
+    },
+    {
+      "seed": 11,
+      "arm": "github_core",
+      "union_recount_matches": true,
+      "result_sha256": "2f59e7aee4871231f83863ec6cbf59171043dd91272165866fe16bd670bc99c7",
+      "prefix_hashes": {
+        "pcfg": "d2889ddb9f7c598fb57e393a433087efe2c786f6d0bd0ecdec149ade496e8b0a",
+        "omen": "167072983357516b497df2e8219b4e7805a4070dfd6568da69d9390c121ec18f"
+      }
+    }
+  ]
+}
