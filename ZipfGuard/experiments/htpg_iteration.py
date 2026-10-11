@@ -1,4 +1,8 @@
-"""Paper-style multi-round simulation on synthetic users.
+"""Historical operational multi-round simulation on synthetic users.
+
+This is not a strict reproduction of the paper's IV-D transition. The strict
+contracts live in core.htpg_paper and experiments.htpg_paper_pipeline, with
+missing original feature/response definitions explicitly required as inputs.
 
 Half the users keep their string. The other half adopt up to two suggestions.
 This is the paper's simulated response, not a measured adoption rate. User

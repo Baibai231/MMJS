@@ -49,7 +49,7 @@ def render_dual_report(result, document=True):
     parts.append('<p>模拟包含攻击检查后的重选及显式构造，不是自然用户响应率的实测结果；'
                  '所有方法使用同一修改机制。构造失败的方案不下发。</p></section>')
     for name, (title, series, opts) in specs.items():
-        if name.startswith('yahoo_'):
+        if name.startswith(('yahoo_', 'cdf_fit_yahoo')):
             continue
         if name == 'cdf_fit_baseline':
             parts.append('<section id="distribution-fit"><h2>CDF 采样拟合</h2>'
@@ -63,9 +63,63 @@ def render_dual_report(result, document=True):
         audit = yahoo['target_audit']
         parts.append(table(['要求修改人数', '要求修改比例', '迁移后不合规人数'],
                            [[audit['required_modifications'], pct(audit['required_rate']), audit['noncompliant_remaining']]]))
+        hybrid = result.get('site_controls', {}).get('yahoo_dynamic_hybrid')
+        if hybrid:
+            design, costs = hybrid['hybrid_design'], hybrid['target_audit']
+            parts.append('<h3>部分用户用强策略，其余用户动态调整</h3>'
+                f'<p>预先设定最多 {pct(design["requested_strong_fraction"])} 的全站账户采用 Yahoo!；'
+                '只从未满足 Yahoo! 规则的账户中，按原始完整口令的重复频次从高到低选择，'
+                '相同频次用固定种子打散。这是分布驱动的选人办法，不声称已经找到最优比例。</p>'
+                f'<p>其余 {design["remaining_accounts"]:,} 个账户先满足至少 8 字符的基础规则，'
+                f'随后使用相同 18 条候选规则动态调整。每轮最多 {design["round_cap"]:,} 人，'
+                f'累计最多 {design["total_local_cap"]:,} 人，最多 {design["maximum_rounds"]} 轮；'
+                '所有分布和攻击比例均按全站账户计算。Yahoo! 分组不重复参与动态调整；'
+                '其余账户有资格参加，并非每个人都要修改。</p>'
+                f'<p>混合组实际执行 {len(hybrid["rounds"])} 轮动态调整；停止原因：'
+                f'{escape(hybrid["stop_label"])}。动态阶段沿用 PCFG 与 OMEN 个体门槛，'
+                'Yahoo! 阶段与全站 Yahoo! 对照使用同一合规修改机制；A1 仅在独立参考群体上重训。</p>')
+            parts.append(table(['方案', 'Yahoo! 修改人数', '其余账户基础规则修改', '后续动态修改',
+                                '累计修改的不同账户', '累计修改比例', '修改事件总数'], [
+                ['全站 Yahoo!', audit['required_modifications'], 0, 0,
+                 yahoo['final']['ledger']['changed'], pct(yahoo['final']['ledger']['changed_rate']),
+                 yahoo['final']['ledger']['modification_events']],
+                [hybrid['label'], costs['strong_modified'], costs['baseline_modified'], costs['local_modified'],
+                 costs['total_distinct_modified'], pct(costs['total_distinct_modified_rate']), costs['modification_events']]]))
+            parts.append('<p>基础规则修改与后续动态修改可能发生在同一账户上；'
+                         '累计不同账户按账户去重，不能把三个阶段人数简单相加。</p>')
+            rows = []
+            for method in (yahoo, hybrid):
+                distance = method['final']['ideal_distance']
+                evaluations = []
+                for level in ('F', 'A1'):
+                    ev = method['attacks'][level]
+                    from core.intervention_attack_area import curve_area
+                    evaluations += [pct(ev['minauto'][-1]['rate']), f'{curve_area(ev):.6f}']
+                rows.append([method['label'], f'{distance["empirical"]:.9f}',
+                             '—' if distance['fitted'] is None else f'{distance["fitted"]:.9f}', *evaluations])
+            parts.append(table(['方案', '实际频次 W1', 'CDF 拟合 W1', 'F 联合终点命中', 'F 联合对数面积',
+                                'A1 联合终点命中', 'A1 联合对数面积'], rows))
+            summary = result.get('hybrid_comparison')
+            if summary:
+                gaps = summary['distribution']
+                parts.append(f'<p>混合方案保留全站 Yahoo! 相对原始分布改善的比例：实际频次 '
+                    f'{pct(gaps["empirical"]["yahoo_improvement_retained"])}，CDF 拟合 '
+                    f'{pct(gaps["fitted"]["yahoo_improvement_retained"])}。'
+                    '预先设定的探索容差为保留至少 95% 的 W1 改善，且 F、A1 联合曲线对数面积'
+                    '分别不高于全站 Yahoo! 超过 0.005。逐项差距如实报告，不能据此宣称统计等效。</p>')
+                parts.append(table(['检查项', '混合−全站 Yahoo!', '是否落入预设探索容差'],
+                    [[k+' W1', f'{v["hybrid_minus_yahoo"]:+.9f}', '是' if v['within_exploratory_95pct'] else '否']
+                     for k, v in [('实际频次', gaps['empirical']), ('CDF 拟合', gaps['fitted'])]] +
+                    [[k+' 联合对数面积', f'{v["area_gap"]:+.6f}', '是' if v['within_exploratory_half_pp_area'] else '否']
+                     for k, v in summary['attacks'].items()]))
+            extension = result['metadata'].get('hybrid_extension', {})
+            parts.append(f'<p>本次只新增混合组计算。原有五组与全站 Yahoo! 结果沿用实验 '
+                         f'{escape(extension.get("parent_run_id", ""))}，已核对相同抽样、起始账户和固定 F 结果。'
+                         '30% 是预先固定的试验值；单次模拟不确定最低可行比例，也不等同于真实网站用户实验。</p>')
         for name, (title, series, opts) in specs.items():
-            if name.startswith('yahoo_'):
-                parts.append('<h3>'+escape(title)+'</h3>'+plot(series, distinguish=True, **opts))
+            if name.startswith(('yahoo_', 'cdf_fit_yahoo')):
+                parts.append('<div id="'+escape(name)+'"><h3>'+escape(title)+'</h3>'+plot(series, distinguish=True, **opts)+
+                    f'<p><a href="/api/intervention/figure/{result["metadata"]["run_id"]}/{name}.svg">下载带图例 SVG</a></p></div>')
         parts.append('</section>')
     parameter_rows = result.get('round_parameter_fits', {}).get('rows', [])
     parts.append('<section id="round_parameters"><h2>逐轮拟合参数</h2>'+

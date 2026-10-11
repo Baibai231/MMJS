@@ -1,0 +1,52 @@
+{
+  "passed": true,
+  "accounts": 100000,
+  "common_start": true,
+  "round_budget": 2000,
+  "total_budget": 20000,
+  "checks": [
+    "population",
+    "common eight-character start",
+    "notifications",
+    "round limit",
+    "individual PCFG + OMEN threshold",
+    "endpoint A1"
+  ],
+  "notification_matching": {
+    "google_random": true,
+    "google_frozen": true
+  },
+  "hybrid": {
+    "passed": true,
+    "original_arms_preserved": true,
+    "costs": {
+      "strong_assigned": 30000,
+      "strong_modified": 30000,
+      "strong_rate": 0.3,
+      "strong_explicit_completions": 7492,
+      "remaining_accounts": 70000,
+      "baseline_modified": 30387,
+      "strong_noncompliant": 0,
+      "local_modified": 3430,
+      "total_distinct_modified": 61646,
+      "total_distinct_modified_rate": 0.61646,
+      "modification_events": 63817
+    },
+    "design": {
+      "requested_strong_fraction": 0.3,
+      "remaining_accounts": 70000,
+      "round_cap": 1400,
+      "total_local_cap": 14000,
+      "maximum_rounds": 10,
+      "round_fraction_of_remaining": 0.02,
+      "total_fraction_of_remaining": 0.2,
+      "selection": "原始完整口令频次降序；相同频次按种子和账户编号打散；只选未满足 Yahoo 的账户",
+      "metric_population": 100000,
+      "dynamic_policy": "dual-F-individual-threshold-v1",
+      "strong_accounts_locked": true,
+      "A1_training": "independent-reference-only",
+      "remaining": "其余账户有资格参与动态调整，并非全部必须修改",
+      "cost_accounting": "adaptive 字段包含 Yahoo 阶段；local_modified 才是后续动态人数"
+    }
+  }
+}

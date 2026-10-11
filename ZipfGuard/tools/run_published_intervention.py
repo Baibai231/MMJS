@@ -91,10 +91,12 @@ def publish(report):
         'run_id': run_id, 'users': report['config']['data']['users'], 'google_start': True,
         'dynamic_rounds': len(report['arms']['google_dynamic']['rounds']),
         'candidate_pool': report['config']['controller']['candidate_pool'],
-        'comparison_arms': 5, 'endpoint_arms': 6,
+        'comparison_arms': len(report['arms'])+1,
+        'endpoint_arms': len(report['arms'])+1+len(report.get('site_controls', {})),
         'protocol': report['metadata']['protocol'],
         'analysis_metric': METRIC,
-        'dynamic_execution_reused': False, 'site_controls': list(report.get('site_controls', {})),
+        'dynamic_execution_reused': bool(report['metadata'].get('hybrid_extension', {}).get('existing_arms_reused')),
+        'site_controls': list(report.get('site_controls', {})),
         'created_at': report['metadata']['created_at'], 'validated': True})
 
 

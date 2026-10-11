@@ -1,0 +1,13 @@
+{
+  "name": "zipfguard-applications",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:user && npm run build:admin",
+    "build:user": "vite build --config user-assistant/vite.config.ts",
+    "build:admin": "vite build --config admin-console/vite.config.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {"react": "^19.1.0", "react-dom": "^19.1.0", "lucide-react": "^0.468.0"},
+  "devDependencies": {"@types/react": "^19.1.0", "@types/react-dom": "^19.1.0", "@types/node": "^22.0.0", "typescript": "^5.8.0", "vite": "^6.3.0", "@vitejs/plugin-react": "^4.4.0"}
+}

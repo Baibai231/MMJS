@@ -1,0 +1,8 @@
+{
+  "literature_arms": ["malone", "segreti_struct_m_nohint"],
+  "website_arms": ["github_core", "github_base", "github_graded"],
+  "segreti_compliant_guesses": 100000,
+  "segreti_candidate_prefix_budget": 1000000,
+  "website_incremental_limits": {"cost_mode": "incremental_base", "max_modification": 0.2, "max_extra": 0.5, "max_more_than_three": 0.05},
+  "workers": 1
+}

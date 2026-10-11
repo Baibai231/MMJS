@@ -1,0 +1,28 @@
+{
+  "source": "rockyou-withcount.txt",
+  "fresh_split_seed": 202610110941,
+  "users": 100000,
+  "batches": 10,
+  "seeds": [11, 23, 42, 67, 101],
+  "weights": [0.6, 0.25, 0.15],
+  "candidate_limit": 1000,
+  "candidate_sizes": [100, 1000, 3000, 10000],
+  "popularity_rates": [0.000001, 0.00001, 0.00003, 0.0001, 0.0003, 0.001],
+  "preview_users": 6000,
+  "cf_min_gain": 0.0005,
+  "outside_increase": 0.02,
+  "small_budget_increase": 0.002,
+  "budgets": [100, 10000, 100000, 1000000],
+  "final_samples": 100000,
+  "mc_seed": 20261011,
+  "attack_timeout": 3600,
+  "cost_limits": {
+    "literature": {"cost_mode": "absolute", "max_modification": 0.6, "max_extra": 1.0, "max_more_than_three": 0.05},
+    "website": {"cost_mode": "incremental_base", "max_modification": 0.2, "max_extra": 0.5, "max_more_than_three": 0.05}
+  },
+  "arms": {
+    "literature": ["refresh", "schechter", "malone", "risk_budgeted", "current_joint"],
+    "website": ["website_core", "base", "risk_budgeted"]
+  },
+  "development_amendment": "Pre-test calibration showed benefit-list selection weak and ideal popularity stronger; add attack-selective threshold controller. User narrowed scope to report-relevant comparisons. Reuse completed baseline calibration and fresh disjoint roles; no old final results used for new hypothesis confirmation."
+}

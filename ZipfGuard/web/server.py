@@ -136,6 +136,28 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = urlparse(self.path).path
         try:
+            if path == '/intervention/htpg':
+                from web.htpg_paper_interface import render_audit
+                return self._send(render_audit(document=True).encode('utf-8'), 'text/html; charset=utf-8')
+            if path == '/api/intervention/htpg/status':
+                from experiments.htpg_paper_audit import readiness
+                return self._send(_json_safe(readiness()))
+            if path == '/api/intervention/htpg/report':
+                from web.htpg_paper_interface import latest_audit
+                return self._send(_json_safe(latest_audit()))
+            if path == '/api/intervention/htpg/conditional':
+                from web.htpg_paper_interface import latest_conditional
+                result = latest_conditional()
+                return self._send(_json_safe(result if result is not None else
+                    {'status': 'not_run'}), status=200 if result is not None else 404)
+            if path in ('/api/intervention/htpg/conditional_distribution.svg',
+                        '/api/intervention/htpg/conditional_attack.svg'):
+                from web.htpg_paper_interface import latest_figure
+                figure = latest_figure(path.rsplit('/', 1)[-1])
+                return self._send(figure if figure is not None else b'not found',
+                                  'image/svg+xml; charset=utf-8' if figure is not None else
+                                  'text/plain; charset=utf-8',
+                                  200 if figure is not None else 404)
             if path in ('/open', '/dynamic', '/legacy') or path.startswith('/dynamic/'):
                 self.send_response(302)
                 self.send_header('Location', '/intervention')
@@ -164,7 +186,7 @@ class Handler(BaseHTTPRequestHandler):
             if path.startswith("/api/intervention/jobs/"):
                 return self._send(_json_safe(intervention_job_snapshot(path.rsplit("/", 1)[-1])))
             intervention_asset = re.fullmatch(
-                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(distribution_cost|attack_area_cost|dynamic_distribution_detail|coverage_F|attack_F|attack_A1|attack_markov_F|attack_markov_A1|attack_union_F|attack_union_A1|yahoo_attack_F|yahoo_attack_A1|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_random|cdf_fit_google_frozen|cdf_fit_google_dynamic|cdf_fit_yahoo_japan)\.svg)', path)
+                r'/api/intervention/(report|figure)/([a-f0-9]{16})(?:\.json|/(distribution_cost|attack_area_cost|dynamic_distribution_detail|coverage_F|attack_F|attack_A1|attack_markov_F|attack_markov_A1|attack_union_F|attack_union_A1|yahoo_attack_F|yahoo_attack_A1|yahoo_distribution|final_distribution|google_round_zipf|round_parameters|cdf_fit_baseline|cdf_fit_google_hold|cdf_fit_google_random|cdf_fit_google_frozen|cdf_fit_google_dynamic|cdf_fit_yahoo_japan|cdf_fit_yahoo_dynamic_hybrid)\.svg)', path)
             if intervention_asset:
                 kind, run_id, figure = intervention_asset.groups()
                 if (kind == 'report') != (figure is None):
@@ -246,7 +268,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = urlparse(self.path).path
-        if path != '/api/intervention/jobs':
+        if path not in ('/api/intervention/jobs', '/api/intervention/htpg/compute'):
             return self._send(b"not found", "text/plain", 404)
         # Local UI accepts JSON only; reject cross-site browser writes.
         if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -256,6 +278,10 @@ class Handler(BaseHTTPRequestHandler):
             if not 0 < length <= 8_000_000:
                 raise ValueError("请求大小无效")
             request = json.loads(self.rfile.read(length))
+            if path == '/api/intervention/htpg/compute':
+                from web.htpg_paper_interface import execute_contract
+                result, status = execute_contract(request)
+                return self._send(_json_safe(result), status=status)
             if path == "/api/intervention/jobs":
                 return self._send(_json_safe(start_intervention_job(request)), status=202)
             if path == "/api/dynamic/query":

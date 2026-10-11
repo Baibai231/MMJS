@@ -1,0 +1,11 @@
+[Party 0]
+host = party-one-private.example
+port = 8551
+
+[Party 1]
+host = party-two-private.example
+port = 8551
+
+[Party 2]
+host = party-three-private.example
+port = 8551

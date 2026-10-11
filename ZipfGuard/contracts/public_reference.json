@@ -1,0 +1,8 @@
+{
+  "name": "公开规则参照",
+  "source": "人工列举的常见弱口令及可预测词；用于规则功能，不提供概率攻击排名",
+  "version": "curated-public-rules-20261011",
+  "words": ["password", "password123", "12345678", "123456789", "qwerty123", "admin123", "letmein123", "welcome123", "iloveyou", "abc12345", "Password1!", "password2026"],
+  "dictionary": ["password", "welcome", "admin", "dragon", "monkey", "sunshine", "princess", "football", "baseball", "letmein"],
+  "predictable_terms": ["password", "admin", "gitlab", "devops"]
+}

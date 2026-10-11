@@ -253,15 +253,31 @@ def chart_specs(result):
                          y_format='percent', y_domain=(0, 1)))
     yahoo = result.get('site_controls', {}).get('yahoo_japan')
     if yahoo:
+        hybrid = result.get('site_controls', {}).get('yahoo_dynamic_hybrid')
+        yahoo_methods = [('全站 Yahoo!', yahoo)] + ([('部分 Yahoo!＋动态', hybrid)] if hybrid else [])
         for level in ('F', 'A1'):
-            ev = yahoo['attacks'].get(level)
-            if ev:
-                curves = ev.get('attack_curves', {'pcfg': ev})
-                yseries = [(label, [(p['budget'], p['rate']) for p in curves[key]['minauto']])
-                           for key, label in [('pcfg', 'PCFG'), ('markov', 'OMEN'), ('union', 'PCFG ∪ OMEN')] if key in curves]
-                specs['yahoo_attack_'+level] = ('Yahoo! JAPAN 独立全站对照 · '+level, yseries,
+            yseries = []
+            for method_label, method in yahoo_methods:
+                ev = method['attacks'].get(level)
+                if ev:
+                    curves = ev.get('attack_curves', {'pcfg': ev})
+                    yseries += [(method_label+' · '+label, [(p['budget'], p['rate']) for p in curves[key]['minauto']])
+                                for key, label in [('pcfg', 'PCFG'), ('markov', 'OMEN'), ('union', 'PCFG ∪ OMEN')] if key in curves]
+            if yseries:
+                specs['yahoo_attack_'+level] = ('Yahoo! JAPAN 全站强策略与混合方案 · '+level if hybrid else 'Yahoo! JAPAN 独立全站对照 · '+level, yseries,
                     dict(xlabel='每模型尝试预算 B；联合最多 2B' if base['risk'].get('attack_curves') else '估计猜测预算',
                          ylabel='命中账户比例', log=True, x_format='power10', y_format='percent', y_domain=(0, 1)))
+        if hybrid:
+            ydist = [('原始分布（无干预）', base['distribution']['full_rank_frequency']),
+                     ('8 字符基础规则', arms['google_hold']['final']['distribution']['full_rank_frequency'])]
+            ydist += [(method['label'], method['final']['distribution']['full_rank_frequency'])
+                      for _, method in yahoo_methods]
+            if distance_mode:
+                ydist.append((IDEAL_LABEL, ideal_frequency_curve(base['distribution']['users'])))
+            specs['yahoo_distribution'] = ('Yahoo! JAPAN 全站强策略与混合方案 · 最终口令分布', ydist,
+                dict(xlabel='口令排名 r', ylabel='使用该口令的人数 f(r)', log=True, log_y=True,
+                     x_format='count', y_format='count', markers=False,
+                     reference_series=[IDEAL_LABEL] if distance_mode else []))
     dist = [(labels[0][1], base['distribution']['full_rank_frequency'])]
     dist += [(label, endpoint_arms[key]['final']['distribution']['full_rank_frequency'])
              for key, label in endpoint_labels[1:]]
@@ -280,7 +296,7 @@ def chart_specs(result):
                  reference_series=[IDEAL_LABEL] if distance_mode else []))
     # Match the second workbench: zero-based percentage axes with 12% headroom.
     for name, (_, series, opts) in specs.items():
-        if name not in ('final_distribution', 'google_round_zipf',
+        if name not in ('final_distribution', 'google_round_zipf', 'yahoo_distribution',
                         'dynamic_distribution_detail'):
             ceiling = max((row[1] for _, values in series for row in values if row[1] is not None), default=0)
             opts['y_domain'] = (0, min(1, max(.01, ceiling*1.12)))

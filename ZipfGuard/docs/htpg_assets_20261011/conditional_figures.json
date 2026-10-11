@@ -1,0 +1,15 @@
+{
+  "run_id": "7efad5289d640853",
+  "source_sha256": "b79b84e52e883b4ce7e30bf9a5d471a781f35d0a79e16caf1d5b9c351e33bbbc",
+  "interpretation": "The HTPG curve uses disclosed replacements for missing author definitions.",
+  "figures": {
+    "conditional_distribution.svg": {
+      "sha256": "f3b88297f1b1ab409a3f59b2d436f16f37251531f4ba68d951890d40beb17d7d",
+      "size": 5505
+    },
+    "conditional_attack.svg": {
+      "sha256": "353ee810f208ab333d174977cb37766163a5959aee73f0443c34775a29611199",
+      "size": 16276
+    }
+  }
+}

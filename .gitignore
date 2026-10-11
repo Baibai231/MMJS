@@ -22,10 +22,32 @@ local_datasets/
 /ZipfGuard_项目详细讲解_给师兄.md
 /目前项目需要提升的地方.md
 
+# Separate Git clone of the Overleaf report project.
+/Overleaf_Report/
+
 # Temporary files
 *.tmp
 *.log
 *.pid
 *.sav
 *.bak
+
+# Local privacy protocol dependencies and per-party secrets.
+/ZipfGuard/privacy_deps/
+/ZipfGuard/reports/privacy_protocol_20261011/private/
+/ZipfGuard/tool_deps/
+/ZipfGuard/tool_runtime/
+/ZipfGuard/apps/node_modules/
+/ZipfGuard/apps/user-assistant/dist/
+/ZipfGuard/apps/admin-console/dist/
+/ZipfGuard/delivery/
+
+# Local runtimes, third-party paper artifacts, and intermediate builds.
+/Python/
+/tmp/
+/ZipfGuard/tmp/
+/output/
+/report_update/
+/Available artifacts for USENIX Security 2025 #772-v1/
+/参考文献/
 

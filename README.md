@@ -4,6 +4,14 @@ ZipfGuard 用于研究网站口令规则如何影响口令分布、离线猜测�
 
 本项目提供本地网页实验台、命令行实验、可复核的配置与测试。网页可以查看十批路径的三项 Top10 排名、F/A0/A1 攻击曲线、最终口令分布，并查询单条口令的估计猜测次数与热门排名。
 
+## 报告写作位置
+
+后续竞赛报告使用 [Overleaf 报告项目](https://cn.overleaf.com/project/6ac9c5e4a50a568cf0b505a3) 作为在线写作位置（2026-10-10 由用户指定）。后续整理报告正文、LaTeX 源码、图表和参考文献时，默认以此项目为交付目标。
+
+本地已有报告草稿和素材位于 `ZipfGuard/docs/`。Overleaf 项目已于 2026-10-10 通过 Git 克隆到 `Overleaf_Report/`，并验证可使用保存的凭据读取远端。该目录不会自动同步；后续在目录中使用 Git 拉取和推送。
+
+在本项目目录的 PowerShell 终端运行 `./connect_overleaf.ps1`，可将 Overleaf 项目克隆到独立的 `Overleaf_Report/` 目录。首次连接时，只在 Git 的密码提示中输入 Overleaf Git 身份验证令牌。克隆成功后，该目录使用自己的 Git 历史；本项目的 Git 仓库会忽略它。
+
 ## 第三展示台：局部账户干预
 
 新增 [存量账户局部干预](ZipfGuard/docs/SELECTIVE_INTERVENTION.md)，在固定账户总数下每轮选择对象、局部要求和干预人数。当前完整实验比较 Google 固定、动态重算、随机选人和初始一次规划等方案；单轮最多通知 2%、累计最多通知 20%。模拟中被通知账户全部成功改口令，只有固定 F 攻击曲线面积严格下降的方案才执行并计入通知。
@@ -11,6 +19,8 @@ ZipfGuard 用于研究网站口令规则如何影响口令分布、离线猜测�
 启动同一网页服务后访问 /intervention；图例、猜测预算刻度和分布图复用第二展示台。快速运行入口为 tools/run_intervention_study.py --preset intervention_smoke（在 ZipfGuard 目录中运行）。该实验使用独立协议，不替换下文的十批注册研究。
 
 ## 当前研究问题
+
+论文 HTPG 的严格计算核心、接口与核验入口已接入同一服务，访问 `/intervention/htpg`。完整原始口令迭代仍缺论文未公开的类别数值编码、词表和修改函数；页面明确展示缺口，尚未运行的论文组指标留空。全量频次核验及当前方法快照对照见 [HTPG 严格复现记录](ZipfGuard/docs/HTPG_PAPER_REPRODUCTION.md)。
 
 实验从 Top15 网站资料中整理可执行的口令规则，比较完整的十批规则路径：
 

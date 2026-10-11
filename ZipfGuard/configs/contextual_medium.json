@@ -1,0 +1,17 @@
+{
+  "intervention": {
+    "seed": 42,
+    "data": {"users": 10000, "development": 10000},
+    "pcfg": {"timeout_seconds": 3600},
+    "controller": {"max_rounds": 40},
+    "evaluation": {"adaptive": true, "yahoo_control": false}
+  },
+  "learning": {
+    "shortlist": 12, "reserved": 4,
+    "screening_repeats": 3, "finalists": 3, "validation_repeats": 30,
+    "beta": 0.5, "ridge": 1.0, "mode": "empirical", "delta": 0.05,
+    "warmup_rounds": 5,
+    "methods": ["heuristic", "random", "greedy", "bandit"],
+    "legacy": true
+  }
+}

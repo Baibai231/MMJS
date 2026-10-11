@@ -1,0 +1,1102 @@
+{
+  "schema_version": "htpg-conditional-v1",
+  "status": "measured_conditional_assumptions",
+  "full_author_reproduction_verified": false,
+  "paper_equations_preserved": true,
+  "run_id": "7efad5289d640853",
+  "published_report_sha256": "6d3eabf8e6c033d6fe6e65c90c87ed9bd531f569840a5d76e593ed25feb532c8",
+  "start_account_state_sha256": "d9617d3d8f24c9abab9580d3aa1a5f39deeb04f06870bf30a44f83f6755ad622",
+  "population_mass": 100000,
+  "reference_start_account_state_sha256": "6167871c1b48aa3c37676aa41b59a565c8285f2a301bc4ba93ddc61dc20ea4cd",
+  "reference_final_account_state_sha256": "041e7a65d9dd3552aa89ee2b8a2259a04f005df0d45ef2f58539740dcf2cabe7",
+  "reference_initial_ledger_matched_published": true,
+  "reference_replay": [
+    {
+      "round": 1,
+      "eligible_accounts": 777,
+      "branches": {
+        "keep": 392,
+        "first": 190,
+        "second": 195
+      },
+      "changed_accounts": 174,
+      "reference_accounts": 60000
+    },
+    {
+      "round": 2,
+      "eligible_accounts": 645,
+      "branches": {
+        "keep": 341,
+        "first": 143,
+        "second": 161
+      },
+      "changed_accounts": 177,
+      "reference_accounts": 60000
+    },
+    {
+      "round": 3,
+      "eligible_accounts": 521,
+      "branches": {
+        "keep": 262,
+        "first": 131,
+        "second": 128
+      },
+      "changed_accounts": 159,
+      "reference_accounts": 60000
+    },
+    {
+      "round": 4,
+      "eligible_accounts": 411,
+      "branches": {
+        "keep": 209,
+        "first": 97,
+        "second": 105
+      },
+      "changed_accounts": 43,
+      "reference_accounts": 60000
+    },
+    {
+      "round": 5,
+      "eligible_accounts": 396,
+      "branches": {
+        "keep": 197,
+        "first": 92,
+        "second": 107
+      },
+      "changed_accounts": 83,
+      "reference_accounts": 60000
+    },
+    {
+      "round": 6,
+      "eligible_accounts": 362,
+      "branches": {
+        "keep": 197,
+        "first": 77,
+        "second": 88
+      },
+      "changed_accounts": 30,
+      "reference_accounts": 60000
+    }
+  ],
+  "reference_training_accounts": 60000,
+  "reference_training_types": 52990,
+  "A1_model_training_sha256": "36b1496f249ebf7eb096845af500dbd55542496604fcbc2803ba507e36680aee",
+  "rounds": [
+    {
+      "round": 1,
+      "fit": {
+        "version": "htpg-paper-contract-v1",
+        "source": "III-C; Eq.1-3; Algorithm 1; Appendix",
+        "C": 196.99101153333154,
+        "alpha": 0.6382178429832513,
+        "curvature_x0": 18.279892187017587,
+        "cutoff_rank": 18,
+        "fit_types": 547,
+        "fit_min_frequency_exclusive": 3,
+        "fit_log_r_squared": 0.9879604049236803,
+        "head_types": 18,
+        "tail_types": 92477,
+        "head_mass": 1382.0,
+        "tail_mass": 98618.0,
+        "total_mass": 100000.0,
+        "head_mass_rate": 0.01382,
+        "integer_boundary": "integer ranks r <= continuous x0; floor, no forced minimum head",
+        "fit_is_goodness_of_fit_test": false
+      },
+      "top_two_features": [
+        "keyboard",
+        "capital"
+      ],
+      "undefined_igr": [],
+      "suggestions_per_head_type": {
+        "2": 4,
+        "1": 14
+      },
+      "no_change_response_types": {
+        "no_change_or_missing_2": 18,
+        "no_change_or_missing_1": 1
+      },
+      "transition": {
+        "source": "IV-D; Fig.12",
+        "response_fractions": [
+          0.5,
+          0.25,
+          0.25
+        ],
+        "head_mass": 1382.0,
+        "changed_mass": 328.75,
+        "population_mass": 100000.0,
+        "semantics": "exact expected mass; not rounded individual accounts",
+        "two_alternative_policies": true
+      },
+      "types_after": 92505,
+      "hhi_after": 2.53810125e-05
+    },
+    {
+      "round": 2,
+      "fit": {
+        "version": "htpg-paper-contract-v1",
+        "source": "III-C; Eq.1-3; Algorithm 1; Appendix",
+        "C": 195.16409674817112,
+        "alpha": 0.6298683960683742,
+        "curvature_x0": 18.27629587212064,
+        "cutoff_rank": 18,
+        "fit_types": 563,
+        "fit_min_frequency_exclusive": 3,
+        "fit_log_r_squared": 0.9911287057608136,
+        "head_types": 18,
+        "tail_types": 92487,
+        "head_mass": 1158.5,
+        "tail_mass": 98841.5,
+        "total_mass": 100000.0,
+        "head_mass_rate": 0.011585,
+        "integer_boundary": "integer ranks r <= continuous x0; floor, no forced minimum head",
+        "fit_is_goodness_of_fit_test": false
+      },
+      "top_two_features": [
+        "keyboard",
+        "length"
+      ],
+      "undefined_igr": [],
+      "suggestions_per_head_type": {
+        "2": 4,
+        "1": 14
+      },
+      "no_change_response_types": {
+        "no_change_or_missing_2": 14,
+        "no_change_or_missing_1": 1
+      },
+      "transition": {
+        "source": "IV-D; Fig.12",
+        "response_fractions": [
+          0.5,
+          0.25,
+          0.25
+        ],
+        "head_mass": 1158.5,
+        "changed_mass": 364.8125,
+        "population_mass": 100000.0,
+        "semantics": "exact expected mass; not rounded individual accounts",
+        "two_alternative_policies": true
+      },
+      "types_after": 92523,
+      "hhi_after": 2.0665584375000002e-05
+    },
+    {
+      "round": 3,
+      "fit": {
+        "version": "htpg-paper-contract-v1",
+        "source": "III-C; Eq.1-3; Algorithm 1; Appendix",
+        "C": 182.24042219563086,
+        "alpha": 0.6109844466896859,
+        "curvature_x0": 17.729781081908467,
+        "cutoff_rank": 17,
+        "fit_types": 581,
+        "fit_min_frequency_exclusive": 3,
+        "fit_log_r_squared": 0.9847665687335021,
+        "head_types": 17,
+        "tail_types": 92506,
+        "head_mass": 882.875,
+        "tail_mass": 99117.125,
+        "total_mass": 100000.0,
+        "head_mass_rate": 0.00882875,
+        "integer_boundary": "integer ranks r <= continuous x0; floor, no forced minimum head",
+        "fit_is_goodness_of_fit_test": false
+      },
+      "top_two_features": [
+        "length",
+        "lsd_structure"
+      ],
+      "undefined_igr": [],
+      "suggestions_per_head_type": {
+        "2": 13,
+        "0": 3,
+        "1": 1
+      },
+      "no_change_response_types": {
+        "no_change_or_missing_2": 12,
+        "no_change_or_missing_1": 3
+      },
+      "transition": {
+        "source": "IV-D; Fig.12",
+        "response_fractions": [
+          0.5,
+          0.25,
+          0.25
+        ],
+        "head_mass": 882.875,
+        "changed_mass": 266.8125,
+        "population_mass": 100000.0,
+        "semantics": "exact expected mass; not rounded individual accounts",
+        "two_alternative_policies": true
+      },
+      "types_after": 92536,
+      "hhi_after": 1.845453505859375e-05
+    },
+    {
+      "round": 4,
+      "fit": {
+        "version": "htpg-paper-contract-v1",
+        "source": "III-C; Eq.1-3; Algorithm 1; Appendix",
+        "C": 169.59748487643586,
+        "alpha": 0.5937584154868345,
+        "curvature_x0": 17.123293097196754,
+        "cutoff_rank": 17,
+        "fit_types": 594,
+        "fit_min_frequency_exclusive": 3,
+        "fit_log_r_squared": 0.9746464762810255,
+        "head_types": 17,
+        "tail_types": 92519,
+        "head_mass": 719.125,
+        "tail_mass": 99280.875,
+        "total_mass": 100000.0,
+        "head_mass_rate": 0.00719125,
+        "integer_boundary": "integer ranks r <= continuous x0; floor, no forced minimum head",
+        "fit_is_goodness_of_fit_test": false
+      },
+      "top_two_features": [
+        "lsd_structure",
+        "keyboard"
+      ],
+      "undefined_igr": [],
+      "suggestions_per_head_type": {
+        "1": 11,
+        "2": 2,
+        "0": 4
+      },
+      "no_change_response_types": {
+        "no_change_or_missing_1": 10,
+        "no_change_or_missing_2": 15
+      },
+      "transition": {
+        "source": "IV-D; Fig.12",
+        "response_fractions": [
+          0.5,
+          0.25,
+          0.25
+        ],
+        "head_mass": 719.125,
+        "changed_mass": 81.65625,
+        "population_mass": 100000.0,
+        "semantics": "exact expected mass; not rounded individual accounts",
+        "two_alternative_policies": true
+      },
+      "types_after": 92539,
+      "hhi_after": 1.8631908007812502e-05
+    },
+    {
+      "round": 5,
+      "fit": {
+        "version": "htpg-paper-contract-v1",
+        "source": "III-C; Eq.1-3; Algorithm 1; Appendix",
+        "C": 163.984590110092,
+        "alpha": 0.5873050608685034,
+        "curvature_x0": 16.824242767683728,
+        "cutoff_rank": 16,
+        "fit_types": 597,
+        "fit_min_frequency_exclusive": 3,
+        "fit_log_r_squared": 0.9736650405161938,
+        "head_types": 16,
+        "tail_types": 92523,
+        "head_mass": 689.953125,
+        "tail_mass": 99310.046875,
+        "total_mass": 100000.0,
+        "head_mass_rate": 0.00689953125,
+        "integer_boundary": "integer ranks r <= continuous x0; floor, no forced minimum head",
+        "fit_is_goodness_of_fit_test": false
+      },
+      "top_two_features": [
+        "length",
+        "lsd_structure"
+      ],
+      "undefined_igr": [],
+      "suggestions_per_head_type": {
+        "2": 10,
+        "0": 5,
+        "1": 1
+      },
+      "no_change_response_types": {
+        "no_change_or_missing_2": 14,
+        "no_change_or_missing_1": 5
+      },
+      "transition": {
+        "source": "IV-D; Fig.12",
+        "response_fractions": [
+          0.5,
+          0.25,
+          0.25
+        ],
+        "head_mass": 689.953125,
+        "changed_mass": 147.76171875,
+        "population_mass": 100000.0,
+        "semantics": "exact expected mass; not rounded individual accounts",
+        "two_alternative_policies": true
+      },
+      "types_after": 92548,
+      "hhi_after": 1.7787532949829102e-05
+    },
+    {
+      "round": 6,
+      "fit": {
+        "version": "htpg-paper-contract-v1",
+        "source": "III-C; Eq.1-3; Algorithm 1; Appendix",
+        "C": 152.62705261058923,
+        "alpha": 0.5721902781683516,
+        "curvature_x0": 16.201984313178794,
+        "cutoff_rank": 16,
+        "fit_types": 606,
+        "fit_min_frequency_exclusive": 3,
+        "fit_log_r_squared": 0.9642054498136966,
+        "head_types": 16,
+        "tail_types": 92532,
+        "head_mass": 607.15625,
+        "tail_mass": 99392.84375,
+        "total_mass": 100000.0,
+        "head_mass_rate": 0.0060715625,
+        "integer_boundary": "integer ranks r <= continuous x0; floor, no forced minimum head",
+        "fit_is_goodness_of_fit_test": false
+      },
+      "top_two_features": [
+        "lowercase",
+        "lsd_structure"
+      ],
+      "undefined_igr": [],
+      "suggestions_per_head_type": {
+        "0": 8,
+        "1": 6,
+        "2": 2
+      },
+      "no_change_response_types": {
+        "no_change_or_missing_1": 10,
+        "no_change_or_missing_2": 14
+      },
+      "transition": {
+        "source": "IV-D; Fig.12",
+        "response_fractions": [
+          0.5,
+          0.25,
+          0.25
+        ],
+        "head_mass": 607.15625,
+        "changed_mass": 65.78125,
+        "population_mass": 100000.0,
+        "semantics": "exact expected mass; not rounded individual accounts",
+        "two_alternative_policies": true
+      },
+      "types_after": 92550,
+      "hhi_after": 1.7996040635681155e-05
+    }
+  ],
+  "metrics": {
+    "F_pcfg_rate": 0.15637291015625,
+    "F_omen_rate": 0.01402634765625,
+    "F_union_rate": 0.16013291015625,
+    "A1_pcfg_rate": 0.18037078125,
+    "A1_omen_rate": 0.023488046875,
+    "A1_union_rate": 0.18489203125
+  },
+  "final_rank_frequency": [
+    [
+      1,
+      99.091796875
+    ],
+    [
+      2,
+      81.28125
+    ],
+    [
+      3,
+      64.681640625
+    ],
+    [
+      4,
+      46.21875
+    ],
+    [
+      5,
+      36.474609375
+    ],
+    [
+      6,
+      28.6875
+    ],
+    [
+      7,
+      28.546875
+    ],
+    [
+      8,
+      27.2109375
+    ],
+    [
+      9,
+      25.0
+    ],
+    [
+      10,
+      24.1875
+    ],
+    [
+      11,
+      24.1875
+    ],
+    [
+      12,
+      24.0
+    ],
+    [
+      14,
+      24.0
+    ],
+    [
+      15,
+      23.34375
+    ],
+    [
+      16,
+      23.34375
+    ],
+    [
+      17,
+      23.25
+    ],
+    [
+      18,
+      23.09765625
+    ],
+    [
+      19,
+      23.0
+    ],
+    [
+      22,
+      23.0
+    ],
+    [
+      23,
+      22.78125
+    ],
+    [
+      24,
+      22.5
+    ],
+    [
+      25,
+      22.0
+    ],
+    [
+      26,
+      21.9375
+    ],
+    [
+      27,
+      21.875
+    ],
+    [
+      28,
+      21.75
+    ],
+    [
+      29,
+      21.515625
+    ],
+    [
+      31,
+      21.515625
+    ],
+    [
+      32,
+      21.375
+    ],
+    [
+      33,
+      21.09375
+    ],
+    [
+      34,
+      21.0
+    ],
+    [
+      37,
+      21.0
+    ],
+    [
+      38,
+      20.53125
+    ],
+    [
+      39,
+      20.25
+    ],
+    [
+      40,
+      20.25
+    ],
+    [
+      41,
+      20.0
+    ],
+    [
+      42,
+      19.6875
+    ],
+    [
+      43,
+      19.5
+    ],
+    [
+      44,
+      19.125
+    ],
+    [
+      45,
+      19.0
+    ],
+    [
+      47,
+      19.0
+    ],
+    [
+      48,
+      18.626953125
+    ],
+    [
+      49,
+      18.15625
+    ],
+    [
+      50,
+      18.140625
+    ],
+    [
+      51,
+      18.140625
+    ],
+    [
+      52,
+      18.0
+    ],
+    [
+      57,
+      18.0
+    ],
+    [
+      58,
+      17.0
+    ],
+    [
+      59,
+      17.0
+    ],
+    [
+      60,
+      16.75
+    ],
+    [
+      61,
+      16.734375
+    ],
+    [
+      62,
+      16.125
+    ],
+    [
+      63,
+      16.0
+    ],
+    [
+      68,
+      16.0
+    ],
+    [
+      69,
+      15.75
+    ],
+    [
+      70,
+      15.1171875
+    ],
+    [
+      71,
+      15.0
+    ],
+    [
+      74,
+      15.0
+    ],
+    [
+      75,
+      14.75
+    ],
+    [
+      76,
+      14.0
+    ],
+    [
+      82,
+      14.0
+    ],
+    [
+      83,
+      13.875
+    ],
+    [
+      84,
+      13.6875
+    ],
+    [
+      85,
+      13.5
+    ],
+    [
+      86,
+      13.5
+    ],
+    [
+      87,
+      13.125
+    ],
+    [
+      88,
+      13.125
+    ],
+    [
+      89,
+      13.0
+    ],
+    [
+      103,
+      13.0
+    ],
+    [
+      104,
+      12.5625
+    ],
+    [
+      105,
+      12.5625
+    ],
+    [
+      106,
+      12.234375
+    ],
+    [
+      107,
+      12.09375
+    ],
+    [
+      108,
+      12.09375
+    ],
+    [
+      109,
+      12.0
+    ],
+    [
+      117,
+      12.0
+    ],
+    [
+      118,
+      11.0
+    ],
+    [
+      127,
+      11.0
+    ],
+    [
+      128,
+      10.5
+    ],
+    [
+      129,
+      10.125
+    ],
+    [
+      130,
+      10.0
+    ],
+    [
+      149,
+      10.0
+    ],
+    [
+      150,
+      9.75
+    ],
+    [
+      151,
+      9.5
+    ],
+    [
+      152,
+      9.375
+    ],
+    [
+      153,
+      9.25
+    ],
+    [
+      154,
+      9.0
+    ],
+    [
+      179,
+      9.0
+    ],
+    [
+      180,
+      8.75
+    ],
+    [
+      181,
+      8.0
+    ],
+    [
+      211,
+      8.0
+    ],
+    [
+      212,
+      7.984375
+    ],
+    [
+      213,
+      7.75
+    ],
+    [
+      214,
+      7.69921875
+    ],
+    [
+      215,
+      7.65625
+    ],
+    [
+      216,
+      7.59375
+    ],
+    [
+      217,
+      7.5
+    ],
+    [
+      218,
+      7.3125
+    ],
+    [
+      219,
+      7.25
+    ],
+    [
+      220,
+      7.125
+    ],
+    [
+      221,
+      7.03125
+    ],
+    [
+      222,
+      7.0
+    ],
+    [
+      260,
+      7.0
+    ],
+    [
+      261,
+      6.9375
+    ],
+    [
+      262,
+      6.9375
+    ],
+    [
+      263,
+      6.75
+    ],
+    [
+      264,
+      6.5625
+    ],
+    [
+      265,
+      6.5
+    ],
+    [
+      266,
+      6.375
+    ],
+    [
+      267,
+      6.28125
+    ],
+    [
+      268,
+      6.046875
+    ],
+    [
+      269,
+      6.0
+    ],
+    [
+      326,
+      6.0
+    ],
+    [
+      327,
+      5.0
+    ],
+    [
+      427,
+      5.0
+    ],
+    [
+      428,
+      4.0
+    ],
+    [
+      608,
+      4.0
+    ],
+    [
+      609,
+      3.0
+    ],
+    [
+      1072,
+      3.0
+    ],
+    [
+      1073,
+      2.0
+    ],
+    [
+      3093,
+      2.0
+    ],
+    [
+      3094,
+      1.0
+    ],
+    [
+      92550,
+      1.0
+    ]
+  ],
+  "F_curves": {
+    "union": [
+      {
+        "budget": 1,
+        "rate": 0.0
+      },
+      {
+        "budget": 10,
+        "rate": 0.00228931640625
+      },
+      {
+        "budget": 100,
+        "rate": 0.00617041015625
+      },
+      {
+        "budget": 1000,
+        "rate": 0.02370791015625
+      },
+      {
+        "budget": 10000,
+        "rate": 0.05169103515625
+      },
+      {
+        "budget": 100000,
+        "rate": 0.11514103515625
+      },
+      {
+        "budget": 1000000,
+        "rate": 0.16013291015625
+      }
+    ],
+    "pcfg": [
+      {
+        "budget": 1,
+        "rate": 0.0
+      },
+      {
+        "budget": 10,
+        "rate": 0.00228931640625
+      },
+      {
+        "budget": 100,
+        "rate": 0.00597041015625
+      },
+      {
+        "budget": 1000,
+        "rate": 0.02318791015625
+      },
+      {
+        "budget": 10000,
+        "rate": 0.05115103515625
+      },
+      {
+        "budget": 100000,
+        "rate": 0.11398103515625
+      },
+      {
+        "budget": 1000000,
+        "rate": 0.15637291015625
+      }
+    ],
+    "markov": [
+      {
+        "budget": 1,
+        "rate": 0.0
+      },
+      {
+        "budget": 10,
+        "rate": 0.0
+      },
+      {
+        "budget": 100,
+        "rate": 0.000325625
+      },
+      {
+        "budget": 1000,
+        "rate": 0.00260650390625
+      },
+      {
+        "budget": 10000,
+        "rate": 0.00367869140625
+      },
+      {
+        "budget": 100000,
+        "rate": 0.00682634765625
+      },
+      {
+        "budget": 1000000,
+        "rate": 0.01402634765625
+      }
+    ]
+  },
+  "A1_curves": {
+    "union": [
+      {
+        "budget": 1,
+        "rate": 0.0008128125
+      },
+      {
+        "budget": 10,
+        "rate": 0.00358072265625
+      },
+      {
+        "budget": 100,
+        "rate": 0.015133828125
+      },
+      {
+        "budget": 1000,
+        "rate": 0.031713046875
+      },
+      {
+        "budget": 10000,
+        "rate": 0.07060765625
+      },
+      {
+        "budget": 100000,
+        "rate": 0.13498390625
+      },
+      {
+        "budget": 1000000,
+        "rate": 0.18489203125
+      }
+    ],
+    "pcfg": [
+      {
+        "budget": 1,
+        "rate": 0.0008128125
+      },
+      {
+        "budget": 10,
+        "rate": 0.00337509765625
+      },
+      {
+        "budget": 100,
+        "rate": 0.015033828125
+      },
+      {
+        "budget": 1000,
+        "rate": 0.031247734375
+      },
+      {
+        "budget": 10000,
+        "rate": 0.06999765625
+      },
+      {
+        "budget": 100000,
+        "rate": 0.13355390625
+      },
+      {
+        "budget": 1000000,
+        "rate": 0.18037078125
+      }
+    ],
+    "markov": [
+      {
+        "budget": 1,
+        "rate": 0.0
+      },
+      {
+        "budget": 10,
+        "rate": 0.000205625
+      },
+      {
+        "budget": 100,
+        "rate": 0.0004675
+      },
+      {
+        "budget": 1000,
+        "rate": 0.003642734375
+      },
+      {
+        "budget": 10000,
+        "rate": 0.007210078125
+      },
+      {
+        "budget": 100000,
+        "rate": 0.011175078125
+      },
+      {
+        "budget": 1000000,
+        "rate": 0.023488046875
+      }
+    ]
+  },
+  "current_F_union_rate": 0.08096,
+  "hold_F_union_rate": 0.16627,
+  "F_union_delta_vs_current": 0.07917291015625,
+  "F_union_delta_vs_hold": -0.006137089843749999,
+  "current_A1_union_rate": 0.09613,
+  "hold_A1_union_rate": 0.19058,
+  "A1_union_delta_vs_current": 0.08876203125000001,
+  "profile_sha256": "9e5f3d74550b3ab23da5855bcb681a3a06ceff6021f49d666fb7af695e9e37ac",
+  "assumptions": {
+    "feature_recognizers": "core.htpg_features operational grammar, not author source",
+    "lexicons": "htpg_reference_v1.json VADER/Census alternative, not author lexicons",
+    "weighting": "one per unique password for IGR and side means",
+    "lsd_scalar": "number of L/D/S runs",
+    "specplace_scalar": "head=1, middle=2, tail=4 bit mask",
+    "tail_categorical_target": "unique-password modal category, lexical tie break",
+    "undefined_igr": "rank after defined scores; preserve all nine features",
+    "feature_ties": "stable FEATURES order",
+    "lowercase_policy": "toggle first character case toward tail-side prevalence",
+    "date_use": "append deterministic seeded uniform 1980..2020 year",
+    "other_rewrites": "existing project execute_suggestion rewrite functions, one policy per branch",
+    "missing_or_failed_response": "the corresponding 25% branch retains original password",
+    "mass": "exact expected fractions, not integer account assignments",
+    "A1_reference": "independent 60k accounts, published Google baseline reproduced exactly",
+    "A1_policy": "target-generated per-password two-response map replayed on independent reference only",
+    "A1_integer_response": "per-account deterministic SHA-256 seeded 50/25/25 branch draw; repeat changes allowed",
+    "A1_training": "PCFG and OMEN prefix retrained on integer independent reference endpoint; target counts never train A1",
+    "comparison": "same 100k target start; F and A1 use the same budgets and independent-reference protocol"
+  },
+  "plaintext_retained": false,
+  "created_at": "2026-10-11T00:15:34.042968+00:00"
+}

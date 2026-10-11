@@ -1,0 +1,12 @@
+{
+  "source_study": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\privacy_joint_minimal_20261011",
+  "font": "Microsoft YaHei",
+  "source_hashes": {
+    "manifest.json": "d8e97ad37b9b00b2db83a7c984d1688fad8109419f153639c85f2bce7a85bbed",
+    "summary.json": "07f2a1241f03fc5d29a5d7d9eee21697041870ca0fa69b2218d421ab3315b675",
+    "profile_results.csv": "da874e3f8ffaa8d1a135a2cd6529534fe0a86e81cd58983f8cacc4c1dd8332e8",
+    "profile_references.csv": "3c973fb35ee1dede7ea0281b566294bfd0f942d71b2145be9d2088dd8cdeb66a",
+    "registration_results.csv": "726a56ce03ce075d7eb0f3a942193b0386972538b0992b53fc1d0dcd1f626e5f"
+  },
+  "render_script_sha256": "e73bd163c31a8cff688b692f97da8b8d94e5f9e3b374ad8b33a446e1dba3dbaf"
+}

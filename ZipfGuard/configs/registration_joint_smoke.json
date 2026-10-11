@@ -1,0 +1,78 @@
+{
+  "source": "rockyou-withcount.txt",
+  "split_seed": 20261011,
+  "role_sizes": {
+    "train": 3000,
+    "tuning": 1000,
+    "preview_select": 1000,
+    "preview_confirm": 1000,
+    "validation": 6000,
+    "test": 6000
+  },
+  "users": 999,
+  "batches": 3,
+  "seeds": [
+    11
+  ],
+  "scenarios": [
+    "raw"
+  ],
+  "minimum": 5,
+  "common_size": 20,
+  "ks": [
+    0,
+    10,
+    100,
+    1000
+  ],
+  "js": [
+    0,
+    5,
+    20
+  ],
+  "window": 2,
+  "recent_weight": 0.5,
+  "weights": [
+    0.6,
+    0.25,
+    0.15
+  ],
+  "response_mode": "mixed",
+  "candidate_limit": 1000,
+  "preview_users": 100,
+  "max_modification": 1,
+  "max_extra": 10,
+  "max_more_than_three": 1,
+  "min_gain": 0,
+  "frozen_increase": 0.005,
+  "outside_increase": 0.02,
+  "objective_budget": 1000,
+  "budgets": [
+    10,
+    100,
+    1000
+  ],
+  "selection_samples": 500,
+  "confirmation_samples": 1000,
+  "final_samples": 1000,
+  "mc_seed": 20261011,
+  "frozen_budget": 1000,
+  "strength_thresholds": [
+    10,
+    100
+  ],
+  "attack_timeout": 3600,
+  "actual_attacks": true,
+  "cohort_aware": true,
+  "sensitivities": {
+    "patience_three": {
+      "patience": 3
+    }
+  },
+  "incremental_extension": {
+    "cost_mode": "incremental_base",
+    "max_modification": 0.2,
+    "max_extra": 0.5,
+    "max_more_than_three": 0.05
+  }
+}

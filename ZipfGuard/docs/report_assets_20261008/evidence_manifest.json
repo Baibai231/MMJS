@@ -1,0 +1,21 @@
+{
+  "current_run": "1c08a5567e27a0c8",
+  "current_protocol": "selective-intervention-v7-ideal-wasserstein",
+  "current_report_sha256": "8af9320f08d24e5bc2b1cd13939c3f25064e057514bb7171d3820c4723b044e2",
+  "historical_report_sha256": "7c8c828e4ea9b464fd79999f216ca92df153265d91f5299fcd736e4ee98e3055",
+  "report_sha256": "f15330995bbff83b4f400bd82e2e866a4db60ff386e1379585bb58b0fe14fcdb",
+  "checks_passed": 19,
+  "current_users": 1000,
+  "current_development": 3000,
+  "current_runtime_seconds": 44.29948799998965,
+  "native_v7_full_100k_available": false,
+  "source_mapping_complete": false,
+  "cdf_original_authorship_complete": false,
+  "markdown_structure_valid": true,
+  "citations_resolve": true,
+  "notes": [
+    "HTML embeds all vector figures; MathJax equation enhancement requires internet.",
+    "Historical v5 endpoints are never relabeled as v7 outcomes.",
+    "No target password strings are published in the supplied evidence records."
+  ]
+}

@@ -70,6 +70,16 @@ def main():
                         assert page.locator('#yahoo_control').count() == 1
                         for name in ('yahoo_attack_F', 'yahoo_attack_A1'):
                             assert page.request.get(origin+'/api/intervention/figure/'+run_id+'/'+name+'.svg').status == 200
+                    if report.get('site_controls', {}).get('yahoo_dynamic_hybrid'):
+                        for name in ('yahoo_attack_F', 'yahoo_attack_A1', 'yahoo_distribution'):
+                            panel = page.locator('#yahoo_control #'+name)
+                            assert panel.count() == 1 and panel.locator('.plot-distinct > svg').count() == 1, name
+                            if name != 'yahoo_distribution':
+                                assert panel.locator('.legend input').count() == 6, name
+                            response = page.request.get(origin+'/api/intervention/figure/'+run_id+'/'+name+'.svg')
+                            assert response.status == 200 and '图例' in response.text(), name
+                        assert '累计修改的不同账户' in page.locator('#yahoo_control').inner_text()
+                        page.locator('#yahoo_distribution').screenshot(path=str(out/'yahoo_distribution.png'))
                     with page.expect_download() as download:
                         page.locator('#download').click()
                     downloaded = json.loads(Path(download.value.path()).read_text(encoding='utf-8'))

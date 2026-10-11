@@ -1,0 +1,11 @@
+# Application dependencies are installed into tool_deps, separate from experiments.
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+httpx>=0.28,<1
+webauthn>=2.5,<3
+psycopg[binary]>=3.2,<4
+pytest>=8,<10
+cryptography==46.0.7
+mpyc==0.11
+gmpy2>=2.2,<3
+numpy>=2.1,<3

@@ -1,0 +1,2 @@
+# Optional local automatic presentation; never required by production services.
+playwright>=1.50,<2

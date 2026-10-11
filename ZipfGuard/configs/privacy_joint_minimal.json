@@ -1,0 +1,22 @@
+{
+  "source_study": "reports/registration_joint_minimal_20261011",
+  "output": "reports/privacy_joint_minimal_20261011",
+  "history_role": "tuning",
+  "history_users": 10000,
+  "registration_role": "test",
+  "registration_users": 3000,
+  "structure_limit": 32,
+  "spectrum_length": 30,
+  "candidates": [[10, 0], [10, 1], [10, 2], [30, 0], [30, 1], [30, 2]],
+  "registration_pair": [10, 1],
+  "epsilons": [0.5, 1.0, 2.0],
+  "registration_epsilon": 1.0,
+  "noise_repetitions": 20,
+  "noise_seed": 2026101103,
+  "response_seed": 11,
+  "patience": 3,
+  "attack_model": "pcfg",
+  "attack_budget": 100000,
+  "baseline_budget_split": [0.5, 0.5],
+  "study_scope": "fixed-window algorithm and ideal-function simulation; no cryptographic protocol benchmark"
+}

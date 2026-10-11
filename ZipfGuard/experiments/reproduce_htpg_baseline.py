@@ -1,4 +1,7 @@
-"""Reproduce the paper Zipf fit, curvature cut, IGR, and suggestion baseline.
+"""Historical operational Zipf/IGR/suggestion baseline, with substitute features.
+
+This is not the strict full-paper replication. Use tools/audit_htpg_paper.py
+for the paper contracts, original-definition gaps, and project comparison status.
 
 The report contains parameters, masses, feature scores, and suggestions for
 caller-supplied synthetic strings. It does not write corpus passwords.

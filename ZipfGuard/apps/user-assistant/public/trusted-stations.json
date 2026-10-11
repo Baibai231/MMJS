@@ -1,0 +1,24 @@
+[
+  {
+    "site": "demo",
+    "name": "ZipfGuard 研究站点",
+    "nodes": [
+      "https://localhost:8541",
+      "https://localhost:8542",
+      "https://localhost:8543"
+    ],
+    "node_keys": [
+      "95399aa51b05513d63b2d0409bf6f184526c6f479dc23367826e001a1a2a0e00",
+      "9acc4c0aaa62c9bdaac038c311931d536fd31340f3d684983a9aad8555e289a0",
+      "fd6cc79f304e026aa9520d6059368d8534c7c7f9403069dde90c3b2932b3d66d"
+    ],
+    "epsilon_cap": 10,
+    "task_cap": 100,
+    "user_api": "https://localhost:8531",
+    "admin_api": "https://localhost:8532",
+    "reference_site": "https://localhost:8560",
+    "local_demo": true,
+    "user_issuer": "7c567e34e524f9418cb60d16407693b93ce3ce908c725e247c046d4af3d30b55",
+    "extension_id": "aepnbkjmnicjbdepcncjmpfgjngfdogn"
+  }
+]
