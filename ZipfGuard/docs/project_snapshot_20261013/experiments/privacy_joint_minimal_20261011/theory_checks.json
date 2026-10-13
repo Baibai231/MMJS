@@ -1,0 +1,6 @@
+{
+  "synthetic_policy_conditions": 2520,
+  "neighbor_pairs": 2016,
+  "max_observed_L1_sensitivity": 4,
+  "scope": "finite synthetic verification, not a privacy proof"
+}

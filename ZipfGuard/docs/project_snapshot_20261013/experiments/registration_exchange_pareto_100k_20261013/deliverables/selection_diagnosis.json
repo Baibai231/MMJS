@@ -1,0 +1,83 @@
+{
+  "candidate_failure_counts": {
+    "frozen_risk_increase": 24,
+    "no_risk_improvement_over_baseline": 24
+  },
+  "risk_and_submission_improved_but_edit_increased": [],
+  "edit_aware_screening": [
+    {
+      "status": "confirmed_bidirectional_update",
+      "screened": 378,
+      "cost_feasible": 146,
+      "pareto": 14,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "confirmed_bidirectional_update",
+      "screened": 404,
+      "cost_feasible": 402,
+      "pareto": 58,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "confirmed_bidirectional_update",
+      "screened": 414,
+      "cost_feasible": 412,
+      "pareto": 56,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "confirmed_bidirectional_update",
+      "screened": 431,
+      "cost_feasible": 429,
+      "pareto": 54,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "hold_no_selection_double_improvement",
+      "screened": 439,
+      "cost_feasible": 437,
+      "pareto": 77,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "hold_no_selection_double_improvement",
+      "screened": 429,
+      "cost_feasible": 427,
+      "pareto": 68,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "hold_no_confirmed_double_improvement",
+      "screened": 427,
+      "cost_feasible": 425,
+      "pareto": 91,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "confirmed_bidirectional_update",
+      "screened": 432,
+      "cost_feasible": 430,
+      "pareto": 65,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    },
+    {
+      "status": "hold_no_selection_double_improvement",
+      "screened": 409,
+      "cost_feasible": 407,
+      "pareto": 44,
+      "shortlisted": 6,
+      "cached_and_direct_replays_match": true
+    }
+  ],
+  "actual_updated_batches": 5,
+  "scope": "development previews, not additional target trajectories"
+}

@@ -1,0 +1,123 @@
+{
+  "status": "passed",
+  "new_complete_trajectories": 1,
+  "historical_retraining": false,
+  "historical_result_mutations": false,
+  "same_partition_all_arms": true,
+  "records": [
+    {
+      "label": "新双向调整",
+      "root": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\registration_exchange_100k_20261013",
+      "result_sha256": "b248b05c35b130d9015d71d6ab6899816ea55b596ab52ff79f718ed062efd96e",
+      "state_sha256": "6a821e03dbbacb3c48dcc37bf89ab594708b33da0043f505e380cdb3ed7a1c30",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "a489870bcb73a05341915b56b1ff0c42572ec74a0a5c23422e3ce7fa901be90f",
+        "omen": "6f08d1f637d2207969ab98c390747468382bd95fdf03b7c422b574e1e4b3e8b5"
+      },
+      "recount": "passed",
+      "edit_distance_measured": true,
+      "human_verification": "pending"
+    },
+    {
+      "label": "固定 Segreti",
+      "root": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+      "result_sha256": "b313fb39bb4becfedc99e4756ab74771d8884e50b871860efa7a719380c57df1",
+      "state_sha256": "bb819e5be675611578778b7bef993fe0ccd8a48cd1b0b3d56021ab8cfa748cba",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "a489870bcb73a05341915b56b1ff0c42572ec74a0a5c23422e3ce7fa901be90f",
+        "omen": "6f08d1f637d2207969ab98c390747468382bd95fdf03b7c422b574e1e4b3e8b5"
+      },
+      "recount": "passed",
+      "edit_distance_measured": false,
+      "human_verification": "pending"
+    },
+    {
+      "label": "此前单向新增",
+      "root": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\11\\01a12a85-b74d-7740-89ee-d9101382a8d9\\sp",
+      "result_sha256": "6540510e17a34ebcc6352f49e22905b283184d3686bfc76f79865126eaa6c8da",
+      "state_sha256": "ad24d64abca802df37eb65abb0bde41c6025efac04fb5ad6b95afc0da8f8211e",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "c237141d0aae4eb94e985296df1054a7ab15c71f9bd79ad22c673716493ea5a6",
+        "omen": "9c84b15f3f93417ec6d18d800f5ff8d95624bf4adba2e6aafe11cb36b2322e5c"
+      },
+      "recount": "passed",
+      "edit_distance_measured": true,
+      "human_verification": "pending"
+    },
+    {
+      "label": "此前可调范围",
+      "root": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\11\\01a12a85-b74d-7740-89ee-d9101382a8d9\\registration_variable_scope_20261012",
+      "result_sha256": "db1ce2841e8225d87611f0a134b69900138a13d503cfa43f4a6e5afff059bd2c",
+      "state_sha256": "ea60c975ad1cd9578d3c0764eb55909a4c1e0fc6338e1f4ff12ae6291cd1de1e",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "5d2e33978dc6445fc1078e5a81affa1423afd58fb99abc7c33755b5d0a2ad868",
+        "omen": "8a49fbce20bf622fe7df6b4e145411789e7aec1943be78b3b79deb4984fc8363"
+      },
+      "recount": "passed",
+      "edit_distance_measured": true,
+      "human_verification": "pending"
+    },
+    {
+      "label": "此前限成本方案",
+      "root": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+      "result_sha256": "c09b98c681112ae8369dd1685781e644fd1054fd3567a5a7691e9ae4eea2dcab",
+      "state_sha256": "fed77bfac462002ac78122231085ea9e1116827e59d9afac84341222f62b4a7b",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "d97fbfe28b0847bc17ab32bcba7cf216a6c1c3ff0fcbb2d45344ec51f2b058ea",
+        "omen": "f0123d9eba32e7366d1e3e8c162f133f000ce43d7eb900df774a328402b1c8f3"
+      },
+      "recount": "passed",
+      "edit_distance_measured": true,
+      "human_verification": "pending"
+    },
+    {
+      "label": "Schechter 严格档",
+      "root": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+      "result_sha256": "32a82589274c2ce890718fbb7b1048f820135aea14bd4bf905092e5f9abf8a41",
+      "state_sha256": "dd511aca8cc52c26bfbf069d14726418f29259bdbde6528e953fa1895ba8e0c1",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "3c995e5dafa6f676e8f61e6391f81ec99797542d560ff9ad61be50a06d89bfd2",
+        "omen": "22ef19136f774642f338a4d12fa391a57596eee9718906cba2ea61809cc30dca"
+      },
+      "recount": "passed",
+      "edit_distance_measured": false,
+      "human_verification": "pending"
+    },
+    {
+      "label": "Malone–Maher",
+      "root": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+      "result_sha256": "56280386e1d26409ab45517991d7ce68b4cb21d805ddc98b40b96ab34c93cc89",
+      "state_sha256": "f8e977d16c5bcf9eda43aa1c47fb9d889a10022ecf56eb9f593c6048cc5cf46a",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "44c1d8bd7b268c0eaba3f9b9d578412caf8550ef184a74bb2177916ba522d5b2",
+        "omen": "19af2f5e1a9376a3bc8fccc98a862528ce124d83e075ac4d306871161c5bcd3a"
+      },
+      "recount": "passed",
+      "edit_distance_measured": false,
+      "human_verification": "pending"
+    },
+    {
+      "label": "GitHub 核心规则",
+      "root": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+      "result_sha256": "287cdaa891ad9c2b6bf408531e2b4d137542d3c7a72f8d4aef41de80b7c3a1d7",
+      "state_sha256": "b54464ef340c27a008e88c7082626cd21f05201e30712f2758e3cb83958a3f41",
+      "partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+      "prefix_sha256": {
+        "pcfg": "a94e3ad8587427b292ae39a08028be2b532929e2c635276f407c627901c015fd",
+        "omen": "d7716738d54c2f46af026b48db958415845d8dd7563795d70f4c15ffe7663e16"
+      },
+      "recount": "passed",
+      "edit_distance_measured": false,
+      "human_verification": "pending"
+    }
+  ],
+  "analysis_type": "paired post-hoc single-seed exploration",
+  "human_verification": "pending"
+}

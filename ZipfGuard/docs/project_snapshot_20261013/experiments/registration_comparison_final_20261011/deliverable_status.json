@@ -1,0 +1,21 @@
+{
+  "status": "complete",
+  "expected_trajectories": 35,
+  "completed_trajectories": 35,
+  "report": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\10\\01a1267e-e75f-7693-aae2-ee6d66bd5db4\\registration_comparison_final_20261011\\deliverables\\注册策略对照实验报告_阅读版.md",
+  "evidence_report": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\10\\01a1267e-e75f-7693-aae2-ee6d66bd5db4\\registration_comparison_final_20261011\\deliverables\\注册策略对照实验报告.md",
+  "visual_review": "assistant_reviewed_all_six_figures",
+  "visual_reviewed_at": "2026-10-11 10:51:21",
+  "visual_reviewed_files": [
+    "literature_attack_curves",
+    "website_attack_curves",
+    "literature_cost_risk",
+    "website_cost_risk",
+    "paired_improvement",
+    "threshold_trajectory"
+  ],
+  "claim_hashes_checked": 77,
+  "markdown_structure": "passed",
+  "human_source_review": "pending",
+  "submission_ready": false
+}

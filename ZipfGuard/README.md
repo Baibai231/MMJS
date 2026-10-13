@@ -1,4 +1,4 @@
-# ZipfGuard / DP-HTPG
+# TriGuard / DP-HTPG
 
 ## 存量账户局部干预：当前协议
 

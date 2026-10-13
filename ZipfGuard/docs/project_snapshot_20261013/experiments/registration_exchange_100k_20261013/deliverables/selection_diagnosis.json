@@ -1,0 +1,275 @@
+{
+  "candidate_failure_counts": {
+    "mean_edit_distance": 33,
+    "no_risk_improvement_over_baseline": 12,
+    "frozen_risk_increase": 9
+  },
+  "risk_and_submission_improved_but_edit_increased": [
+    {
+      "roles": [
+        "release_top_5"
+      ],
+      "risk_improvement_pp": 0.3783333333333333,
+      "extra_saving": 0.1326666666666667,
+      "edit_increase": 0.15133333333333354
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.3783333333333333,
+      "extra_saving": 0.1326666666666667,
+      "edit_increase": 0.15133333333333354
+    },
+    {
+      "roles": [
+        "release_top_3"
+      ],
+      "risk_improvement_pp": 0.2755555555555553,
+      "extra_saving": 0.16233333333333322,
+      "edit_increase": 0.27499999999999947
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.2699999999999994,
+      "extra_saving": 0.22166666666666668,
+      "edit_increase": 0.23533333333333317
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_3"
+      ],
+      "risk_improvement_pp": 0.3499999999999989,
+      "extra_saving": 0.17933333333333357,
+      "edit_increase": 0.33833333333333293
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_5"
+      ],
+      "risk_improvement_pp": 0.39000000000000007,
+      "extra_saving": 0.16999999999999993,
+      "edit_increase": 0.35233333333333317
+    },
+    {
+      "roles": [
+        "exchange_release_3_add_1"
+      ],
+      "risk_improvement_pp": 0.3311111111111098,
+      "extra_saving": 0.12733333333333352,
+      "edit_increase": 0.3476666666666661
+    },
+    {
+      "roles": [
+        "release_top_5"
+      ],
+      "risk_improvement_pp": 0.1941666666666661,
+      "extra_saving": 0.18799999999999972,
+      "edit_increase": 0.18266666666666698
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.19666666666666582,
+      "extra_saving": 0.18799999999999972,
+      "edit_increase": 0.18266666666666698
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_5"
+      ],
+      "risk_improvement_pp": 0.2549999999999983,
+      "extra_saving": 0.11933333333333307,
+      "edit_increase": 0.2839999999999998
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_3"
+      ],
+      "risk_improvement_pp": 0.2433333333333329,
+      "extra_saving": 0.12699999999999978,
+      "edit_increase": 0.27066666666666706
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_1"
+      ],
+      "risk_improvement_pp": 0.21333333333333204,
+      "extra_saving": 0.160333333333333,
+      "edit_increase": 0.2290000000000001
+    },
+    {
+      "roles": [
+        "release_top_5"
+      ],
+      "risk_improvement_pp": 0.14733333333333265,
+      "extra_saving": 0.1816666666666671,
+      "edit_increase": 0.18599999999999994
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.14733333333333265,
+      "extra_saving": 0.1816666666666671,
+      "edit_increase": 0.18599999999999994
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_1"
+      ],
+      "risk_improvement_pp": 0.18333333333333257,
+      "extra_saving": 0.15900000000000025,
+      "edit_increase": 0.2270000000000003
+    },
+    {
+      "roles": [
+        "refine_top_3"
+      ],
+      "risk_improvement_pp": 0.12066666666666614,
+      "extra_saving": 0.13066666666666693,
+      "edit_increase": 0.13266666666666627
+    },
+    {
+      "roles": [
+        "release_top_3"
+      ],
+      "risk_improvement_pp": 0.11866666666666692,
+      "extra_saving": 0.13066666666666693,
+      "edit_increase": 0.13266666666666627
+    },
+    {
+      "roles": [
+        "release_top_5"
+      ],
+      "risk_improvement_pp": 0.2350000000000005,
+      "extra_saving": 0.2603333333333335,
+      "edit_increase": 0.3403333333333336
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.23166666666666613,
+      "extra_saving": 0.2589999999999999,
+      "edit_increase": 0.33933333333333326
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_5"
+      ],
+      "risk_improvement_pp": 0.2888888888888899,
+      "extra_saving": 0.18299999999999983,
+      "edit_increase": 0.43533333333333335
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_3"
+      ],
+      "risk_improvement_pp": 0.28333333333333266,
+      "extra_saving": 0.18999999999999995,
+      "edit_increase": 0.448666666666667
+    },
+    {
+      "roles": [
+        "exchange_release_3_add_3"
+      ],
+      "risk_improvement_pp": 0.20611111111111108,
+      "extra_saving": 0.12400000000000011,
+      "edit_increase": 0.4029999999999996
+    },
+    {
+      "roles": [
+        "release_top_5"
+      ],
+      "risk_improvement_pp": 0.05999999999999894,
+      "extra_saving": 0.13000000000000034,
+      "edit_increase": 0.11366666666666703
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.05428571428571366,
+      "extra_saving": 0.1286666666666667,
+      "edit_increase": 0.11466666666666647
+    },
+    {
+      "roles": [
+        "release_top_5"
+      ],
+      "risk_improvement_pp": 0.07500000000000145,
+      "extra_saving": 0.15200000000000014,
+      "edit_increase": 0.23800000000000043
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.07500000000000145,
+      "extra_saving": 0.15200000000000014,
+      "edit_increase": 0.23800000000000043
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_1"
+      ],
+      "risk_improvement_pp": 0.09124999999999966,
+      "extra_saving": 0.137,
+      "edit_increase": 0.27200000000000024
+    },
+    {
+      "roles": [
+        "release_L8D4"
+      ],
+      "risk_improvement_pp": 0.07291666666666696,
+      "extra_saving": 0.1286666666666667,
+      "edit_increase": 0.22433333333333394
+    },
+    {
+      "roles": [
+        "release_top_3"
+      ],
+      "risk_improvement_pp": 0.07599999999999968,
+      "extra_saving": 0.18666666666666698,
+      "edit_increase": 0.2919999999999998
+    },
+    {
+      "roles": [
+        "refine_top_5"
+      ],
+      "risk_improvement_pp": 0.11299999999999921,
+      "extra_saving": 0.23900000000000032,
+      "edit_increase": 0.34266666666666623
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_5"
+      ],
+      "risk_improvement_pp": 0.12799999999999895,
+      "extra_saving": 0.17333333333333334,
+      "edit_increase": 0.4710000000000001
+    },
+    {
+      "roles": [
+        "exchange_release_5_add_3"
+      ],
+      "risk_improvement_pp": 0.11299999999999921,
+      "extra_saving": 0.18133333333333335,
+      "edit_increase": 0.46133333333333315
+    },
+    {
+      "roles": [
+        "exchange_release_3_add_1"
+      ],
+      "risk_improvement_pp": 0.0983333333333336,
+      "extra_saving": 0.14800000000000013,
+      "edit_increase": 0.3693333333333335
+    }
+  ],
+  "actual_updated_batches": 0,
+  "scope": "development previews, not additional target trajectories"
+}

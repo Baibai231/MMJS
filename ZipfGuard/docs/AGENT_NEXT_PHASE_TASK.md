@@ -1,4 +1,4 @@
-# 给 Agent 的执行任务：在 HTPG 原论文场景上优化 ZipfGuard
+# 给 Agent 的执行任务：在 HTPG 原论文场景上优化 TriGuard
 
 > **范围已更新（2026-09-25）：**用户现已明确采用 19 个 MAYA 数据集，并将创新重点转到分布、拟合、分析、攻击、评价，攻击需含 PassLLM 等多模型。请优先执行 [最新核验与任务书](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/PIPELINE_NEXT_PHASE_2026-09-25.md)。以下保留为历史任务记录；“优先建议组合”和“补齐原六站后再继续”的安排不再作为当前前置要求。
 

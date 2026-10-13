@@ -1,0 +1,49 @@
+{
+  "changes_authorized": [
+    "variable risk membership cutoff",
+    "remove all user modification hard limits"
+  ],
+  "risk_cutoffs_per_model": [
+    50000,
+    100000,
+    1000000
+  ],
+  "evaluation_attempts_per_model": 1000000,
+  "target_users": 100000,
+  "batches": 10,
+  "only_rerun_arm": "graded",
+  "paired_prior": "registration_dual_full_20261011",
+  "all_user_cost_caps": null,
+  "single_user_retry_cap": null,
+  "response_stream": "same seeded proposals, continued until acceptance",
+  "unchanged_controls": [
+    "minimum gain",
+    "fixed dual-model risk check",
+    "model support check",
+    "single winner confirmation",
+    "risk objective"
+  ],
+  "post_hoc_revision": true,
+  "independent_final_validation": false,
+  "human_verification": "pending",
+  "pre_run_tests": {
+    "passed": 29
+  },
+  "storage_recovery": {
+    "original_volume_full": true,
+    "resumed_checkpoint_users": 20000,
+    "files_copied_verified_sha256": true,
+    "method_changed": false
+  },
+  "usability_evidence": {
+    "url": "https://www.usenix.org/system/files/conference/soups2017/soups2017-segreti.pdf",
+    "locator": "printed page 2, Introduction final paragraph",
+    "additional_attempts_mean_range": [
+      0.58,
+      1.58
+    ],
+    "extreme_restriction_exception": true,
+    "not_evidence_for_this_simulated_policy_user_sentiment": true,
+    "human_verification": "pending"
+  }
+}

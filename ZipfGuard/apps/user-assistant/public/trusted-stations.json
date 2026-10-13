@@ -1,7 +1,7 @@
 [
   {
     "site": "demo",
-    "name": "ZipfGuard 研究站点",
+    "name": "TriGuard 研究站点",
     "nodes": [
       "https://localhost:8541",
       "https://localhost:8542",

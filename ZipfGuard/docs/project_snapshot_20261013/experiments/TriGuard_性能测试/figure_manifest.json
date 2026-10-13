@@ -1,0 +1,31 @@
+{
+  "source_files": [
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\report_update\\performance_optimization_20261012\\runs\\baseline-profile-10\\results.json",
+      "sha256": "4675ef21e43cef241d18eda887b7dc96942b92bc1845052cd7f1cc6ea5407e96"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\report_update\\performance_optimization_20261012\\runs\\optimized-profile-10\\results.json",
+      "sha256": "08f5215770d35383b8e45e66ccb3b3d612b048d69de630ad993f0da15a370f18"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\report_update\\performance_optimization_20261012\\runs\\quick-baseline-interaction-100\\results.json",
+      "sha256": "a7fcfbf8f7031271cfa2b4935007c3c62af158d4f8f8a5ed90efc7c7cfe802dc"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\report_update\\performance_optimization_20261012\\runs\\quick-optimized-interaction-100\\results.json",
+      "sha256": "26635c13fff52bc388aa38b1ec64794b2cf31294718c5eb33d79bf40fbdd6a7d"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\output\\TriGuard_性能测试\\快速存储实测.json",
+      "sha256": "9cf9da25c69e8829bf978ce28444da1c6db6b0e91bbcb10774e79779ed8ed97b"
+    }
+  ],
+  "style": "reference report figure 20: white background, thin axes and simple lines; categorical interaction comparisons use bars",
+  "samples": {
+    "profiles": 3,
+    "interactions": 5,
+    "storage_sizes": 8
+  },
+  "interrupted_scale_test_excluded": true
+}

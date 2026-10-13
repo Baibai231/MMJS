@@ -1,0 +1,17 @@
+﻿experiment,new,comparator,seed,budget,risk_reduction_pp,extra_increase,new_eligible,comparator_eligible
+literature,graded,joint,11,100000,10.652999999999999,0.13185000000000002,True,True
+literature,graded,joint,11,1000000,11.463999999999999,0.13185000000000002,True,True
+literature,graded,schechter_strong,11,100000,4.09,0.014990000000000059,True,True
+literature,graded,schechter_strong,11,1000000,4.860999999999999,0.014990000000000059,True,True
+literature,graded,schechter_middle,11,100000,8.401,0.09636999999999996,True,True
+literature,graded,schechter_middle,11,1000000,9.424,0.09636999999999996,True,True
+literature,graded,schechter_light,11,100000,13.26,0.15937999999999997,True,True
+literature,graded,schechter_light,11,1000000,13.563,0.15937999999999997,True,True
+literature,graded,malone,11,100000,9.623999999999999,0.11182999999999998,True,True
+literature,graded,malone,11,1000000,10.346,0.11182999999999998,True,True
+literature,graded,segreti_struct_m_nohint,11,100000,-1.856,-1.6169900000000001,True,False
+literature,graded,segreti_struct_m_nohint,11,1000000,-5.875000000000001,-1.6169900000000001,True,False
+website,github_graded,github_core,11,100000,13.71,0.22350000000000003,True,True
+website,github_graded,github_core,11,1000000,13.486000000000004,0.22350000000000003,True,True
+website,github_graded,github_base,11,100000,13.168000000000003,0.2134799999999999,True,True
+website,github_graded,github_base,11,1000000,12.9,0.2134799999999999,True,True

@@ -1,0 +1,11 @@
+{
+  "source": "overleaf/main.tex",
+  "registration": "sec:design-registration",
+  "privacy": "sec:design-privacy",
+  "format_reference": "existing-dynamic-overview-2-1-1.pdf",
+  "new_labels": [
+    "fig:registration-dynamic-overview",
+    "fig:privacy-protection-overview"
+  ],
+  "scope": "Scheme overview only; no results or new algorithm claims"
+}

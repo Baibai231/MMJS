@@ -1,0 +1,57 @@
+{
+  "users": 100000,
+  "batches": 10,
+  "seeds": [
+    11
+  ],
+  "minimum": 8,
+  "common_size": 1000,
+  "window": 2,
+  "recent_weight": 0.5,
+  "weights": [
+    0.6,
+    0.25,
+    0.15
+  ],
+  "response_mode": "mixed",
+  "candidate_limit": null,
+  "preview_users": 3000,
+  "max_modification": null,
+  "max_extra": null,
+  "max_more_than_three": null,
+  "min_gain": 0.0,
+  "frozen_increase": 0.005,
+  "outside_increase": 0.02,
+  "objective_budget": 1000000,
+  "budgets": [
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "frozen_budget": 1000000,
+  "attack_timeout": 3600,
+  "candidate_workers": 4,
+  "user_cost_caps_disabled": true,
+  "comparison_source": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+  "paired_partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+  "reuse_attack_roots": [
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\graded",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\schechter_strong",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\malone",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\segreti_struct_m_nohint",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\github_core",
+    "C:/Users/jlx51/.codex/visualizations/2026/10/11/01a12a85-b74d-7740-89ee-d9101382a8d9/registration_variable_scope_20261012/private/attacks/11/graded",
+    "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\11\\01a12a85-b74d-7740-89ee-d9101382a8d9\\sd\\private\\attacks\\11\\segreti_dynamic"
+  ],
+  "patience": null,
+  "arms": [
+    "segreti_dynamic"
+  ],
+  "additional_structures": [
+    5,
+    20
+  ],
+  "baseline_artifact_sha256": "9a24d3a3292da2557a66ecaf7c30fbc1ede5f9576bd81ccc060826b6b9f5d456",
+  "gain_tolerance": 1e-12
+}

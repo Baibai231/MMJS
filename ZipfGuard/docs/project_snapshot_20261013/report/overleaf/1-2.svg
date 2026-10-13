@@ -1,0 +1,142 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1190" viewBox="0 0 1800 1190">
+  <defs>
+    <style>
+      text { font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #232731; }
+      .section { font-size: 37px; font-weight: 700; }
+      .heading { font-size: 34px; font-weight: 700; }
+      .body { font-size: 27px; }
+      .small { font-size: 24px; }
+      .step { font-size: 23px; font-weight: 700; fill: #59627a; }
+      .line { stroke: #4d5667; stroke-width: 3.5; fill: none; marker-end: url(#arrow); }
+      .feedback { stroke: #347e68; stroke-width: 3.5; fill: none; marker-end: url(#green-arrow); }
+      .model { stroke: #796a9d; stroke-width: 3; stroke-dasharray: 11 8; fill: none; marker-end: url(#purple-arrow); }
+      .box { fill: #fff; stroke: #59616d; stroke-width: 2.3; rx: 5; }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#4d5667" stroke-width="2"/></marker>
+    <marker id="green-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#347e68" stroke-width="2"/></marker>
+    <marker id="purple-arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#796a9d" stroke-width="2"/></marker>
+  </defs>
+
+  <rect width="1800" height="1190" fill="#fff"/>
+
+  <!-- 数据准备：目标群体与独立开发记录按出现位置划分。 -->
+  <text x="68" y="54" class="section">数据与共同起点</text>
+  <path d="M68 68 H1730" stroke="#8c94a5" stroke-width="2"/>
+
+  <rect x="72" y="104" width="330" height="205" class="box"/>
+  <rect x="72" y="104" width="330" height="55" fill="#e9e5f7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="237" y="144" text-anchor="middle" class="heading">频次语料</text>
+  <text x="237" y="211" text-anchor="middle" class="body">按出现记录抽样</text>
+  <text x="237" y="261" text-anchor="middle" class="small">固定随机种子 · 数据摘要</text>
+
+  <path d="M402 180 H473 V171 H501" class="line"/>
+  <path d="M473 180 V260 H501" class="line"/>
+
+  <rect x="510" y="105" width="465" height="92" class="box"/>
+  <rect x="510" y="105" width="115" height="92" fill="#e9e5f7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="568" y="162" text-anchor="middle" class="step">目标</text>
+  <text x="649" y="161" class="body">固定规模存量账户群体</text>
+
+  <rect x="510" y="218" width="465" height="92" class="box"/>
+  <rect x="510" y="218" width="115" height="92" fill="#e9e5f7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="568" y="275" text-anchor="middle" class="step">开发</text>
+  <text x="649" y="274" class="body">独立训练与参考记录</text>
+
+  <path d="M975 151 H1022" class="line"/>
+  <path d="M975 264 H1022" class="line"/>
+
+  <rect x="1030" y="105" width="695" height="92" class="box"/>
+  <rect x="1030" y="105" width="695" height="92" fill="#f3f8ee" stroke="#59616d" stroke-width="2.3"/>
+  <text x="1377" y="145" text-anchor="middle" class="heading">8 字符基础迁移</text>
+  <text x="1377" y="179" text-anchor="middle" class="small">所有局部方法共用同一账户起点</text>
+
+  <rect x="1030" y="218" width="695" height="92" class="box"/>
+  <rect x="1030" y="218" width="695" height="92" fill="#eeeafa" stroke="#59616d" stroke-width="2.3"/>
+  <text x="1377" y="257" text-anchor="middle" class="heading">训练固定攻击模型 F</text>
+  <text x="1377" y="291" text-anchor="middle" class="small">PCFG + OMEN · 生成响应所需词表</text>
+
+  <!-- 主流程，箭头按真实执行顺序排列。 -->
+  <text x="68" y="380" class="section">预算约束下的逐轮局部干预</text>
+  <path d="M68 394 H1730" stroke="#8c94a5" stroke-width="2"/>
+  <path d="M1725 151 H1745 V416 H275 V449" class="line"/>
+
+  <rect x="72" y="458" width="345" height="171" class="box"/>
+  <rect x="72" y="458" width="345" height="55" fill="#e9e5f7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="95" y="495" class="step">01</text>
+  <text x="244" y="496" text-anchor="middle" class="heading">当前分布</text>
+  <text x="244" y="553" text-anchor="middle" class="body">统计完整口令频次</text>
+  <text x="244" y="595" text-anchor="middle" class="small">高频口令与重复账户</text>
+
+  <path d="M417 542 H464" class="line"/>
+  <rect x="472" y="458" width="345" height="171" class="box"/>
+  <rect x="472" y="458" width="345" height="55" fill="#e9e5f7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="495" y="495" class="step">02</text>
+  <text x="644" y="496" text-anchor="middle" class="heading">分布分析</text>
+  <text x="644" y="553" text-anchor="middle" class="body">经验 W1 距离初筛</text>
+  <text x="644" y="595" text-anchor="middle" class="small">CDF 采样拟合与复核</text>
+
+  <path d="M817 542 H864" class="line"/>
+  <rect x="872" y="458" width="345" height="171" class="box"/>
+  <rect x="872" y="458" width="345" height="55" fill="#dff1e8" stroke="#59616d" stroke-width="2.3"/>
+  <text x="895" y="495" class="step">03</text>
+  <text x="1044" y="496" text-anchor="middle" class="heading">候选动作</text>
+  <text x="1044" y="553" text-anchor="middle" class="body">账户群体 × 规则 × 规模</text>
+  <text x="1044" y="595" text-anchor="middle" class="small">热点组 · 结构组 · 18 条方法</text>
+
+  <path d="M1217 542 H1264" class="line"/>
+  <rect x="1272" y="458" width="455" height="171" class="box"/>
+  <rect x="1272" y="458" width="455" height="55" fill="#dff1e8" stroke="#59616d" stroke-width="2.3"/>
+  <text x="1296" y="495" class="step">04</text>
+  <text x="1500" y="496" text-anchor="middle" class="heading">模拟与选择</text>
+  <text x="1500" y="553" text-anchor="middle" class="body">预测迁移后的完整频次</text>
+  <text x="1500" y="595" text-anchor="middle" class="small">按预计拟合 W1 收益排序</text>
+
+  <path d="M1500 629 V672" class="line"/>
+  <rect x="1174" y="681" width="553" height="187" class="box"/>
+  <rect x="1174" y="681" width="553" height="55" fill="#f7e7e7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="1199" y="719" class="step">05</text>
+  <text x="1450" y="719" text-anchor="middle" class="heading">个体双模型门槛</text>
+  <text x="1450" y="775" text-anchor="middle" class="body">生成新口令，检查固定 F</text>
+  <text x="1450" y="814" text-anchor="middle" class="small">PCFG 与 OMEN 各前 100 万次</text>
+  <text x="1450" y="846" text-anchor="middle" class="small">未通过则重试；整批无法合规则不下发</text>
+  <path d="M1377 310 V344 H1760 V774 H1736" class="model"/>
+
+  <path d="M1174 774 H1127" class="line"/>
+  <rect x="666" y="681" width="453" height="187" class="box"/>
+  <rect x="666" y="681" width="453" height="55" fill="#dff1e8" stroke="#59616d" stroke-width="2.3"/>
+  <text x="690" y="719" class="step">06</text>
+  <text x="892" y="719" text-anchor="middle" class="heading">执行与反馈</text>
+  <text x="892" y="775" text-anchor="middle" class="body">提交整批修改，登记通知成本</text>
+  <text x="892" y="814" text-anchor="middle" class="small">更新账户状态 · 频次 · 剩余预算</text>
+  <text x="892" y="846" text-anchor="middle" class="small">预算耗尽或无正收益候选时停止</text>
+
+  <path d="M666 785 H244 V640" class="feedback"/>
+  <rect x="293" y="756" width="317" height="42" fill="#fff"/>
+  <text x="451" y="786" text-anchor="middle" class="small" fill="#347e68">下一轮重新分析分布</text>
+
+  <!-- 对照、终态评估与可追溯输出；A1 使用独立参考迁移。 -->
+  <path d="M892 868 V920" class="line"/>
+  <text x="68" y="970" class="section">对照实验、终态评估与输出</text>
+  <path d="M68 984 H1730" stroke="#8c94a5" stroke-width="2"/>
+
+  <rect x="72" y="1014" width="505" height="133" class="box"/>
+  <rect x="72" y="1014" width="505" height="48" fill="#e9e5f7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="324" y="1049" text-anchor="middle" class="heading">对照组</text>
+  <text x="324" y="1097" text-anchor="middle" class="body">固定起点 · 随机 · 初始排序</text>
+  <text x="324" y="1128" text-anchor="middle" class="small">Yahoo 全站迁移单独比较</text>
+
+  <rect x="648" y="1014" width="505" height="133" class="box"/>
+  <rect x="648" y="1014" width="505" height="48" fill="#f7e7e7" stroke="#59616d" stroke-width="2.3"/>
+  <text x="900" y="1049" text-anchor="middle" class="heading">终态评估</text>
+  <text x="900" y="1097" text-anchor="middle" class="body">经验 W1 · 固定 F / 适应性 A1</text>
+  <text x="900" y="1128" text-anchor="middle" class="small">A1 由独立参考群体迁移后重训</text>
+
+  <rect x="1224" y="1014" width="503" height="133" class="box"/>
+  <rect x="1224" y="1014" width="503" height="48" fill="#f7e8d9" stroke="#59616d" stroke-width="2.3"/>
+  <text x="1476" y="1049" text-anchor="middle" class="heading">报告与展示</text>
+  <text x="1476" y="1097" text-anchor="middle" class="body">逐轮动作 · 通知账本</text>
+  <text x="1476" y="1128" text-anchor="middle" class="small">停止原因 · 图表 · 网页展示</text>
+
+  <path d="M577 1081 H639" class="line"/>
+  <path d="M1153 1081 H1215" class="line"/>
+</svg>

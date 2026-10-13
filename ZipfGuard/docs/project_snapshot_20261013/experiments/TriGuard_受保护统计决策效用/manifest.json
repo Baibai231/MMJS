@@ -1,0 +1,96 @@
+{
+  "version": "protected-decision-utility-v1",
+  "config": {
+    "source_study": "reports/registration_joint_minimal_20261011",
+    "expected_partition_sha256": "b5fd390744f5f778d367b10b3d92ccef26550a6a2417e1323531affd1bd0c967",
+    "output": "E:/学习/竞赛/密码技术竞赛_参赛版/output/TriGuard_受保护统计决策效用",
+    "history_role": "tuning",
+    "history_users": 10000,
+    "training_users": 60000,
+    "response_seed": 11,
+    "spectrum_length": 3,
+    "quota_pairs": [
+      [
+        1,
+        1
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        3,
+        1
+      ],
+      [
+        3,
+        2
+      ]
+    ],
+    "epsilons": [
+      0.5,
+      1,
+      2
+    ],
+    "noise_repetitions": 20,
+    "noise_seed": 2026101204,
+    "noise_parties": 3,
+    "core_budget_fraction": 0.8,
+    "baseline_core_budget_split": [
+      0.5,
+      0.5
+    ],
+    "scope": "Offline test of the production administrator decision adapter on synthesized protected releases; no live credentials, no MPC benchmark, no policy activation; 20 noise repetitions on a fixed cohort"
+  },
+  "config_sha256": "a1b90730450f39aee678b0df8bc17b30db98557ae004a963f2eba9ab87316066",
+  "source_partition_sha256": "b5fd390744f5f778d367b10b3d92ccef26550a6a2417e1323531affd1bd0c967",
+  "source_corpus_sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+  "implementation_sha256": {
+    "tools\\run_protected_statistics_decision_utility.py": "f1b9c42f2bfbca21a841a8ac1943432a906879421139c3c242afc62a22cd26a8",
+    "adapters\\live_engines.py": "6c897060e69225bcc8c5cbea060e2fd8479618d29cd84ddfa0b63479d6df38e1",
+    "policy\\privacy_joint_profile.py": "b0f3bfd1790331762b0fec55a80cac7e125a9b9adf27c1a13dec69a1e8260876",
+    "privacy\\service\\compute.py": "36cbb5d95cdc81cb89ab470f3b208dc19b87fdda7b11a7c98d6839728bd3df22",
+    "policy\\registration_joint.py": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1",
+    "tools\\run_privacy_joint_study.py": "c5f57ca4aa43a6f067c3049e344c4a0cac0a344129037c0ac3df23e5804a3ddd"
+  },
+  "python": "3.13.9",
+  "numpy": "2.5.3",
+  "structure_catalogue": [
+    "L8",
+    "L10",
+    "D8",
+    "D10",
+    "L5D4S1",
+    "U1L5D3S1",
+    "L10D2",
+    "U1L8D2S1",
+    "OTHER"
+  ],
+  "shape_version": "ascii-luds-runs-v1-fixed-catalogue",
+  "population": 10000,
+  "historical_preprocessing": {
+    "initial_users": 10000,
+    "completed_users": 10000,
+    "pending_users": 0,
+    "completion_rate": 1.0,
+    "modification_rate": 0.5258,
+    "mean_extra_submissions": 0.5304,
+    "p90_extra_submissions": 1,
+    "more_than_three_fraction": 0.0,
+    "visible_length_repairs": 4974,
+    "hidden_initial_rejections": 284,
+    "mean_edit_distance": null,
+    "terminal_state": "candidate_limit_pending",
+    "preference_protocol": "registration-joint-paired-v1"
+  },
+  "known_structure_coverage": 0.22750000000000004,
+  "spectrum_length": 3,
+  "comparison": "same protected counts, selected shapes, quota and total nominal epsilon",
+  "epsilon_allocation": "80 percent to core statistics; remaining 20 percent reserved for rule-count coordinates, not used in this decision test",
+  "baseline_core_allocation": "half to sensitivity-2 structure counts and half to sensitivity-2 global frequencies",
+  "noise": "three independent seeded test contributions, each the difference of two exact-rational geometric samples; same q and bound as deployed Computer.noisy",
+  "release_scope": "Synthetic protected snapshots generated offline; production adapter called directly; no HTTP/MPC/cryptographic protocol claims",
+  "reference_scope": "Unnoised optimal complete-password selection for the SAME selected structures in each paired comparison",
+  "uncertainty_scope": "noise repetitions on one fixed cohort, not population sampling or real-user behavior",
+  "password_strings_in_public_outputs": false
+}

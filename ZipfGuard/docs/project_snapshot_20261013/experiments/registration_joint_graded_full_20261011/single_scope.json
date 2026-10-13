@@ -1,0 +1,33 @@
+{
+  "version": "first-round-only-v1",
+  "retained_seed": 11,
+  "excluded_seeds": [
+    23,
+    42,
+    67,
+    101
+  ],
+  "arms": [
+    "joint",
+    "graded",
+    "schechter_strong",
+    "schechter_middle",
+    "schechter_light",
+    "malone",
+    "segreti_struct_m_nohint",
+    "github_core",
+    "github_base",
+    "github_graded"
+  ],
+  "users": 100000,
+  "batches": 10,
+  "total_trajectories": 10,
+  "reason": "User explicitly requested one round only and stopping all later rounds",
+  "selection": "First originally prespecified seed, not selected by performance",
+  "parent_manifest_sha256": "f7531125a96c39de356daf7a72a10c2f88d4aedd5ec2052b21923ab18921531f",
+  "additions_manifest_sha256": "41bcd7cfbdc80e41027e2ccd7b36d07fdf7eb7142d232d58c1ae8ef8a10c1638",
+  "source_hashes": {
+    "run_registration_first_round.py": "f5c7ff75462a3b0c6e2e1f19b024d147c9d662ba125253baa7a6d07b8eb5b151",
+    "report_registration_first_round.py": "b700b612768b7166ca71a10ce0598131dad3940e47bac2a38151240097da0db2"
+  }
+}

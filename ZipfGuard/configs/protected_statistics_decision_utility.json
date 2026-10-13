@@ -1,0 +1,42 @@
+{
+  "source_study": "reports/registration_joint_minimal_20261011",
+  "expected_partition_sha256": "b5fd390744f5f778d367b10b3d92ccef26550a6a2417e1323531affd1bd0c967",
+  "output": "E:/学习/竞赛/密码技术竞赛_参赛版/output/TriGuard_受保护统计决策效用",
+  "history_role": "tuning",
+  "history_users": 10000,
+  "training_users": 60000,
+  "response_seed": 11,
+  "spectrum_length": 3,
+  "quota_pairs": [
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      2
+    ],
+    [
+      3,
+      1
+    ],
+    [
+      3,
+      2
+    ]
+  ],
+  "epsilons": [
+    0.5,
+    1,
+    2
+  ],
+  "noise_repetitions": 20,
+  "noise_seed": 2026101204,
+  "noise_parties": 3,
+  "core_budget_fraction": 0.8,
+  "baseline_core_budget_split": [
+    0.5,
+    0.5
+  ],
+  "scope": "Offline test of the production administrator decision adapter on synthesized protected releases; no live credentials, no MPC benchmark, no policy activation; 20 noise repetitions on a fixed cohort"
+}

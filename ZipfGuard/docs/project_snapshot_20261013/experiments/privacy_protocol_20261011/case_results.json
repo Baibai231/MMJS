@@ -1,0 +1,290 @@
+[
+  {
+    "case": "bootstrap_0",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_1",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_2",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_3",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_4",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_5",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_6",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "bootstrap_7",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "profile_before",
+    "passed": true,
+    "outcome": "profile_released",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "same_snapshot_cached",
+    "passed": true,
+    "outcome": "profile_cached",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "refresh_hidden_rule",
+    "passed": true,
+    "outcome": "policy_refreshed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "hidden_exact_rejection",
+    "passed": true,
+    "outcome": "policy_rejected",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "structure_rejection",
+    "passed": true,
+    "outcome": "policy_rejected",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "valid_registration",
+    "passed": true,
+    "outcome": "registered",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "alternate_auth_input",
+    "passed": true,
+    "outcome": "unexpected_field",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "forged_structure_report",
+    "passed": true,
+    "outcome": "unexpected_field",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "inconsistent_client_shares",
+    "passed": true,
+    "outcome": "inconsistent_or_nonbinary_shares",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "consistent_nonbinary_shares",
+    "passed": true,
+    "outcome": "inconsistent_or_nonbinary_shares",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "noncontiguous_padding",
+    "passed": true,
+    "outcome": "policy_rejected",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "wrong_login",
+    "passed": true,
+    "outcome": "authentication_failed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "legacy_login_ignores_new_policy",
+    "passed": true,
+    "outcome": "authenticated",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "wrong_old_password",
+    "passed": true,
+    "outcome": "change_rejected",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "abort_without_commit",
+    "passed": true,
+    "outcome": "prepared_then_aborted",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "successful_password_change",
+    "passed": true,
+    "outcome": "password_changed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "exact_change_replay",
+    "passed": true,
+    "outcome": "password_changed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "conflicting_nonce",
+    "passed": true,
+    "outcome": "nonce_conflict",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "stale_account_version",
+    "passed": true,
+    "outcome": "stale_account",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "stale_policy",
+    "passed": true,
+    "outcome": "stale_policy",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "checkpoint_reload",
+    "passed": true,
+    "outcome": "local_share_checkpoint_reloaded",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "old_password_revoked",
+    "passed": true,
+    "outcome": "authentication_failed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "new_password_works",
+    "passed": true,
+    "outcome": "authenticated",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "login_quota_third",
+    "passed": true,
+    "outcome": "authenticated",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "login_quota_fourth",
+    "passed": true,
+    "outcome": "authentication_failed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "login_quota_fifth",
+    "passed": true,
+    "outcome": "query_limit",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "private_remediation_eligibility",
+    "passed": true,
+    "outcome": "eligible",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "forged_eligibility_without_auth",
+    "passed": true,
+    "outcome": "eligibility_not_proved",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "unrelated_account_eligibility",
+    "passed": true,
+    "outcome": "eligibility_not_proved",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "unauthenticated_task_denied",
+    "passed": true,
+    "outcome": "eligibility_not_proved",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "authenticated_task_assignment",
+    "passed": true,
+    "outcome": "task_assigned",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "task_assignment_idempotent",
+    "passed": true,
+    "outcome": "task_already_assigned",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "task_count_budget_exhausted",
+    "passed": true,
+    "outcome": "task_budget_exhausted",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "task_completed_by_private_change",
+    "passed": true,
+    "outcome": "password_changed",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "final_checkpoint_reload",
+    "passed": true,
+    "outcome": "local_share_checkpoint_reloaded",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "second_snapshot_budget_exhausted",
+    "passed": true,
+    "outcome": "budget_exhausted",
+    "three_party_signatures_verified": true
+  },
+  {
+    "case": "tampered_receipt_rejected",
+    "passed": true,
+    "outcome": "receipt_rejected",
+    "three_party_signatures_verified": false
+  },
+  {
+    "case": "missing_party_receipt_fail_closed",
+    "passed": true,
+    "outcome": "receipt_rejected",
+    "three_party_signatures_verified": false
+  },
+  {
+    "case": "duplicated_signer_fail_closed",
+    "passed": true,
+    "outcome": "receipt_rejected",
+    "three_party_signatures_verified": false
+  },
+  {
+    "case": "wrong_receipt_context_fail_closed",
+    "passed": true,
+    "outcome": "receipt_rejected",
+    "three_party_signatures_verified": false
+  }
+]

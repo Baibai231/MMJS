@@ -1,0 +1,25 @@
+{
+  "stage": "complete",
+  "started_at": "2026-10-11 16:13:04",
+  "retained_seed": 11,
+  "total_trajectories": 10,
+  "users_per_trajectory": 100000,
+  "batches": 10,
+  "completed": [
+    "11/joint",
+    "11/schechter_strong",
+    "11/schechter_middle",
+    "11/schechter_light",
+    "11/malone",
+    "11/segreti_struct_m_nohint",
+    "11/github_core",
+    "11/github_base",
+    "11/graded",
+    "11/github_graded"
+  ],
+  "active": [],
+  "failures": [],
+  "updated_at": "2026-10-11 16:33:32",
+  "batch_progress": {},
+  "completed_at": "2026-10-11 16:33:32"
+}

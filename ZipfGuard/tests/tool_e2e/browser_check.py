@@ -48,7 +48,7 @@ def run():
             page.get_by_role('button',name=label,exact=True).click();page.get_by_role('heading',name=label,exact=True).wait_for();assert page.locator('body').inner_text()
         user=context.new_page();user.goto('chrome-extension://'+cfg['extension_id']+'/index.html');user.get_by_role('heading',name='口令助手',exact=True).wait_for(timeout=20000)
         print('Extension loaded',flush=True)
-        user.get_by_text('新规则不会锁定原有口令登录',exact=False).wait_for(timeout=15000)
+        user.get_by_text('适用于新注册与修改口令',exact=True).wait_for(timeout=15000)
         user.screenshot(path=str(output/'user-assistant.png'),full_page=True)
         import httpx
         version=httpx.get(cfg['user_api']+'/account-version/integration-smoke',verify=cfg['ca']).json()['version']

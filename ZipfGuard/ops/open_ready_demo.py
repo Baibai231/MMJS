@@ -95,7 +95,7 @@ def main():
             admin.on('response',persist_on_login)
             user=context.new_page();user.goto('chrome-extension://'+cfg['extension_id']+'/index.html')
             user.get_by_role('heading',name='口令助手',exact=True).wait_for(timeout=20000)
-            user.get_by_text('新规则不会锁定原有口令登录',exact=False).wait_for()
+            user.get_by_text('适用于新注册与修改口令',exact=True).wait_for()
             # This public synthetic fixture is entered only into the extension.
             # It is never passed to the administrator page or business service.
             user_logged_in=False

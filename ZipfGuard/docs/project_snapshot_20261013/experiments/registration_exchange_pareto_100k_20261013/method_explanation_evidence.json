@@ -1,0 +1,124 @@
+{
+  "document": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册双向调整v2_方法阐述与优势机制分析_20261013.md",
+  "scope": "explanation of completed experiment; no new experiment",
+  "human_verification": "pending",
+  "machine_structure_checks": "passed",
+  "terminal_rule_diagnosis": {
+    "initial_hard": 213,
+    "final_hard": 211,
+    "removed_original_hard": 19,
+    "softened_original": 14,
+    "removed_additional_structure_restrictions": 5,
+    "added_new_hard": 17,
+    "hard_soft_disjoint": true
+  },
+  "selected_update_roles": [
+    {
+      "batch": 2,
+      "roles": [
+        "risk_exchange_seed1_add3"
+      ]
+    },
+    {
+      "batch": 3,
+      "roles": [
+        "risk_exchange_seed1_add5"
+      ]
+    },
+    {
+      "batch": 4,
+      "roles": [
+        "risk_exchange_seed1_add5"
+      ]
+    },
+    {
+      "batch": 5,
+      "roles": [
+        "risk_exchange_seed1_add5"
+      ]
+    },
+    {
+      "batch": 9,
+      "roles": [
+        "beam_release_D15,L4D5,L8D3,L8D4S1"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册双向调整v2_方法阐述与优势机制分析_20261013.md",
+      "sha256": "99f45c881f090a8228b7b59e4829adce9143cf7b92164ea173a8ab9287e6943a",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\experiments\\registration_exchange_pareto.py",
+      "sha256": "3c886d88e32132eb70d8b653707d12e3ba2c0b78caf2bf73c6abdf739f4454f2",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\experiments\\registration_exchange.py",
+      "sha256": "d91cdafe315ffeeee795c72a00ef9117210ddce38d7958ff2958dccc86573178",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\tools\\run_registration_exchange_pareto.py",
+      "sha256": "397fa667c670e14496523aecd4b7c7e00c4ba47603c2598e1f32960da65fb556",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\policy\\registration_joint.py",
+      "sha256": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册双向调整v2_优化与单组十万复测协议_20261013.md",
+      "sha256": "1831fc60015f9be0b5820ed651f03b855d75257b0f3ee81f9eb1e05712550ec7",
+      "human_verification": "pending"
+    },
+    {
+      "path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\exchange_pareto_100k_20261013\\runs\\11\\bidirectional_exchange\\state.pkl.gz",
+      "sha256": "338183541061ba6548be66a230e2f893c3d6d8c2cad40facd3fcf728bd162127",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\runs\\11\\segreti_struct_m_nohint\\blacklist.pkl.gz",
+      "sha256": "9a24d3a3292da2557a66ecaf7c30fbc1ede5f9576bd81ccc060826b6b9f5d456",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_exchange_pareto_100k_20261013\\deliverables\\comparison_summary.csv",
+      "sha256": "4004546886a3e648b8963e2265672f1fd0eeefcbaee605a41b487b365930e500",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_exchange_pareto_100k_20261013\\deliverables\\comparison_evidence.json",
+      "sha256": "2c16d177bfa39060682e27d411ccf7a3c4c700bc574d79b545f96454f88921b1",
+      "human_verification": "pending"
+    },
+    {
+      "path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\exchange_pareto_100k_20261013\\runs\\11\\bidirectional_exchange\\candidate_audit_02.json",
+      "sha256": "0f23660e5db675aec150a3fe9b4a76ae40b93dc011ca2bbafd500ba2dd8f2af5",
+      "human_verification": "pending"
+    },
+    {
+      "path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\exchange_pareto_100k_20261013\\runs\\11\\bidirectional_exchange\\candidate_audit_03.json",
+      "sha256": "9e9af50909fc9a37f8b607a7c195c0a2364c1da6f7ba7286f2d09398d6e7a681",
+      "human_verification": "pending"
+    },
+    {
+      "path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\exchange_pareto_100k_20261013\\runs\\11\\bidirectional_exchange\\candidate_audit_04.json",
+      "sha256": "4aa9f3da893096c9ed9294fa440b8d992fcdfc37b71d48b978111b75d3431172",
+      "human_verification": "pending"
+    },
+    {
+      "path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\exchange_pareto_100k_20261013\\runs\\11\\bidirectional_exchange\\candidate_audit_05.json",
+      "sha256": "98ae73a2b9e112b10e74a63fc7cec0f84a7627eace1c98e8b846a851eb5d3a13",
+      "human_verification": "pending"
+    },
+    {
+      "path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\13\\01a133d8-c9b6-7383-bf5d-057cfccb2364\\exchange_pareto_100k_20261013\\runs\\11\\bidirectional_exchange\\candidate_audit_09.json",
+      "sha256": "814767e9b509169f1e594c6adf5a9155524fc0684395973a926bd82bee2c4f02",
+      "human_verification": "pending"
+    }
+  ]
+}

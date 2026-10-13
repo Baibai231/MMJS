@@ -18,11 +18,11 @@ def create_app(cfg):
     def health():return {'ready':True,'service':'reference-site'}
     @app.get('/',response_class=HTMLResponse)
     def home():
-        return '''<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>接入站点 · ZipfGuard</title><style>body{font:18px system-ui;background:#f3f6f5;color:#153c35;margin:10vh auto;max-width:750px;padding:25px}article{background:white;padding:40px;border-radius:24px}code{overflow-wrap:anywhere}button,a{display:inline-block;padding:12px;background:#145c4c;color:white;border:0;border-radius:8px}</style><article><small>独立业务网站 · 接入样例</small><h1>登录时，网站无需接触口令</h1><p>请打开已安装的 ZipfGuard 用户助手，在扩展内完成注册或登录，再将“网站认证证明”粘贴到这里。</p><p>本站只验证三个计算方签名与一次性网站挑战，不显示口令输入框。</p><button id="challenge">取得本站挑战</button><p id="nonce"></p><textarea id="proof" aria-label="网站认证证明" rows="6" style="width:100%"></textarea><p><button id="verify">验证证明并建立会话</button></p><p id="status" role="status"></p><script src="/client.js"></script></article></html>'''
+        return (ROOT/'sdk/reference-site.html').read_text('utf-8')
     @app.get('/client.js')
     def client_js():
         from fastapi.responses import Response
-        return Response("""let challenge;document.querySelector('#challenge').onclick=async()=>{challenge=await(await fetch('/challenge',{method:'POST'})).json();document.querySelector('#nonce').textContent=challenge.nonce};document.querySelector('#verify').onclick=async()=>{try{const proof=JSON.parse(document.querySelector('#proof').value);const r=await fetch('/authenticate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...proof,challenge:challenge?.nonce})});const value=await r.json();document.querySelector('#status').textContent=r.ok?'已建立网站会话：'+value.account:JSON.stringify(value)}catch{document.querySelector('#status').textContent='请提供有效认证证明'}};""",media_type='text/javascript')
+        return Response((ROOT/'sdk/reference-client.js').read_text('utf-8'),media_type='text/javascript')
     @app.post('/challenge')
     def challenge():
         nonce=secrets.token_urlsafe(24);store.put('challenges',nonce,{'expires':time.time()+300})

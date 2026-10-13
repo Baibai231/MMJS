@@ -1,0 +1,124 @@
+{
+  "version": "privacy-joint-minimal-v1",
+  "config": {
+    "source_study": "reports/registration_joint_minimal_20261011",
+    "output": "reports/privacy_joint_minimal_20261011",
+    "history_role": "tuning",
+    "history_users": 10000,
+    "registration_role": "test",
+    "registration_users": 3000,
+    "structure_limit": 32,
+    "spectrum_length": 30,
+    "candidates": [
+      [
+        10,
+        0
+      ],
+      [
+        10,
+        1
+      ],
+      [
+        10,
+        2
+      ],
+      [
+        30,
+        0
+      ],
+      [
+        30,
+        1
+      ],
+      [
+        30,
+        2
+      ]
+    ],
+    "registration_pair": [
+      10,
+      1
+    ],
+    "epsilons": [
+      0.5,
+      1.0,
+      2.0
+    ],
+    "registration_epsilon": 1.0,
+    "noise_repetitions": 20,
+    "noise_seed": 2026101103,
+    "response_seed": 11,
+    "patience": 3,
+    "attack_model": "pcfg",
+    "attack_budget": 100000,
+    "baseline_budget_split": [
+      0.5,
+      0.5
+    ],
+    "study_scope": "fixed-window algorithm and ideal-function simulation; no cryptographic protocol benchmark"
+  },
+  "config_sha256": "697fd034ede5b1bbc1c2a40db4dd7088eb6a0d5de13c6f58f7c55381311629a1",
+  "source_partition_sha256": "b5fd390744f5f778d367b10b3d92ccef26550a6a2417e1323531affd1bd0c967",
+  "source_corpus_sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+  "source_role_position_hashes": {
+    "train": "09cdd66cc4358251dd2f26691066707050be2583300fd78346b5cac0e5a6167c",
+    "tuning": "18796c0b6f08bb564f4b0f363a4f3dc42d2a0b7e35b691b860ecf88d3ff72cb2",
+    "preview_select": "e4f1237474a2e34d3f0cdb23c0f138dc5496c3f2ae2d05d19b61480648e298aa",
+    "preview_confirm": "06dad6e460375bbbc47efb6d8967c4d3ca75c5b946d5c5c54a9d18b65d46e651",
+    "validation": "241d1b29c9be79412ef912846c37deae2c75daf7930c47a32b7fddd9bc982461",
+    "test": "15c684e7d4c320b7316901fdf678f24be0b9142852700d49bbae788b2f3cb11d"
+  },
+  "attack_prefix_sha256": "5f7dcae8bcf3bf3242d39147e05e57e3f3a7c5b5956bc594167d3f6195c1c95a",
+  "attack_prefix_path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_minimal_20261011\\private\\attacks\\raw\\11\\prefixes\\2805e5cfa19ce656f435c57c5822c1fcc9ae31e93983dc9e2605b64fce04aecb-pcfg-100000.pkl.gz",
+  "attack_training_counts_sha256": "2805e5cfa19ce656f435c57c5822c1fcc9ae31e93983dc9e2605b64fce04aecb",
+  "attack_raw_emissions": 100000,
+  "attack_distinct_guesses": 99996,
+  "attack_budget_unit": "raw_attempts_including_duplicates",
+  "training_occurrences": 60000,
+  "historical_occurrences": 10000,
+  "registration_occurrences": 3000,
+  "structure_dimension_including_OTHER": 33,
+  "training_defined_structure_coverage": 0.7468,
+  "history_preprocessing": {
+    "initial_users": 10000,
+    "completed_users": 10000,
+    "pending_users": 0,
+    "completion_rate": 1.0,
+    "modification_rate": 0.5258,
+    "mean_extra_submissions": 0.5304,
+    "p90_extra_submissions": 1,
+    "more_than_three_fraction": 0.0,
+    "visible_length_repairs": 4974,
+    "hidden_initial_rejections": 284,
+    "mean_edit_distance": null,
+    "terminal_state": "candidate_limit_pending",
+    "preference_protocol": "registration-joint-paired-v1"
+  },
+  "occurrence_ids_disjoint": true,
+  "individual_identities_verified": false,
+  "base_policy": {
+    "minimum": 8,
+    "common_size": 1000
+  },
+  "cost_limits": {
+    "max_modification": 0.6,
+    "max_extra": 1.0,
+    "pending_limit": 0
+  },
+  "statistical_scope": "20 noise repetitions on one fixed cohort; error bars are empirical 10-90 percentiles",
+  "privacy_scope": "numeric profile only; ideal hidden mapping and policy checks are not DP outputs",
+  "cryptographic_protocol_implemented": false,
+  "theory_checks": {
+    "synthetic_policy_conditions": 2520,
+    "neighbor_pairs": 2016,
+    "max_observed_L1_sensitivity": 4,
+    "scope": "finite synthetic verification, not a privacy proof"
+  },
+  "python": "3.13.9",
+  "numpy": "2.5.3",
+  "implementation_sha256": {
+    "tools\\run_privacy_joint_study.py": "c5f57ca4aa43a6f067c3049e344c4a0cac0a344129037c0ac3df23e5804a3ddd",
+    "policy\\privacy_joint_profile.py": "b0f3bfd1790331762b0fec55a80cac7e125a9b9adf27c1a13dec69a1e8260876",
+    "policy\\registration_joint.py": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1"
+  }
+}

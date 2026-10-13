@@ -1,0 +1,39 @@
+{
+  "status": "machine_verified",
+  "visual_check": "assistant_checked_readable",
+  "human_verification": "pending",
+  "files": [
+    {
+      "name": "comparison_evidence.json",
+      "sha256": "2c16d177bfa39060682e27d411ccf7a3c4c700bc574d79b545f96454f88921b1"
+    },
+    {
+      "name": "comparison_summary.csv",
+      "sha256": "4004546886a3e648b8963e2265672f1fd0eeefcbaee605a41b487b365930e500"
+    },
+    {
+      "name": "selection_diagnosis.json",
+      "sha256": "9e6d8363fe209405ebeefe3c2f91031a4abe314a6e2967433de81b0484831fbc"
+    },
+    {
+      "name": "verified_improvement_summary.json",
+      "sha256": "b1085d96dc47f0efe1690677238fb07cfab6177e9a970381c71793ab8ec5e082"
+    },
+    {
+      "name": "双向调整与历史方案对照.pdf",
+      "sha256": "73b1cde58775d38aabb0fdd2370a6c3364f8bee731b98c1e7aec8943703b8313"
+    },
+    {
+      "name": "双向调整与历史方案对照.png",
+      "sha256": "17c34076f899366cd7464c83a3afa94fb944fc79ad2d8704dac2ed76fe1ae83d"
+    },
+    {
+      "name": "双向调整与历史方案对照.svg",
+      "sha256": "c4a6bcc9aa5f2928d95aa59b138205129ca92b9168354688d80bf1465ab08a61"
+    },
+    {
+      "name": "完整结果与比较.md",
+      "sha256": "85397358f9ebab566ebc31f66f8898e91ffedba5c7e4611391dbe625528385fc"
+    }
+  ]
+}

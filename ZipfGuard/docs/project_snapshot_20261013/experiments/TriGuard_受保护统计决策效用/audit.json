@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "checks": [
+    "Two analytically known fixtures: same marginal populations/spectra, different overlap; 100->160 and 180->180 union counts",
+    "All production candidates use only numeric profiles and retain the automatic hold gate",
+    "Both methods share exactly the same structure-count release and selected shapes",
+    "Actual coverage checked by independent plaintext union counting",
+    "Exact reference checked against all outside-structure password frequencies",
+    "No TriGuard complete-password slot overlaps a blocked structure",
+    "All methods obey the same k/j limits; empty padded slots are recorded"
+  ],
+  "raw_rows": 720,
+  "expected_rows": 720
+}

@@ -8,11 +8,11 @@ from matplotlib import font_manager
 from matplotlib.ticker import MultipleLocator
 
 METHODS = [
-    ('graded', '我们的改进方案', '#27648C', 'o', '-'),
-    ('schechter_strong', 'Schechter（严格）', '#BA7635', 's', '--'),
-    ('malone', 'Malone–Maher', '#8A709A', '^', '-.'),
-    ('segreti_struct_m_nohint', 'Segreti（结构黑名单）', '#698B72', 'D', ':'),
-    ('github_core', 'GitHub 公开核心规则', '#879DAF', 'v', (0, (5, 2, 1, 2))),
+    ('graded', '我们的改进方案', '#5C79BC', 'o', '-'),
+    ('schechter_strong', 'Schechter（严格）', '#F39A20', 's', '-'),
+    ('malone', 'Malone–Maher', '#B51F25', '^', '-'),
+    ('segreti_struct_m_nohint', 'Segreti（结构黑名单）', '#70AF3D', 'D', '-'),
+    ('github_core', 'GitHub 公开核心规则', '#8950BA', 'v', '-'),
 ]
 
 
@@ -44,7 +44,7 @@ def main():
     attack_ax.yaxis.set_major_locator(MultipleLocator(5))
     attack_ax.grid(axis='y', color='#E6EBEF', linewidth=.8)
     attack_ax.set_axisbelow(True)
-    attack_ax.axvline(cfg['primary_observed_budget'], color='#A6AFB7', linewidth=.8, linestyle='--', zorder=0)
+    attack_ax.axvline(cfg['primary_observed_budget'], color='#A6AFB7', linewidth=.8, linestyle='-', zorder=0)
     attack_ax.legend(loc='upper left', fontsize=9.5, framealpha=.95)
     values = [results[arm]['cost']['mean_extra_submissions'] for arm, *_ in METHODS]
     bars = cost_ax.barh(range(len(METHODS)), values, height=.55,
@@ -63,7 +63,7 @@ def main():
         axis.spines['right'].set_visible(False)
     reduction = 100*(1-values[0]/values[3])
     fig.text(.735, .072, f'相较 Segreti，改进方案的人均额外提交次数降低 {reduction:.1f}%',
-             ha='center', color='#27648C', fontsize=11)
+             ha='center', color='#5C79BC', fontsize=11)
     fig.text(.5, .025, '联合预算由 PCFG 与 OMEN 各分配一半；用户成本包含各方案基础规则引起的额外提交。',
              ha='center', color='#505B65', fontsize=10)
     base = dest / '五方案攻击与用户成本'

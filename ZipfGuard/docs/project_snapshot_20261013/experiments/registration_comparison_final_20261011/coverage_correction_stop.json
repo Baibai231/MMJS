@@ -1,0 +1,5 @@
+{
+  "StoppedAt": "2026-10-11 10:08:25",
+  "TestOpened": false,
+  "Reason": "Pre-test correction: joint predictor support check must use both PCFG and OMEN, not PCFG alone"
+}

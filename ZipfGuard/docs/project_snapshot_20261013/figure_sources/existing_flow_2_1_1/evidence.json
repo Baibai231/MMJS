@@ -1,0 +1,12 @@
+{
+  "scope": "report section 2.1.1 only; no chapter 3 datasets, contrasts or results",
+  "chapter_source": "report_update/block_names_overleaf/main.tex at Overleaf commit 78aa1f0",
+  "statistical_evaluation": "2.1.1 items (1)-(2)",
+  "candidates": "2.1.1 item (3)",
+  "screen_and_score": "2.1.1 item (4)",
+  "shared_new_password_check": "2.1.1 item (5)",
+  "combination_and_two_round_lookahead": "2.1.1 item (6)",
+  "commit_feedback_stop": "2.1.1 item (7)",
+  "implementation_crosscheck": "ZipfGuard/policy/intervention_controller.py",
+  "palette": "作图参考.pptx slide1: E1E1FF, FFDDDD, DDFFDD, F5F5F5"
+}

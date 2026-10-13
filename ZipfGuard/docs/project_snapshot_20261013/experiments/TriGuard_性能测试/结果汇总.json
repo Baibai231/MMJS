@@ -1,0 +1,61 @@
+{
+  "profile_10_accounts": {
+    "before_median_seconds": 117.98105479998048,
+    "after_median_seconds": 57.73396970005706,
+    "reduction_percent": 51.06505040327322
+  },
+  "storage_5000_accounts": {
+    "before_bytes": 27156480,
+    "after_bytes": 15355904,
+    "reduction_percent": 43.45399698340875
+  },
+  "interaction_100_accounts": {
+    "baseline": {
+      "login": {
+        "n": 5,
+        "median_seconds": 1.1598596000112593,
+        "mean_seconds": 1.1595420599915087,
+        "min_seconds": 1.1360971999820322,
+        "max_seconds": 1.1888296999968588
+      },
+      "check": {
+        "n": 5,
+        "median_seconds": 1.9946348000084981,
+        "mean_seconds": 1.9908195000025444,
+        "min_seconds": 1.8790207999991253,
+        "max_seconds": 2.0909706000238657
+      },
+      "change": {
+        "n": 5,
+        "median_seconds": 2.2231471000122838,
+        "mean_seconds": 2.18829689999111,
+        "min_seconds": 2.009678000002168,
+        "max_seconds": 2.3638635999523103
+      }
+    },
+    "optimized": {
+      "login": {
+        "n": 5,
+        "median_seconds": 0.9269112999900244,
+        "mean_seconds": 0.9157095800037496,
+        "min_seconds": 0.6861544000566937,
+        "max_seconds": 1.2743389999959618
+      },
+      "check": {
+        "n": 5,
+        "median_seconds": 1.760694099997636,
+        "mean_seconds": 1.8021205200115218,
+        "min_seconds": 1.4125176999950781,
+        "max_seconds": 2.269421000033617
+      },
+      "change": {
+        "n": 5,
+        "median_seconds": 1.9279837000067346,
+        "mean_seconds": 1.9464647400192916,
+        "min_seconds": 1.6147536000353284,
+        "max_seconds": 2.1952737999963574
+      }
+    }
+  },
+  "scope": "local loopback HTTPS, actual three-party MPC; 5 repetitions per interaction; 3 distinct profile publications; storage uses exact paired native-share SQLite writes"
+}

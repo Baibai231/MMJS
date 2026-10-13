@@ -1,0 +1,260 @@
+{
+  "schema_version": "1.0",
+  "sources": [
+    {
+      "evidence_id": "E001",
+      "title": "Popularity Is Everything: A New Approach to Protecting Passwords from Statistical-Guessing Attacks",
+      "authors": [
+        "Stuart Schechter",
+        "Cormac Herley",
+        "Michael Mitzenmacher"
+      ],
+      "year": 2010,
+      "source_type": "conference_paper",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://www.usenix.org/legacy/event/hotsec10/tech/full_papers/Schechter.pdf",
+        "doi": "",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "Section 2, pp. 2-3; Section 3 privacy design",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E002",
+      "title": "Investigating the Distribution of Password Choices",
+      "authors": [
+        "David Malone",
+        "Kevin Maher"
+      ],
+      "year": 2012,
+      "source_type": "conference_paper",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://www.maths.tcd.ie/~dwmalone/p/www2012.pdf",
+        "doi": "10.1145/2187836.2187878",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "Section 6, printed p.308, PDF p.9",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E003",
+      "title": "Diversify to Survive: Making Passwords Stronger with Adaptive Policies",
+      "authors": [
+        "Sean M. Segreti",
+        "William Melicher",
+        "Saranga Komanduri",
+        "Darya Melicher",
+        "Richard Shay",
+        "Blase Ur",
+        "Lujo Bauer",
+        "Nicolas Christin",
+        "Lorrie Faith Cranor",
+        "Michelle L. Mazurek"
+      ],
+      "year": 2017,
+      "source_type": "conference_paper",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://www.usenix.org/system/files/conference/soups2017/soups2017-segreti.pdf",
+        "doi": "",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "Sections 3.3, 3.5 and results",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E004",
+      "title": "DPPG: A Dynamic Password Policy Generation System",
+      "authors": [
+        "Shukun Yang",
+        "Shouling Ji",
+        "Raheem Beyah"
+      ],
+      "year": 2018,
+      "source_type": "journal_article",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://nesa.zju.edu.cn/download/DPPG%20A%20Dynamic%20Password%20Policy%20Generation%20System.pdf",
+        "doi": "10.1109/TIFS.2017.2737971",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "Sections III-IV; source is accepted manuscript",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E005",
+      "title": "Skeptic: Automatic, Justified and Privacy-Preserving Password Composition Policy Selection",
+      "authors": [
+        "Saul Johnson",
+        "João F. Ferreira",
+        "Alexandra Mendes",
+        "Julien Cordry"
+      ],
+      "year": 2020,
+      "source_type": "preprint",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://arxiv.org/html/2007.03809v2",
+        "doi": "10.48550/arXiv.2007.03809",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "Sections 3.3, 3.4; 2024 revision",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E006",
+      "title": "Creating a strong password",
+      "authors": [
+        "GitHub"
+      ],
+      "year": null,
+      "source_type": "webpage",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-strong-password",
+        "doi": "",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "Official published length/category requirements, accessed 2026-10-11",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E007",
+      "title": "Scientific Agent Skills: A Library of Procedural Knowledge for Research Agents",
+      "authors": [
+        "Timothy Kassis",
+        "Vinayak Agarwal",
+        "Yuhuan He",
+        "Darshil Patel",
+        "Aubrey M. Brueckner"
+      ],
+      "year": 2026,
+      "source_type": "preprint",
+      "confidentiality": "public",
+      "identifiers": {
+        "url": "https://arxiv.org/abs/2609.00065",
+        "doi": "10.48550/arXiv.2609.00065",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "arXiv v2 metadata, 2026-09-02; writing workflow only",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E010",
+      "title": "Prospective registration comparison final results",
+      "authors": [],
+      "year": 2026,
+      "source_type": "report",
+      "confidentiality": "restricted",
+      "identifiers": {
+        "url": "",
+        "doi": "",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "runs/test and per_seed_results.csv",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E011",
+      "title": "Frozen registration protocol and implementation",
+      "authors": [],
+      "year": 2026,
+      "source_type": "report",
+      "confidentiality": "restricted",
+      "identifiers": {
+        "url": "",
+        "doi": "",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "manifest.json; extension_manifest.json; protocol.md; frozen_parameters; candidate audits; omen_memory_fix.json",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    },
+    {
+      "evidence_id": "E012",
+      "title": "Previous joint registration experiment",
+      "authors": [],
+      "year": 2026,
+      "source_type": "report",
+      "confidentiality": "restricted",
+      "identifiers": {
+        "url": "",
+        "doi": "",
+        "pmid": "",
+        "pmcid": "",
+        "isbn": ""
+      },
+      "locator": "../registration_joint_minimal_20261011/deliverables/evidence.json",
+      "verification": {
+        "source_opened": true,
+        "status": "unverified",
+        "verified_by": "",
+        "verified_on": ""
+      }
+    }
+  ]
+}

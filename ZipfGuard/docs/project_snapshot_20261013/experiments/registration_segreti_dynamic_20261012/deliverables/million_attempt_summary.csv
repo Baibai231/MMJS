@@ -1,0 +1,3 @@
+﻿arm,label,users,per_model_budget,pcfg,omen,union_each_model_B,union_equal_total_B,extra,modification,more_than_three,extra_zero,extra_one,extra_two,extra_three,extra_max,extra_p90,extra_p95,pending,outside_both
+segreti_dynamic,Segreti起点上的动态调整,100000,1000000,0.08803,0.01157,0.08992,0.07373,2.66616,0.93205,0.21705,0.06795,0.24361,0.31461,0.15678,57,5,7,0,0.00889
+segreti_struct_m_nohint,固定Segreti名单,100000,1000000,0.09231,0.01346,0.09431,0.07803,2.34561,0.93124,0.1751,0.06876,0.25606,0.34051,0.15957,27,4,6,0,0.00853

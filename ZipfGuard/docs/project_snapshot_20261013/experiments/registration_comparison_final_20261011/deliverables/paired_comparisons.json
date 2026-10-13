@@ -1,0 +1,111 @@
+{
+  "literature": [
+    {
+      "comparator": "refresh",
+      "differences_pp": [
+        7.561000000000001,
+        7.611000000000004,
+        7.674999999999999,
+        7.588,
+        7.600000000000001
+      ],
+      "mean_improvement_pp": 7.607000000000001,
+      "approximate_t95_low": 7.5544451869819165,
+      "approximate_t95_high": 7.659554813018086,
+      "positive_seeds": 5,
+      "two_sided_exact_sign_flip_p": 0.0625,
+      "extra_submission_difference": 0.10046400000000004,
+      "modification_rate_difference": 0.01623399999999999,
+      "all_new_cost_eligible": true,
+      "all_comparator_cost_eligible": true,
+      "practical_gate": true,
+      "strict_mean_cost_dominance": false
+    },
+    {
+      "comparator": "schechter",
+      "differences_pp": [
+        -0.23100000000000065,
+        -0.26499999999999857,
+        -0.26199999999999835,
+        -0.13200000000000156,
+        -0.18700000000000105
+      ],
+      "mean_improvement_pp": -0.21540000000000004,
+      "approximate_t95_low": -0.2851910163285821,
+      "approximate_t95_high": -0.14560898367141795,
+      "positive_seeds": 0,
+      "two_sided_exact_sign_flip_p": 0.0625,
+      "extra_submission_difference": -0.039363999999999955,
+      "modification_rate_difference": -0.007574000000000014,
+      "all_new_cost_eligible": true,
+      "all_comparator_cost_eligible": true,
+      "practical_gate": false,
+      "strict_mean_cost_dominance": true
+    },
+    {
+      "comparator": "malone",
+      "differences_pp": [
+        5.168999999999999,
+        5.170000000000003,
+        5.294000000000001,
+        5.202999999999999,
+        5.282000000000001
+      ],
+      "mean_improvement_pp": 5.2236,
+      "approximate_t95_low": 5.148468554111057,
+      "approximate_t95_high": 5.298731445888944,
+      "positive_seeds": 5,
+      "two_sided_exact_sign_flip_p": 0.0625,
+      "extra_submission_difference": 0.058660000000000045,
+      "modification_rate_difference": 0.01214599999999999,
+      "all_new_cost_eligible": true,
+      "all_comparator_cost_eligible": true,
+      "practical_gate": true,
+      "strict_mean_cost_dominance": false
+    }
+  ],
+  "website": [
+    {
+      "comparator": "website_core",
+      "differences_pp": [
+        7.037999999999997,
+        8.059,
+        7.752999999999998,
+        8.136,
+        7.2680000000000025
+      ],
+      "mean_improvement_pp": 7.650799999999999,
+      "approximate_t95_low": 7.050628248943967,
+      "approximate_t95_high": 8.250971751056031,
+      "positive_seeds": 5,
+      "two_sided_exact_sign_flip_p": 0.0625,
+      "extra_submission_difference": 0.13245200000000007,
+      "modification_rate_difference": 0.006899999999999995,
+      "all_new_cost_eligible": true,
+      "all_comparator_cost_eligible": true,
+      "practical_gate": true,
+      "strict_mean_cost_dominance": false
+    },
+    {
+      "comparator": "base",
+      "differences_pp": [
+        6.450999999999999,
+        7.468000000000003,
+        7.062999999999997,
+        7.479000000000003,
+        6.654999999999999
+      ],
+      "mean_improvement_pp": 7.0232,
+      "approximate_t95_low": 6.444070287544373,
+      "approximate_t95_high": 7.602329712455627,
+      "positive_seeds": 5,
+      "two_sided_exact_sign_flip_p": 0.0625,
+      "extra_submission_difference": 0.12188800000000004,
+      "modification_rate_difference": 0.004595999999999978,
+      "all_new_cost_eligible": true,
+      "all_comparator_cost_eligible": true,
+      "practical_gate": true,
+      "strict_mean_cost_dominance": false
+    }
+  ]
+}

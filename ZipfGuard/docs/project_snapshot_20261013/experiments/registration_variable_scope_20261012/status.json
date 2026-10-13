@@ -1,0 +1,13 @@
+{
+  "stage": "complete",
+  "started_at": "2026-10-12 00:25:08",
+  "total_trajectories": 1,
+  "completed": [
+    "graded"
+  ],
+  "failures": [],
+  "users_per_trajectory": 100000,
+  "workers": 1,
+  "updated_at": "2026-10-12 01:01:37",
+  "completed_at": "2026-10-12 01:01:37"
+}

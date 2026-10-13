@@ -1,0 +1,13 @@
+{
+  "relative_reductions_percent_vs_v1": {
+    "union_each_model_B": 20.581062453610446,
+    "extra": 36.80108798990455,
+    "mean_edit_all_users": 29.08218771634853
+  },
+  "union_risk_drop_percentage_points": 1.9410000000000012,
+  "strictly_lowest_union_risk_at_all_four_tested_budgets": true,
+  "budget_unit": "raw_attempts_per_model",
+  "max_total_attempts": 2000000,
+  "scope": "single paired exploratory target stream",
+  "human_verification": "pending"
+}

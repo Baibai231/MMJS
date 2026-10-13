@@ -1,0 +1,55 @@
+{
+  "version": "report-additions-v1",
+  "settings": {
+    "literature_arms": [
+      "malone",
+      "segreti_struct_m_nohint"
+    ],
+    "website_arms": [
+      "github_core",
+      "github_base",
+      "github_graded"
+    ],
+    "segreti_compliant_guesses": 100000,
+    "segreti_candidate_prefix_budget": 1000000,
+    "website_incremental_limits": {
+      "cost_mode": "incremental_base",
+      "max_modification": 0.2,
+      "max_extra": 0.5,
+      "max_more_than_three": 0.05
+    },
+    "workers": 1
+  },
+  "parent_manifest_sha256": "f7531125a96c39de356daf7a72a10c2f88d4aedd5ec2052b21923ab18921531f",
+  "source_hashes": {
+    "tools\\run_registration_joint_graded_additions.py": "568bd0ad182c18871b0c54eb0976b84cc2d202c6a111a4cd6f7a829cdf75f6da",
+    "experiments\\registration_full_additions.py": "d65f70e68ece2d0a673b1efeba8ce59526417e65bb71d53090a0c6efb9cbabe7",
+    "tools\\report_registration_joint_graded_combined.py": "9bbf0683b886792ddbcf712fa5f89e03d60378f8b6e00c87b2f1aca6a24150a5"
+  },
+  "targets": "Reuse exact fresh test roles already frozen for current full study",
+  "user_authorized": "Add Malone-Maher and Segreti alongside Schechter, plus one common website",
+  "data_timing": "Scope extension after parent study began; no new tuning on observed target results",
+  "paper_scope": "Mechanism reproduction with explicit shared-simulation adaptations; not original human study replication",
+  "website": "GitHub public composition core, base with common blacklist, dynamic extension under same base",
+  "website_limits": "Incremental to GitHub+common base, following existing website experiment",
+  "sources": [
+    {
+      "url": "https://www.maths.tcd.ie/~dwmalone/p/www2012.pdf",
+      "locator": "Section 6, PDF p.9",
+      "source_opened": true,
+      "human_verification": "pending"
+    },
+    {
+      "url": "https://www.usenix.org/system/files/conference/soups2017/soups2017-segreti.pdf",
+      "locator": "Sections 3.3 and 3.4, StructMNoHint",
+      "source_opened": true,
+      "human_verification": "pending"
+    },
+    {
+      "url": "https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-strong-password",
+      "locator": "Public length/category rules and weak-password check statement, accessed 2026-10-11",
+      "source_opened": true,
+      "human_verification": "pending"
+    }
+  ]
+}

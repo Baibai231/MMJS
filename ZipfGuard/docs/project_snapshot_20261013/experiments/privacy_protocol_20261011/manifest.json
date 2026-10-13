@@ -1,0 +1,56 @@
+{
+  "config": {
+    "output": "reports/privacy_protocol_20261011",
+    "parties": 3,
+    "threshold": 1,
+    "security_model": "semi-honest independent computation parties, at most one passively corrupt; malicious client consistency and format checks",
+    "maximum_ascii_bytes": 16,
+    "minimum_ascii_bytes": 8,
+    "secure_integer_bits": 16,
+    "statistical_security_bits": 40,
+    "structures": [
+      "L5D4S1",
+      "U1L5D3S1",
+      "L10D2",
+      "U1L8D2S1"
+    ],
+    "spectrum_length": 3,
+    "rule_k": 1,
+    "fixed_forbidden_shape_index": 0,
+    "privacy_release_epsilon": 1.0,
+    "privacy_lifetime_cap": 1.0,
+    "profile_noise": "independent discrete Laplace contribution from each computation party, added inside MPC",
+    "noise_uniform_bits": 64,
+    "authentication": "same-secret MPC equality against distributed credential shares, not OPAQUE/PAKE implementation",
+    "query_limit_per_account": 4,
+    "remediation_task_cap": 1,
+    "transport": "mutually authenticated TLS on loopback",
+    "timeout_seconds": 180,
+    "suite_scope": "small synthetic actual cryptographic protocol and state-machine feasibility checks, not scale or production security audit",
+    "mpc_base_port": 40480,
+    "upload_base_port": 39016
+  },
+  "config_sha256": "c2cce43eb9c6eef86dadc92397c1f4dcb991102c54bdc0b6525b34ba3421ebc3",
+  "mpyc_version": "0.11",
+  "cryptography_version": "46.0.7",
+  "field_prime": 288230376151711687,
+  "field_prime_bits": 58,
+  "synthetic_bootstrap_accounts": 8,
+  "synthetic_transactions": 44,
+  "client_randomness": "secrets.randbelow, independent per bit and operation",
+  "privacy_noise": "q=ceil(exp(-epsilon/4)*2^64)/2^64; difference of two exact rational geometric draws at each party",
+  "public_request_binding": "domain-separated HMAC-SHA256 of local envelope under each party private 256-bit key; never unkeyed share hashes",
+  "all_party_keys_on_one_host_for_test_only": true,
+  "independent_deployment_validated": false,
+  "TLS_required": true,
+  "receipt_public_keys": [
+    "7814fd7a3d0f8043d432c08661593fe8bc5b359448bb4a456a5f4953f9e9fdc7",
+    "903488ecd11e5337e1a683910f378324a0579cb66dfffa7a3af1adbd3ad2b4d3",
+    "2cc8a845f6bece59e77643ffe2e351b0e7f28506ae9bf8b71dc6d29d1e1168fb"
+  ],
+  "implementation_sha256": {
+    "tools\\run_privacy_protocol_study.py": "06dc78c41e7919de3c34126a6d883a1529396ebf84afd361cc2809e600f96c07",
+    "privacy\\mpc_protocol_party.py": "e3db9ae7d1ea66d5e7c41e3428050e696e53e19975de3cccdc92ec16392f12ed",
+    "privacy\\transaction_contract.py": "afa910870533cd1f90c9006648bce0d66e186a3cd142e50fc49d3e902c053184"
+  }
+}

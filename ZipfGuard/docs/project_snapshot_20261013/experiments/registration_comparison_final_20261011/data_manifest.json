@@ -1,0 +1,41 @@
+{
+  "source_sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+  "fresh_split_seed": 202610110941,
+  "excluded_previous_occurrences": 500000,
+  "all_roles_disjoint": true,
+  "test_seeds_disjoint": true,
+  "role_sizes": {
+    "calibration_11": 100000,
+    "calibration_23": 100000,
+    "calibration_42": 100000,
+    "calibration_67": 100000,
+    "calibration_101": 100000,
+    "test_11": 100000,
+    "test_23": 100000,
+    "test_42": 100000,
+    "test_67": 100000,
+    "test_101": 100000,
+    "train": 60000,
+    "tuning": 20000,
+    "preview_select": 10000,
+    "preview_confirm": 10000
+  },
+  "position_hashes": {
+    "calibration_11": "45e6a48229c9bce560dd810b60244369b2e3be1e4b6d0e2636b90a35e22370ed",
+    "calibration_23": "7ea14099a2426a74ce28554023aa3f4afd60a3cdaf44cbc38116c9db034e0e46",
+    "calibration_42": "99ff4d96e3ab75f6caec08710e47708b91ba4094b22271a01b3f9f098aca63a8",
+    "calibration_67": "288ed1ab873901c2f33c9a482d7ecd504a501b797a03064d2346a914a2a432f2",
+    "calibration_101": "c9bddeed8ade0c83f1105b4eadcdc77433bb042e7f4ddd2e4efb2aa31b9eeda4",
+    "test_11": "e9ad22cb67537f133caec8571c4905b30973624c4caae00695c27eed7d34d13b",
+    "test_23": "6e917e29457edee7e5db156b8f40aaf0965a28cc0fde7b1b24f2e9be08074a41",
+    "test_42": "3f259df384313552da66ccd0448e95e1553b3d66856ae9247878073b65872e7f",
+    "test_67": "65c56ef9008bca3435982fa91ef4af5d332dea52533b34d783fae1da503979fd",
+    "test_101": "26c75ea290fd3b0b519e50c58c828eb0b26165d7f4d76bd9430c5f191bd287b8",
+    "train": "09cdd66cc4358251dd2f26691066707050be2583300fd78346b5cac0e5a6167c",
+    "tuning": "18796c0b6f08bb564f4b0f363a4f3dc42d2a0b7e35b691b860ecf88d3ff72cb2",
+    "preview_select": "e4f1237474a2e34d3f0cdb23c0f138dc5496c3f2ae2d05d19b61480648e298aa",
+    "preview_confirm": "06dad6e460375bbbc47efb6d8967c4d3ca75c5b946d5c5c54a9d18b65d46e651"
+  },
+  "previous_partition_sha256": "b5fd390744f5f778d367b10b3d92ccef26550a6a2417e1323531affd1bd0c967",
+  "interpretation": "frequency-declared occurrence users, not verified individuals"
+}

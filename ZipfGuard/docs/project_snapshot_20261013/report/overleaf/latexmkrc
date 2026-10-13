@@ -1,0 +1,2 @@
+# This report uses fontspec, xeCJK, and the portable Fandol CJK fonts.
+$pdf_mode = 5;

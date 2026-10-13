@@ -1,0 +1,13 @@
+{
+  "status": "passed",
+  "target_sizes": {
+    "test_11": 100000,
+    "test_23": 100000,
+    "test_42": 100000,
+    "test_67": 100000,
+    "test_101": 100000
+  },
+  "targets_disjoint": true,
+  "no_overlap_with_previous_roles": true,
+  "total_new_target_occurrences": 500000
+}

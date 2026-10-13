@@ -1,0 +1,26 @@
+{
+  "status": "passed",
+  "checks": [
+    "frozen implementation/config hashes",
+    "all 44 transaction signatures independently reverified",
+    "four receipt rejection checks rerun on actual messages",
+    "all 48 case IDs represented exactly once in table",
+    "18 secret-state diagnostics passed",
+    "cached profile equality",
+    "release and remediation budget bounds"
+  ],
+  "algorithm_results_separate": true,
+  "protocol_scope": "small synthetic feasibility run; one host, no active-server security, no PAKE implementation, no crash-consensus proof",
+  "public_artifact_sha256": {
+    "summary.json": "05c52d8ecc8e7f84cd554413fc762bc111aba2a57e0bfcb7d676d649b797f6d7",
+    "case_results.json": "afe3f92928836ad7586dd7128d3a5423bb799a41671f51ca38f821f20bebd9dc",
+    "manifest.json": "253f8e8a58ed364706088c3243d6ebc558653aeb06761d4980082e4fec2edbad",
+    "status.json": "fd542941c628c30343a0d8c382680dd0b72c08a89fdcbd189c7a4c9cd18fab1d",
+    "public_profile.json": "f39fd929a23f6533042fc17265d5ed634f446deeb78df0b2bbf879a826eb6814",
+    "phase_timings.json": "bf36f96ec46ecc1646d6ff391b97799e8893099be58326520be8dd8f9675b01b",
+    "table_protocol_cases.csv": "82c6edb07f1b4706ff3972c420135ada8f2ff91ca6480ac5227e81b556551e70",
+    "table_protocol_timings.csv": "1a275f07a88f9a7d0827b9603f18895ecdd9a05a3be2a29bc8858c6c417f0f7b",
+    "table_protocol_cases.md": "e765231ea3714134e8b51194845703a23baee63779f081b443c5b1eddad38be6"
+  },
+  "exporter_sha256": "b26f8ce2fab0fe2777616099d47590aa64b826f1973aec43d2f5da066b8675cd"
+}

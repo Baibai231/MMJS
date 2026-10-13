@@ -1,0 +1,184 @@
+{
+  "profile": {
+    "0.5": {
+      "A": {
+        "absolute_error_users": 63.82287608800395,
+        "absolute_error_pp": 0.6382287608800395,
+        "overlap_fraction_exact_mass": 0.35153406892871775,
+        "redundant_exact_slots_fraction": 0.36854198799859195,
+        "padded_slot_fraction": 0.0,
+        "numeric_profile_ms": 1.1000650061760098,
+        "ideal_rule_evaluation_ms": 0.6926116649992764
+      },
+      "B": {
+        "absolute_error_users": 143.61968029677166,
+        "absolute_error_pp": 1.4361968029677168,
+        "overlap_fraction_exact_mass": 0.2978685927436196,
+        "redundant_exact_slots_fraction": 0.1642528735632184,
+        "padded_slot_fraction": 0.0008333333333333334,
+        "numeric_profile_ms": 0.5761349922977388,
+        "ideal_rule_evaluation_ms": 0.8174449996052621
+      },
+      "C": {
+        "absolute_error_users": 161.2876622174413,
+        "absolute_error_pp": 1.6128766221744126,
+        "overlap_fraction_exact_mass": 0.0,
+        "redundant_exact_slots_fraction": 0.0,
+        "padded_slot_fraction": 0.0025,
+        "numeric_profile_ms": 0.5761349922977388,
+        "ideal_rule_evaluation_ms": 0.8722033341958498
+      }
+    },
+    "1.0": {
+      "A": {
+        "absolute_error_users": 54.18890439106556,
+        "absolute_error_pp": 0.5418890439106557,
+        "overlap_fraction_exact_mass": 0.35832915502764456,
+        "redundant_exact_slots_fraction": 0.3814276912469692,
+        "padded_slot_fraction": 0.0,
+        "numeric_profile_ms": 0.23216000117827207,
+        "ideal_rule_evaluation_ms": 0.7197800014788905
+      },
+      "B": {
+        "absolute_error_users": 64.34172549108598,
+        "absolute_error_pp": 0.6434172549108598,
+        "overlap_fraction_exact_mass": 0.31957637659308724,
+        "redundant_exact_slots_fraction": 0.24272030651340998,
+        "padded_slot_fraction": 0.0008333333333333334,
+        "numeric_profile_ms": 0.5838349898112938,
+        "ideal_rule_evaluation_ms": 0.849344167606129
+      },
+      "C": {
+        "absolute_error_users": 77.2805966785632,
+        "absolute_error_pp": 0.7728059667856318,
+        "overlap_fraction_exact_mass": 0.0,
+        "redundant_exact_slots_fraction": 0.0,
+        "padded_slot_fraction": 0.0008333333333333334,
+        "numeric_profile_ms": 0.5838349898112938,
+        "ideal_rule_evaluation_ms": 0.8162733361435434
+      }
+    },
+    "2.0": {
+      "A": {
+        "absolute_error_users": 48.575752028494726,
+        "absolute_error_pp": 0.48575752028494723,
+        "overlap_fraction_exact_mass": 0.3605334221312361,
+        "redundant_exact_slots_fraction": 0.38531219972024566,
+        "padded_slot_fraction": 0.0,
+        "numeric_profile_ms": 0.2351250033825636,
+        "ideal_rule_evaluation_ms": 0.7200749969342723
+      },
+      "B": {
+        "absolute_error_users": 23.77464034307041,
+        "absolute_error_pp": 0.2377464034307041,
+        "overlap_fraction_exact_mass": 0.3240872215678742,
+        "redundant_exact_slots_fraction": 0.28500000000000003,
+        "padded_slot_fraction": 0.0,
+        "numeric_profile_ms": 0.5914149951422587,
+        "ideal_rule_evaluation_ms": 0.787480836637163
+      },
+      "C": {
+        "absolute_error_users": 31.354600643020515,
+        "absolute_error_pp": 0.3135460064302052,
+        "overlap_fraction_exact_mass": 0.0,
+        "redundant_exact_slots_fraction": 0.0,
+        "padded_slot_fraction": 0.0,
+        "numeric_profile_ms": 0.5914149951422587,
+        "ideal_rule_evaluation_ms": 0.8393850017455406
+      }
+    }
+  },
+  "registration": {
+    "base": {
+      "completed_users": 3000.0,
+      "pending_users": 0.0,
+      "completion_rate": 1.0,
+      "attack_hits": 366.0,
+      "hit_rate_per_initial": 0.122,
+      "hit_rate_per_completed": 0.122,
+      "modification_rate": 0.5393333333333333,
+      "initial_rejection_rate": 0.5393333333333333,
+      "mean_extra_submissions": 0.5413333333333333,
+      "incremental_output_change_rate": 0.0,
+      "incremental_extra_submissions": 0.0,
+      "runs": 1,
+      "cost_eligible_runs": 1
+    },
+    "O_independent": {
+      "completed_users": 2999.0,
+      "pending_users": 1.0,
+      "completion_rate": 0.9996666666666667,
+      "attack_hits": 271.0,
+      "hit_rate_per_initial": 0.09033333333333333,
+      "hit_rate_per_completed": 0.09036345448482827,
+      "modification_rate": 0.5636666666666666,
+      "initial_rejection_rate": 0.564,
+      "mean_extra_submissions": 0.739,
+      "incremental_output_change_rate": 0.18833333333333332,
+      "incremental_extra_submissions": 0.19766666666666666,
+      "runs": 1,
+      "cost_eligible_runs": 0
+    },
+    "O_residual": {
+      "completed_users": 2999.0,
+      "pending_users": 1.0,
+      "completion_rate": 0.9996666666666667,
+      "attack_hits": 271.0,
+      "hit_rate_per_initial": 0.09033333333333333,
+      "hit_rate_per_completed": 0.09036345448482827,
+      "modification_rate": 0.5636666666666666,
+      "initial_rejection_rate": 0.564,
+      "mean_extra_submissions": 0.7403333333333333,
+      "incremental_output_change_rate": 0.18966666666666668,
+      "incremental_extra_submissions": 0.199,
+      "runs": 1,
+      "cost_eligible_runs": 0
+    },
+    "A": {
+      "completed_users": 2999.0,
+      "pending_users": 1.0,
+      "completion_rate": 0.9996666666666666,
+      "attack_hits": 271.0,
+      "hit_rate_per_initial": 0.09033333333333335,
+      "hit_rate_per_completed": 0.09036345448482826,
+      "modification_rate": 0.5636666666666665,
+      "initial_rejection_rate": 0.564,
+      "mean_extra_submissions": 0.7390000000000001,
+      "incremental_output_change_rate": 0.18833333333333335,
+      "incremental_extra_submissions": 0.19766666666666666,
+      "runs": 20,
+      "cost_eligible_runs": 0
+    },
+    "B": {
+      "completed_users": 2999.0,
+      "pending_users": 1.0,
+      "completion_rate": 0.9996666666666666,
+      "attack_hits": 274.0,
+      "hit_rate_per_initial": 0.09133333333333335,
+      "hit_rate_per_completed": 0.09136378792930976,
+      "modification_rate": 0.5637166666666665,
+      "initial_rejection_rate": 0.5640499999999999,
+      "mean_extra_submissions": 0.7376166666666666,
+      "incremental_output_change_rate": 0.18706666666666666,
+      "incremental_extra_submissions": 0.19628333333333334,
+      "runs": 20,
+      "cost_eligible_runs": 0
+    },
+    "C": {
+      "completed_users": 2999.0,
+      "pending_users": 1.0,
+      "completion_rate": 0.9996666666666666,
+      "attack_hits": 273.6,
+      "hit_rate_per_initial": 0.0912,
+      "hit_rate_per_completed": 0.09123041013671224,
+      "modification_rate": 0.5637333333333332,
+      "initial_rejection_rate": 0.5640666666666666,
+      "mean_extra_submissions": 0.7380000000000001,
+      "incremental_output_change_rate": 0.18743333333333334,
+      "incremental_extra_submissions": 0.19666666666666668,
+      "runs": 20,
+      "cost_eligible_runs": 0
+    }
+  },
+  "runtime_seconds": 1.6132943000411615
+}

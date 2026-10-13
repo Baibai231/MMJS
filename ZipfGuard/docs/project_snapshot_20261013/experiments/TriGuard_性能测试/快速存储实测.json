@@ -1,0 +1,117 @@
+{
+  "method": "actual SQLite write and readback of identical ordinary per-account 64-character native shares; total of three party databases plus business database; excludes program, certificates, logs and history",
+  "rows": [
+    {
+      "variant": "baseline",
+      "accounts": 10,
+      "database_bytes": 114688,
+      "object_payload_bytes": 55321,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 10,
+      "database_bytes": 90112,
+      "object_payload_bytes": 33586,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 25,
+      "database_bytes": 200704,
+      "object_payload_bytes": 136501,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 25,
+      "database_bytes": 139264,
+      "object_payload_bytes": 80685,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 50,
+      "database_bytes": 323584,
+      "object_payload_bytes": 271899,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 50,
+      "database_bytes": 212992,
+      "object_payload_bytes": 156141,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 100,
+      "database_bytes": 598016,
+      "object_payload_bytes": 542557,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 100,
+      "database_bytes": 372736,
+      "object_payload_bytes": 309162,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 200,
+      "database_bytes": 1142784,
+      "object_payload_bytes": 1084011,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 200,
+      "database_bytes": 679936,
+      "object_payload_bytes": 614834,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 500,
+      "database_bytes": 2768896,
+      "object_payload_bytes": 2707932,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 500,
+      "database_bytes": 1589248,
+      "object_payload_bytes": 1531224,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 1000,
+      "database_bytes": 5476352,
+      "object_payload_bytes": 5414523,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 1000,
+      "database_bytes": 3112960,
+      "object_payload_bytes": 3059663,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "baseline",
+      "accounts": 5000,
+      "database_bytes": 27156480,
+      "object_payload_bytes": 27068406,
+      "round_trip_verified": true
+    },
+    {
+      "variant": "optimized",
+      "accounts": 5000,
+      "database_bytes": 15355904,
+      "object_payload_bytes": 15287060,
+      "round_trip_verified": true
+    }
+  ]
+}

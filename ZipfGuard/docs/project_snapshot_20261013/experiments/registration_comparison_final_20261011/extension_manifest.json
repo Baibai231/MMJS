@@ -1,0 +1,9 @@
+{
+  "source_hashes": {
+    "experiments\\registration_risk_cap.py": "e0855204bbf17ed6484afe6c670c719d7eca14608883b49c4c5d7841f03a1749",
+    "tools\\run_registration_comparison_final.py": "07ae18b737663ccd9b4d87a25873fea427a77ed5d412d08b4fc0ba17b614cdfe"
+  },
+  "phase": "pre-test development amendment",
+  "scope": "40 final report-relevant trajectories",
+  "test_observed_during_development": false
+}

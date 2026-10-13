@@ -1,0 +1,17 @@
+{
+  "measurement": "sum of actual files in built dist directories; not installed disk usage or full system package",
+  "components": [
+    {
+      "component": "user-assistant",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\apps\\user-assistant\\dist",
+      "bytes": 278435,
+      "count": 7
+    },
+    {
+      "component": "admin-console",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\apps\\admin-console\\dist",
+      "bytes": 284134,
+      "count": 3
+    }
+  ]
+}

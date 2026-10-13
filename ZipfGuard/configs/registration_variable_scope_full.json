@@ -1,0 +1,92 @@
+{
+  "source": "rockyou-withcount.txt",
+  "fresh_split_seed": 202610112201,
+  "users": 100000,
+  "batches": 10,
+  "seeds": [
+    11
+  ],
+  "arms": [
+    "graded"
+  ],
+  "schechter_rates": {
+    "schechter_strong": 1e-05,
+    "schechter_middle": 3e-05,
+    "schechter_light": 0.0001
+  },
+  "minimum": 8,
+  "common_size": 1000,
+  "ks": [
+    0,
+    10,
+    100,
+    1000
+  ],
+  "js": [
+    0,
+    5,
+    20
+  ],
+  "window": 2,
+  "recent_weight": 0.5,
+  "weights": [
+    0.6,
+    0.25,
+    0.15
+  ],
+  "response_mode": "mixed",
+  "candidate_limit": null,
+  "preview_users": 3000,
+  "max_modification": null,
+  "max_extra": null,
+  "max_more_than_three": null,
+  "min_gain": 0.005,
+  "frozen_increase": 0.005,
+  "outside_increase": 0.02,
+  "objective_budget": 1000000,
+  "risk_membership_budget": 1000000,
+  "budgets": [
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "primary_observed_budget": 1000000,
+  "secondary_observed_budget": 1000000,
+  "selection_samples": 10000,
+  "confirmation_samples": 100000,
+  "final_samples": 100000,
+  "mc_seed": 20261011,
+  "frozen_budget": 1000000,
+  "attack_timeout": 3600,
+  "actual_attacks": false,
+  "cohort_aware": false,
+  "cost_limits": {
+    "literature": {
+      "cost_mode": "absolute",
+      "max_modification": null,
+      "max_extra": null,
+      "max_more_than_three": null
+    }
+  },
+  "segreti_candidate_prefix_budget": 1000000,
+  "segreti_compliant_guesses": 100000,
+  "risk_membership_budgets": [
+    50000,
+    100000,
+    1000000
+  ],
+  "candidate_workers": 4,
+  "user_cost_caps_disabled": true,
+  "comparison_source": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+  "paired_partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+  "reuse_attack_roots": [
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\graded",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\schechter_strong",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\malone",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\segreti_struct_m_nohint",
+    "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\github_core"
+  ],
+  "target_retry_cap": null,
+  "patience": null
+}

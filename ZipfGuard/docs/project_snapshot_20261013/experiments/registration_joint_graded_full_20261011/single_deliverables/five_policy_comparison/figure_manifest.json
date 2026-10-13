@@ -1,0 +1,133 @@
+{
+  "display_id": "registration-five-policies-first-round-v1",
+  "generated_at": "2026-10-11T16:53:24.971208+08:00",
+  "source_evidence": [
+    {
+      "evidence_id": "E001",
+      "type": "local_simulation_result",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_graded_full_20261011\\runs\\11\\graded\\result.json",
+      "sha256": "030a63230ae1f98ced6d9af77644a9e3998e12a5a2f20feb89dd6b02f8f8eea6",
+      "locators": [
+        "actual_attacks.union_equal_total_B.points",
+        "cost"
+      ],
+      "automated_recount": "passed in single_audit.json",
+      "human_verification": "pending"
+    },
+    {
+      "evidence_id": "E002",
+      "type": "local_simulation_result",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_graded_full_20261011\\runs\\11\\schechter_strong\\result.json",
+      "sha256": "acc1a71ff25099f50fd5c2ab2378422eb21558cee633c2f1d97daa37440749be",
+      "locators": [
+        "actual_attacks.union_equal_total_B.points",
+        "cost"
+      ],
+      "automated_recount": "passed in single_audit.json",
+      "human_verification": "pending"
+    },
+    {
+      "evidence_id": "E003",
+      "type": "local_simulation_result",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_graded_full_20261011\\runs\\11\\malone\\result.json",
+      "sha256": "b1dcf89b0f81fa00b4185f684b07eba93d8b6f6feb37312c0fabbf90235af2aa",
+      "locators": [
+        "actual_attacks.union_equal_total_B.points",
+        "cost"
+      ],
+      "automated_recount": "passed in single_audit.json",
+      "human_verification": "pending"
+    },
+    {
+      "evidence_id": "E004",
+      "type": "local_simulation_result",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_graded_full_20261011\\runs\\11\\segreti_struct_m_nohint\\result.json",
+      "sha256": "2a23d566dd0a40bade0ff567e5a11cc97705671d1993b4bd65ea920f5b2d8f26",
+      "locators": [
+        "actual_attacks.union_equal_total_B.points",
+        "cost"
+      ],
+      "automated_recount": "passed in single_audit.json",
+      "human_verification": "pending"
+    },
+    {
+      "evidence_id": "E005",
+      "type": "local_simulation_result",
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_graded_full_20261011\\runs\\11\\github_core\\result.json",
+      "sha256": "2f59e7aee4871231f83863ec6cbf59171043dd91272165866fe16bd670bc99c7",
+      "locators": [
+        "actual_attacks.union_equal_total_B.points",
+        "cost"
+      ],
+      "automated_recount": "passed in single_audit.json",
+      "human_verification": "pending"
+    }
+  ],
+  "audit_path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_joint_graded_full_20261011\\single_audit.json",
+  "audit_sha256": "95d7d27b62726bffb24e51e4bff956d9733a4e519eab8555ce01ddc4692ab4ab",
+  "code_path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\tools\\plot_registration_five_policies.py",
+  "code_sha256": "479d2f6ff899d8af33efd1d8fff8b99972309515642b1ec595a8b2fdf1c0b9a4",
+  "population": {
+    "seed": 11,
+    "users_per_method": 100000,
+    "batches": 10,
+    "repeats": 1
+  },
+  "analysis": "descriptive user-requested display after completed experiments",
+  "primary_budget": 100000,
+  "secondary_budget": 1000000,
+  "denominator": "all 100000 initial users; both attackers half joint budget",
+  "cost": "mean submissions after first submission, including base-rule burden",
+  "claims": [
+    {
+      "claim_id": "C001",
+      "text_sha256": "f9a8b60e26d2872318b97419a1eb76b56a3e585094ad5b54659b07176a679075",
+      "evidence_ids": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "human_verification": "pending"
+    },
+    {
+      "claim_id": "C002",
+      "text_sha256": "a3575ed82121f3c4dd3e9dd0e198848f22471d2310f10d40adc554071c387197",
+      "evidence_ids": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "human_verification": "pending"
+    },
+    {
+      "claim_id": "C003",
+      "text_sha256": "7f8ae205ab394bd980893b961c3714ad18f0b6a57f793740d50f83439a8ddeb2",
+      "evidence_ids": [
+        "E001",
+        "E002",
+        "E003",
+        "E004",
+        "E005"
+      ],
+      "human_verification": "pending"
+    }
+  ],
+  "creator": "Codex automated export",
+  "human_reviewer": "pending",
+  "alt_text": "左图展示五种策略在1千至100万次两模型联合猜测下的猜中比例。10万与100万次预算下，改进方案低于Schechter、Malone–Maher和GitHub，高于Segreti。右图展示人均额外提交次数，Segreti最高，改进方案与Schechter接近。",
+  "image_processing": "matplotlib rendering of recorded values; no raster edits",
+  "uncertainty": "one simulation round; no across-round estimates",
+  "external_visual_material": "none",
+  "outputs": {
+    "五方案作图数据.csv": "eda265ea5a28d6b80ad2e14fc3f7648ac586910548ecf4ca05215beffa3edf99",
+    "五方案图表说明.md": "108d1e3cef40f6eaae0455a90c7563b45ce051fda6d9ba4a6e38e60b1b62826d",
+    "五方案对照论述.md": "69f49a272c5390f7e09b47f4027fa088d68102ba814ca57d375a73d0bae62a8d",
+    "五方案攻击与用户成本.pdf": "d6201685e2cd392e7db36426ccda69b52d5e2e5d5fb434abea1bb35f06ce83ee",
+    "五方案攻击与用户成本.png": "abe1e9ec7459426e566152df2686064050e0866239783d6e69cebca7c1938cd5",
+    "五方案攻击与用户成本.svg": "2cb009b00b01435b3a191f7eed868d76cc6b83862655a2d40c078b80cbd2817d"
+  }
+}

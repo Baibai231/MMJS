@@ -1,0 +1,40 @@
+{
+  "stage": "superseded_by_single_round",
+  "started_at": "2026-10-11 15:32:59",
+  "total_trajectories": 25,
+  "completed": [
+    "11/malone",
+    "23/malone",
+    "42/malone",
+    "67/malone",
+    "101/malone",
+    "11/segreti_struct_m_nohint",
+    "23/segreti_struct_m_nohint",
+    "42/segreti_struct_m_nohint",
+    "67/segreti_struct_m_nohint",
+    "101/segreti_struct_m_nohint",
+    "11/github_core",
+    "23/github_core",
+    "42/github_core",
+    "67/github_core",
+    "101/github_core",
+    "11/github_base",
+    "23/github_base",
+    "42/github_base",
+    "67/github_base",
+    "101/github_base"
+  ],
+  "combined_total_trajectories": 50,
+  "workers": 1,
+  "failures": [],
+  "active": "11/github_graded",
+  "updated_at": "2026-10-11 15:42:37",
+  "superseded_at": "2026-10-11 16:13:04",
+  "current_status": "single_status.json",
+  "excluded_seeds": [
+    23,
+    42,
+    67,
+    101
+  ]
+}

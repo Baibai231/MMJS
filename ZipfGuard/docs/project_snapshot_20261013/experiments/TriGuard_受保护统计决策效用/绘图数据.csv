@@ -1,0 +1,10 @@
+﻿epsilon,method,mean_extra_users,p10_extra_users,p90_extra_users
+0.5,exact_reference,13.5,13.5,13.5
+1,exact_reference,13.5,13.5,13.5
+2,exact_reference,13.5,13.5,13.5
+0.5,TriGuard,7.2,2.725,11.5
+1,TriGuard,7.15,3.9000000000000004,11.775
+2,TriGuard,9.4375,5.925,12.150000000000002
+0.5,marginal,0.0,0.0,0.0
+1,marginal,0.0,0.0,0.0
+2,marginal,0.0,0.0,0.0

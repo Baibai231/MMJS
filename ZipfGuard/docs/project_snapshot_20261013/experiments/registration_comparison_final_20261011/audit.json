@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "checked_final_trajectories": 35,
+  "expected_final_trajectories": 35,
+  "errors": [],
+  "audited_at": "2026-10-11 10:50:15",
+  "checks": [
+    "implementation hashes",
+    "occurrence disjointness and previous test exclusion",
+    "calibration before test opening",
+    "all users retained",
+    "developer hashes and size",
+    "actual one-million prefixes",
+    "private hit reconstruction including union budget"
+  ],
+  "human_source_review": "pending",
+  "visual_review": "assistant_reviewed_all_six_figures",
+  "visual_reviewed_at": "2026-10-11 10:51:21"
+}

@@ -1,0 +1,86 @@
+{
+  "version": "registration-segreti-anchored-dynamic-positive-v2",
+  "config": {
+    "users": 100000,
+    "batches": 10,
+    "seeds": [
+      11
+    ],
+    "minimum": 8,
+    "common_size": 1000,
+    "window": 2,
+    "recent_weight": 0.5,
+    "weights": [
+      0.6,
+      0.25,
+      0.15
+    ],
+    "response_mode": "mixed",
+    "candidate_limit": null,
+    "preview_users": 3000,
+    "max_modification": null,
+    "max_extra": null,
+    "max_more_than_three": null,
+    "min_gain": 0.0,
+    "frozen_increase": 0.005,
+    "outside_increase": 0.02,
+    "objective_budget": 1000000,
+    "budgets": [
+      1000,
+      10000,
+      100000,
+      1000000
+    ],
+    "frozen_budget": 1000000,
+    "attack_timeout": 3600,
+    "candidate_workers": 4,
+    "user_cost_caps_disabled": true,
+    "comparison_source": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011",
+    "paired_partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+    "reuse_attack_roots": [
+      "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\graded",
+      "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\schechter_strong",
+      "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\malone",
+      "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\segreti_struct_m_nohint",
+      "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_dual_full_20261011\\private\\attacks\\11\\github_core",
+      "C:/Users/jlx51/.codex/visualizations/2026/10/11/01a12a85-b74d-7740-89ee-d9101382a8d9/registration_variable_scope_20261012/private/attacks/11/graded",
+      "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\11\\01a12a85-b74d-7740-89ee-d9101382a8d9\\sd\\private\\attacks\\11\\segreti_dynamic"
+    ],
+    "patience": null,
+    "arms": [
+      "segreti_dynamic"
+    ],
+    "additional_structures": [
+      5,
+      20
+    ],
+    "baseline_artifact_sha256": "9a24d3a3292da2557a66ecaf7c30fbc1ede5f9576bd81ccc060826b6b9f5d456",
+    "gain_tolerance": 1e-12
+  },
+  "source_hashes": {
+    "ai\\dual_attack.py": "7fc5031eb16aa7f8b52b8e48190c9e9c1f9b3a310fc8f13600366df60f8120cf",
+    "ai\\pcfg_adapter.py": "9a0d5a04e657e7dc5a167c457be87b708396fa904f1d3f0ba61c0649e6b2ec3c",
+    "ai\\pcfg_monte_carlo.py": "8468ef5e6b26f8b1895204b3eb6d120dc170dade442ae0a27193505449cd73fa",
+    "experiments/registration_segreti_dynamic.py": "17d66f811c0746d00be771c83542089af5855bdf0fb6c0a6c2908b492f4210cf",
+    "experiments/registration_variable_pipeline.py": "7f05574aeff9303862d5e3ac654b1046704454579f6e84816bca652e5b7f8c1b",
+    "experiments/registration_variable_scope.py": "0dc8e83df8d99b9861ccb491e49a2293239dfd86878ef080510fccc93e9eea71",
+    "experiments\\registration_comparison.py": "8c590fcb8cb6b0a0606dfe7281bd83ebfb02552347fa2944c46b55bcbef3a851",
+    "experiments\\registration_dual_pipeline.py": "b98f60eddedbca4112e2680aa01c542a8c038ca7e43cfc4daa158af87ed0a2ae",
+    "experiments\\registration_full_additions.py": "d65f70e68ece2d0a673b1efeba8ce59526417e65bb71d53090a0c6efb9cbabe7",
+    "experiments\\registration_joint_data.py": "74d10242404982e23c572f6a3e22ea564d9c1dafe74bc4206270990c99ac4b62",
+    "experiments\\registration_joint_pilot.py": "5c970b58a87b0a4652cb3240ac1ab8663196d9961ac7619d974a1616dccbb684",
+    "experiments\\registration_joint_pipeline.py": "7586fed599dab07c1b37b43963a6d1c7041f79d23eaf7d722ff70a7f4599b622",
+    "experiments\\registration_risk_cap.py": "e0855204bbf17ed6484afe6c670c719d7eca14608883b49c4c5d7841f03a1749",
+    "policy\\registration_comparators.py": "620b37d4d409ab9e23c69c730347a1ad4f446b25400d50e22c86c68ceea25b63",
+    "policy\\registration_joint.py": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1",
+    "tools/run_registration_segreti_dynamic.py": "67ad2300a90bfff545d70d3104232acf9ecbc0f572ff1128393dc5ecced0292b",
+    "tools/run_registration_variable_scope.py": "fa9a53e619942e4cb715beb97e68c5e76ec8b94b9ea962eb5b3969a522e2f207",
+    "tools\\run_registration_dual_full.py": "22afb2e214705bdbbc73eb1d753cc537fcb4758f33069b14992252fed44bd035"
+  },
+  "analysis_type": "single paired exploratory strategy revision; not independent validation",
+  "human_verification": "pending",
+  "only_new_arm": "segreti_dynamic",
+  "baseline_artifact_sha256": "9a24d3a3292da2557a66ecaf7c30fbc1ede5f9576bd81ccc060826b6b9f5d456",
+  "paired_partition_sha256": "5bbe5e10f5503b49d4416c96cbccc9fd1028d7dc68a6aae32b0ffffb44b04067",
+  "policy": "Start from exact Segreti rule; preserve original rule in every selection; add whole structures"
+}

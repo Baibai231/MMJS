@@ -1,4 +1,4 @@
-# ZipfGuard 技术报告
+# TriGuard 技术报告
 
 ## 问题与威胁模型
 

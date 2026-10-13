@@ -1,0 +1,130 @@
+{
+  "schema_version": "1.0",
+  "numeric_facts": [
+    {
+      "fact_id": "N001",
+      "concept": "literature/refresh/union_total_1m",
+      "value": 26.539600000000004,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 132698,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "literature",
+      "evidence_ids": [
+        "E010"
+      ]
+    },
+    {
+      "fact_id": "N002",
+      "concept": "literature/schechter/union_total_1m",
+      "value": 18.717200000000002,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 93586,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "literature",
+      "evidence_ids": [
+        "E010"
+      ]
+    },
+    {
+      "fact_id": "N003",
+      "concept": "literature/malone/union_total_1m",
+      "value": 24.1562,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 120781,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "literature",
+      "evidence_ids": [
+        "E010"
+      ]
+    },
+    {
+      "fact_id": "N004",
+      "concept": "literature/risk_budgeted/union_total_1m",
+      "value": 18.9326,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 94663,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "literature",
+      "evidence_ids": [
+        "E010"
+      ]
+    },
+    {
+      "fact_id": "N005",
+      "concept": "website/website_core/union_total_1m",
+      "value": 27.160600000000002,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 135803,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "website",
+      "evidence_ids": [
+        "E010"
+      ]
+    },
+    {
+      "fact_id": "N006",
+      "concept": "website/base/union_total_1m",
+      "value": 26.533,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 132665,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "website",
+      "evidence_ids": [
+        "E010"
+      ]
+    },
+    {
+      "fact_id": "N007",
+      "concept": "website/risk_budgeted/union_total_1m",
+      "value": 19.5098,
+      "unit": "percent",
+      "sample_size": 500000,
+      "denominator": 500000,
+      "numerator": 97549,
+      "analysis_set": "five fresh paired target cohorts",
+      "section": "website",
+      "evidence_ids": [
+        "E010"
+      ]
+    }
+  ],
+  "methods": [
+    {
+      "method_id": "M001",
+      "name": "paired simulated registration and observed attacks",
+      "analysis_intent": "descriptive",
+      "protocol_status": "prespecified",
+      "outcome_ids": [
+        "O001"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "result_id": "R001",
+      "method_id": "M001",
+      "outcome_id": "O001",
+      "sample_size": 500000,
+      "analysis_intent": "descriptive",
+      "evidence_ids": [
+        "E010"
+      ],
+      "reported_sections": [
+        "literature",
+        "website"
+      ]
+    }
+  ]
+}

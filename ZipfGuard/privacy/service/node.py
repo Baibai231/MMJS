@@ -204,7 +204,8 @@ class Node:
 
     async def execute(self,context,fields,digest):
         c=self.computer; op=context['op']; a=context['account']; params=context['params']
-        old=self.state; state=copy.deepcopy(old); accounts=state['accounts']; row=accounts.get(a)
+        old=self.state; state=old if op in {'login','check'} else copy.deepcopy(old)
+        accounts=state['accounts']; row=accounts.get(a)
         outcome='rejected'; public={}; changed=False
         if op in {'check','register','migrate','change','recover','apply_policy','assign_plan'} and context['policy_version']!=state['policy_version']:
             return state,'stale_policy',{},False
@@ -222,7 +223,7 @@ class Node:
             if row and not row['enabled']: return state,'account_disabled',{},False
             if op in {'login','change','delete'}:
                 current=c.load_chars(row['shares'])
-                match=bool(await mpc.output(c.equal(secret['old' if op=='change' else 'candidate'],current)))
+                match=bool(await mpc.output(c.equal_bytes(secret['old' if op=='change' else 'candidate'],current)))
                 if not match: return state,'authentication_failed',{},False
             if op=='register' and row: return state,'account_exists',{},False
             if op=='recover':
@@ -281,9 +282,8 @@ class Node:
                 await self.save_demo_groups(state,groups)
             rows=[c.load_chars(accounts[key]['shares']) for key in sorted(accounts)] if groups is None else [r for r,w in groups]
             if groups is None:
-                vector,banks=await c.snapshot(rows)
+                vector,banks,metas=await c.snapshot(rows,include_metas=True)
                 weights=[c.sec(1)]*len(rows)
-                metas=None
             else:
                 vector,banks,metas=await c.compact_snapshot(groups)
                 weights=[w for r,w in groups]
@@ -457,7 +457,7 @@ class Node:
             await mpc.transfer({'durable':nonce})
             event={'party':self.pid,'receipt':result,'signature':self.key.sign(canonical(result)).hex()}
             with self.store.transaction() as conn:
-                self.store.put('state','current',state,conn)
+                if changed: self.store.put('state','current',state,conn)
                 self.store.put('completed',nonce,{'binding':request['binding'],'event':event},conn)
                 # Current shares and the completed receipt are now durable together.
                 self.store.put('prepared',nonce,{'receipt':result,'committed_epoch':state['epoch']},conn)

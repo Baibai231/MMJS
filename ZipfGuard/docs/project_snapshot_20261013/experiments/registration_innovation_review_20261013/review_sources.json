@@ -1,0 +1,78 @@
+{
+  "status": "local_machine_checked_human_verification_pending",
+  "document": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册动态策略_创新性审查与双向调整方案_20261013.md",
+  "new_algorithm_status": "proposed_not_independently_tested",
+  "new_diagnosis_scope": "development_only_frozen_attack_prefixes",
+  "sources": [
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册动态策略_创新性审查与双向调整方案_20261013.md",
+      "sha256": "a4603762379206efc530568dad2f74ade9c795fa95fa204a89bc948fe7c25066",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\tools\\diagnose_registration_policy_exchange.py",
+      "sha256": "a10850f6ab38b1b7fddff35cbf840886a7ed042322feae3bba6bdb9323c031ac",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册阶段动态策略_理论与实验方案.md",
+      "sha256": "92e68d6e0b9717045463a51a7d3bc13b651a55467b7dfba13981b35ab1f53329",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册策略文献对照_实验方案_20261011.md",
+      "sha256": "755576d0abe09230b457aeb8a4e9176d4426a633291177a5320cdfec02f64675",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\docs\\注册策略对照_最终实验方案_20261011.md",
+      "sha256": "c1342ef4645175d81e44a2d7c006d8f9283df93729acef93d41b3255cab20fb0",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\policy\\registration_joint.py",
+      "sha256": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\experiments\\registration_comparison.py",
+      "sha256": "8c590fcb8cb6b0a0606dfe7281bd83ebfb02552347fa2944c46b55bcbef3a851",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\experiments\\registration_variable_scope.py",
+      "sha256": "0dc8e83df8d99b9861ccb491e49a2293239dfd86878ef080510fccc93e9eea71",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\experiments\\registration_variable_pipeline.py",
+      "sha256": "7f05574aeff9303862d5e3ac654b1046704454579f6e84816bca652e5b7f8c1b",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\experiments\\registration_segreti_dynamic.py",
+      "sha256": "17d66f811c0746d00be771c83542089af5855bdf0fb6c0a6c2908b492f4210cf",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\configs\\registration_segreti_dynamic_full.json",
+      "sha256": "73abb7745da70849aea2af53edcb6b6387ba602e4502cc4342ba480052080337",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_segreti_dynamic_20261012\\deliverables\\million_attempt_summary.csv",
+      "sha256": "3690f5113d8fcf25571383c3fbd0e6e3b7a0ff93931b5f2d34804c4ed4c40090",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_variable_scope_20261012\\deliverables\\million_attempt_summary.csv",
+      "sha256": "1dca5cb25e715dd38bd10e88f00c8bf2595160bf55c97d6d11b3d38a0ff8f019",
+      "human_verification": "pending"
+    },
+    {
+      "path": "E:\\学习\\竞赛\\密码技术竞赛_参赛版\\ZipfGuard\\reports\\registration_innovation_review_20261013\\development_release_diagnosis.json",
+      "sha256": "487804c5a6a7f78f2d23e6d0366fb6498298e211948aa64e781c1a2bde713dae",
+      "human_verification": "pending"
+    }
+  ]
+}

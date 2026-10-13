@@ -1,0 +1,17 @@
+﻿variant,accounts,database_bytes,object_payload_bytes,round_trip_verified
+baseline,10,114688,55321,True
+optimized,10,90112,33586,True
+baseline,25,200704,136501,True
+optimized,25,139264,80685,True
+baseline,50,323584,271899,True
+optimized,50,212992,156141,True
+baseline,100,598016,542557,True
+optimized,100,372736,309162,True
+baseline,200,1142784,1084011,True
+optimized,200,679936,614834,True
+baseline,500,2768896,2707932,True
+optimized,500,1589248,1531224,True
+baseline,1000,5476352,5414523,True
+optimized,1000,3112960,3059663,True
+baseline,5000,27156480,27068406,True
+optimized,5000,15355904,15287060,True

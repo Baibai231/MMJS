@@ -1,0 +1,28 @@
+{
+  "experiment": "受保护统计的决策效用",
+  "report_section": "3.4.2",
+  "source_files": [
+    "manifest.json",
+    "逐次决策结果.csv",
+    "结果汇总.json",
+    "独立核验.json",
+    "绘图数据.csv"
+  ],
+  "checks": "machine-checked; no author submission approval asserted",
+  "numeric_claims": {
+    "population": 10000,
+    "epsilon": 2,
+    "baseline_coverage_pct": 15.505,
+    "triguard_coverage_pct": 15.599375,
+    "coverage_gain_pp": 0.094375,
+    "mean_extra_users": 9.4375,
+    "reference_extra_users": 13.5,
+    "baseline_prediction_error_pp": 0.7583507846726191,
+    "triguard_prediction_error_pp": 0.08249603174603166
+  },
+  "scope": "Fixed cohort, 20 seeded noise repeats, four quota combinations, offline numeric adapter evaluation; no real-user or attack-effect claims",
+  "report_artifacts": {
+    "body": "4b2fa01b8e255ad606cc29988a4433dc60686a24ec40fb795e35d73cabb3e009",
+    "figure": "68d85fe32b2b8c09de8ac6a3ff59f38f9b612e630b9dbd9990c17408387925cf"
+  }
+}

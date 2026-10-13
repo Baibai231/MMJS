@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="513.74pt" height="185.68305pt" viewBox="0 0 513.74 185.68305" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-12T15:11:58.020883</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.11.2, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 185.68305 
+L 513.74 185.68305 
+L 513.74 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 39.26 139.68 
+L 236.201176 139.68 
+L 236.201176 5.76 
+L 39.26 5.76 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="matplotlib.axis_1">
+    <g id="xtick_1">
+     <g id="line2d_1">
+      <defs>
+       <path id="mcfc65c1cad" d="M 0 0 
+L 0 -3.5 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#mcfc65c1cad" x="48.211872" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_1">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="48.211872" y="151.77375" transform="rotate(-0 48.211872 151.77375)">1</text>
+     </g>
+    </g>
+    <g id="xtick_2">
+     <g id="line2d_2">
+      <g>
+       <use xlink:href="#mcfc65c1cad" x="137.730588" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_2">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="137.730588" y="151.77375" transform="rotate(-0 137.730588 151.77375)">2</text>
+     </g>
+    </g>
+    <g id="xtick_3">
+     <g id="line2d_3">
+      <g>
+       <use xlink:href="#mcfc65c1cad" x="227.249305" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_3">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="227.249305" y="151.77375" transform="rotate(-0 227.249305 151.77375)">3</text>
+     </g>
+    </g>
+    <g id="text_4">
+     <text style="font-size: 11px; font-family: 'SimSun'; text-anchor: middle" x="137.730588" y="166.633125" transform="rotate(-0 137.730588 166.633125)">新统计发布序号</text>
+    </g>
+   </g>
+   <g id="matplotlib.axis_2">
+    <g id="ytick_1">
+     <g id="line2d_4">
+      <defs>
+       <path id="m23019b7daf" d="M 0 0 
+L 3.5 0 
+" style="stroke: #000000; stroke-width: 0.8"/>
+      </defs>
+      <g>
+       <use xlink:href="#m23019b7daf" x="39.26" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_5">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="35.76" y="143.976875" transform="rotate(-0 35.76 143.976875)">0</text>
+     </g>
+    </g>
+    <g id="ytick_2">
+     <g id="line2d_5">
+      <g>
+       <use xlink:href="#m23019b7daf" x="39.26" y="112.337306" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_6">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="35.76" y="116.634181" transform="rotate(-0 35.76 116.634181)">25</text>
+     </g>
+    </g>
+    <g id="ytick_3">
+     <g id="line2d_6">
+      <g>
+       <use xlink:href="#m23019b7daf" x="39.26" y="84.994612" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_7">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="35.76" y="89.291487" transform="rotate(-0 35.76 89.291487)">50</text>
+     </g>
+    </g>
+    <g id="ytick_4">
+     <g id="line2d_7">
+      <g>
+       <use xlink:href="#m23019b7daf" x="39.26" y="57.651919" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_8">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="35.76" y="61.948794" transform="rotate(-0 35.76 61.948794)">75</text>
+     </g>
+    </g>
+    <g id="ytick_5">
+     <g id="line2d_8">
+      <g>
+       <use xlink:href="#m23019b7daf" x="39.26" y="30.309225" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_9">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="35.76" y="34.6061" transform="rotate(-0 35.76 34.6061)">100</text>
+     </g>
+    </g>
+    <g id="text_10">
+     <text style="font-size: 11px; font-family: 'SimSun'; text-anchor: middle" x="15.213125" y="72.72" transform="rotate(-90 15.213125 72.72)">统计发布耗时（秒）</text>
+    </g>
+   </g>
+   <g id="line2d_9">
+    <path d="M 48.211872 10.724854 
+L 137.730588 9.277097 
+L 227.249305 10.643206 
+" clip-path="url(#p9ff8d40673)" style="fill: none; stroke-dasharray: 4.625,2; stroke-dashoffset: 0; stroke: #777777; stroke-width: 1.25"/>
+    <defs>
+     <path id="me68da04c94" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #777777"/>
+    </defs>
+    <g clip-path="url(#p9ff8d40673)">
+     <use xlink:href="#me68da04c94" x="48.211872" y="10.724854" style="fill: #777777; stroke: #777777"/>
+     <use xlink:href="#me68da04c94" x="137.730588" y="9.277097" style="fill: #777777; stroke: #777777"/>
+     <use xlink:href="#me68da04c94" x="227.249305" y="10.643206" style="fill: #777777; stroke: #777777"/>
+    </g>
+   </g>
+   <g id="line2d_10">
+    <path d="M 48.211872 75.581281 
+L 137.730588 76.53591 
+L 227.249305 79.619038 
+" clip-path="url(#p9ff8d40673)" style="fill: none; stroke: #2588d4; stroke-width: 1.25; stroke-linecap: square"/>
+    <defs>
+     <path id="me5e8746e85" d="M 0 1.5 
+C 0.397805 1.5 0.77937 1.341951 1.06066 1.06066 
+C 1.341951 0.77937 1.5 0.397805 1.5 0 
+C 1.5 -0.397805 1.341951 -0.77937 1.06066 -1.06066 
+C 0.77937 -1.341951 0.397805 -1.5 0 -1.5 
+C -0.397805 -1.5 -0.77937 -1.341951 -1.06066 -1.06066 
+C -1.341951 -0.77937 -1.5 -0.397805 -1.5 0 
+C -1.5 0.397805 -1.341951 0.77937 -1.06066 1.06066 
+C -0.77937 1.341951 -0.397805 1.5 0 1.5 
+z
+" style="stroke: #2588d4"/>
+    </defs>
+    <g clip-path="url(#p9ff8d40673)">
+     <use xlink:href="#me5e8746e85" x="48.211872" y="75.581281" style="fill: #2588d4; stroke: #2588d4"/>
+     <use xlink:href="#me5e8746e85" x="137.730588" y="76.53591" style="fill: #2588d4; stroke: #2588d4"/>
+     <use xlink:href="#me5e8746e85" x="227.249305" y="79.619038" style="fill: #2588d4; stroke: #2588d4"/>
+    </g>
+   </g>
+   <g id="patch_3">
+    <path d="M 39.26 139.68 
+L 39.26 5.76 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 236.201176 139.68 
+L 236.201176 5.76 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 39.26 139.68 
+L 236.201176 139.68 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 39.26 5.76 
+L 236.201176 5.76 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="137.730588" y="178.5168" transform="rotate(-0 137.730588 178.5168)">（a）10个账户，3次不同快照的新发布</text>
+   </g>
+   <g id="legend_1">
+    <g id="line2d_11">
+     <path d="M 47.36 113.664375 
+L 56.36 113.664375 
+L 65.36 113.664375 
+" style="fill: none; stroke-dasharray: 4.625,2; stroke-dashoffset: 0; stroke: #777777; stroke-width: 1.25"/>
+     <g>
+      <use xlink:href="#me68da04c94" x="56.36" y="113.664375" style="fill: #777777; stroke: #777777"/>
+     </g>
+    </g>
+    <g id="text_12">
+     <text style="font-size: 9px; font-family: 'SimSun'; text-anchor: start" x="72.56" y="116.814375" transform="rotate(-0 72.56 116.814375)">优化前</text>
+    </g>
+    <g id="line2d_12">
+     <path d="M 47.36 127.164375 
+L 56.36 127.164375 
+L 65.36 127.164375 
+" style="fill: none; stroke: #2588d4; stroke-width: 1.25; stroke-linecap: square"/>
+     <g>
+      <use xlink:href="#me5e8746e85" x="56.36" y="127.164375" style="fill: #2588d4; stroke: #2588d4"/>
+     </g>
+    </g>
+    <g id="text_13">
+     <text style="font-size: 9px; font-family: 'SimSun'; text-anchor: start" x="72.56" y="130.314375" transform="rotate(-0 72.56 130.314375)">优化后</text>
+    </g>
+   </g>
+  </g>
+  <g id="axes_2">
+   <g id="patch_7">
+    <path d="M 311.038824 139.68 
+L 507.98 139.68 
+L 507.98 5.76 
+L 311.038824 5.76 
+z
+" style="fill: #ffffff"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 319.990695 139.68 
+L 341.529033 139.68 
+L 341.529033 73.138381 
+L 319.990695 73.138381 
+z
+" clip-path="url(#p33fb53f9fd)" style="fill: #777777"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 387.298001 139.68 
+L 408.836339 139.68 
+L 408.836339 25.246987 
+L 387.298001 25.246987 
+z
+" clip-path="url(#p33fb53f9fd)" style="fill: #777777"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 454.605307 139.68 
+L 476.143644 139.68 
+L 476.143644 12.137143 
+L 454.605307 12.137143 
+z
+" clip-path="url(#p33fb53f9fd)" style="fill: #777777"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 342.875179 139.68 
+L 364.413517 139.68 
+L 364.413517 86.50272 
+L 342.875179 86.50272 
+z
+" clip-path="url(#p33fb53f9fd)" style="fill: #2588d4"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 410.182485 139.68 
+L 431.720823 139.68 
+L 431.720823 38.66826 
+L 410.182485 38.66826 
+z
+" clip-path="url(#p33fb53f9fd)" style="fill: #2588d4"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 477.489791 139.68 
+L 499.028128 139.68 
+L 499.028128 29.070788 
+L 477.489791 29.070788 
+z
+" clip-path="url(#p33fb53f9fd)" style="fill: #2588d4"/>
+   </g>
+   <g id="matplotlib.axis_3">
+    <g id="xtick_4">
+     <g id="line2d_13">
+      <g>
+       <use xlink:href="#mcfc65c1cad" x="342.202106" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_14">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="342.202106" y="151.77375" transform="rotate(-0 342.202106 151.77375)">登录</text>
+     </g>
+    </g>
+    <g id="xtick_5">
+     <g id="line2d_14">
+      <g>
+       <use xlink:href="#mcfc65c1cad" x="409.509412" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_15">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="409.509412" y="151.77375" transform="rotate(-0 409.509412 151.77375)">私密检查</text>
+     </g>
+    </g>
+    <g id="xtick_6">
+     <g id="line2d_15">
+      <g>
+       <use xlink:href="#mcfc65c1cad" x="476.816717" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_16">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="476.816717" y="151.77375" transform="rotate(-0 476.816717 151.77375)">改密</text>
+     </g>
+    </g>
+   </g>
+   <g id="matplotlib.axis_4">
+    <g id="ytick_6">
+     <g id="line2d_16">
+      <g>
+       <use xlink:href="#m23019b7daf" x="311.038824" y="139.68" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_17">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="307.538824" y="143.976875" transform="rotate(-0 307.538824 143.976875)">0.0</text>
+     </g>
+    </g>
+    <g id="ytick_7">
+     <g id="line2d_17">
+      <g>
+       <use xlink:href="#m23019b7daf" x="311.038824" y="110.994796" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_18">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="307.538824" y="115.291671" transform="rotate(-0 307.538824 115.291671)">0.5</text>
+     </g>
+    </g>
+    <g id="ytick_8">
+     <g id="line2d_18">
+      <g>
+       <use xlink:href="#m23019b7daf" x="311.038824" y="82.309592" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_19">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="307.538824" y="86.606467" transform="rotate(-0 307.538824 86.606467)">1.0</text>
+     </g>
+    </g>
+    <g id="ytick_9">
+     <g id="line2d_19">
+      <g>
+       <use xlink:href="#m23019b7daf" x="311.038824" y="53.624387" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_20">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="307.538824" y="57.921262" transform="rotate(-0 307.538824 57.921262)">1.5</text>
+     </g>
+    </g>
+    <g id="ytick_10">
+     <g id="line2d_20">
+      <g>
+       <use xlink:href="#m23019b7daf" x="311.038824" y="24.939183" style="stroke: #000000; stroke-width: 0.8"/>
+      </g>
+     </g>
+     <g id="text_21">
+      <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: end" x="307.538824" y="29.236058" transform="rotate(-0 307.538824 29.236058)">2.0</text>
+     </g>
+    </g>
+    <g id="text_22">
+     <text style="font-size: 11px; font-family: 'SimSun'; text-anchor: middle" x="286.991949" y="72.72" transform="rotate(-90 286.991949 72.72)">交互操作耗时（秒）</text>
+    </g>
+   </g>
+   <g id="patch_14">
+    <path d="M 311.038824 139.68 
+L 311.038824 5.76 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 507.98 139.68 
+L 507.98 5.76 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 311.038824 139.68 
+L 507.98 139.68 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 311.038824 5.76 
+L 507.98 5.76 
+" style="fill: none; stroke: #000000; stroke-width: 0.65; stroke-linejoin: miter; stroke-linecap: square"/>
+   </g>
+   <g id="text_23">
+    <text style="font-size: 10px; font-family: 'SimSun'; text-anchor: middle" x="409.509412" y="178.5168" transform="rotate(-0 409.509412 178.5168)">（b）100个账户，各操作5次测量的中位数</text>
+   </g>
+   <g id="legend_2">
+    <g id="patch_18">
+     <path d="M 319.138824 21.594375 
+L 337.138824 21.594375 
+L 337.138824 15.294375 
+L 319.138824 15.294375 
+z
+" style="fill: #777777"/>
+    </g>
+    <g id="text_24">
+     <text style="font-size: 9px; font-family: 'SimSun'; text-anchor: start" x="344.338824" y="21.594375" transform="rotate(-0 344.338824 21.594375)">优化前</text>
+    </g>
+    <g id="patch_19">
+     <path d="M 319.138824 35.094375 
+L 337.138824 35.094375 
+L 337.138824 28.794375 
+L 319.138824 28.794375 
+z
+" style="fill: #2588d4"/>
+    </g>
+    <g id="text_25">
+     <text style="font-size: 9px; font-family: 'SimSun'; text-anchor: start" x="344.338824" y="35.094375" transform="rotate(-0 344.338824 35.094375)">优化后</text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p9ff8d40673">
+   <rect x="39.26" y="5.76" width="196.941176" height="133.92"/>
+  </clipPath>
+  <clipPath id="p33fb53f9fd">
+   <rect x="311.038824" y="5.76" width="196.941176" height="133.92"/>
+  </clipPath>
+ </defs>
+</svg>

@@ -1,4 +1,4 @@
-# ZipfGuard 下一阶段完整目标与执行计划
+# TriGuard 下一阶段完整目标与执行计划
 
 > **最新主线（2026-09-25）：**请以 [19 数据集核验与下一阶段任务书](/Users/cjx_main/Desktop/new/MMJS/ZipfGuard/docs/PIPELINE_NEXT_PHASE_2026-09-25.md) 为准：固定 19 个 MAYA 数据集，重点推进分布、拟合、分析、多模型攻击和评价；修改建议保留为固定对照。下文是较早版本的工程与统计补充。
 

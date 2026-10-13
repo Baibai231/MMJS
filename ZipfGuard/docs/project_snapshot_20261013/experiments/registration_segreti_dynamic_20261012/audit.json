@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "evidence_id": "E001",
+      "arm": "segreti_dynamic",
+      "result_path": "C:\\Users\\jlx51\\.codex\\visualizations\\2026\\10\\11\\01a12a85-b74d-7740-89ee-d9101382a8d9\\sp\\runs\\11\\segreti_dynamic\\result.json",
+      "result_sha256": "6540510e17a34ebcc6352f49e22905b283184d3686bfc76f79865126eaa6c8da",
+      "training_sha256": "b001a250e574997e5581f93ac3d68284aa4d8ce4659ee2ac1c525b6cfe2e8fbe",
+      "prefix_hashes": {
+        "pcfg": "c237141d0aae4eb94e985296df1054a7ab15c71f9bd79ad22c673716493ea5a6",
+        "omen": "9c84b15f3f93417ec6d18d800f5ff8d95624bf4adba2e6aafe11cb36b2322e5c"
+      },
+      "all_model_and_union_recounts_match": true,
+      "candidate_audits": [],
+      "human_verification": "pending"
+    }
+  ],
+  "new_target_occurrences_disjoint": true,
+  "human_verification": "pending"
+}

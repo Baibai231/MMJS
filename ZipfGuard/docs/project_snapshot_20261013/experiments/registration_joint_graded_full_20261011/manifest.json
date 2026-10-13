@@ -1,0 +1,104 @@
+{
+  "version": "graded-registration-fresh-full-v1",
+  "config": {
+    "source": "rockyou-withcount.txt",
+    "fresh_split_seed": 202610111520,
+    "users": 100000,
+    "batches": 10,
+    "seeds": [
+      11,
+      23,
+      42,
+      67,
+      101
+    ],
+    "arms": [
+      "joint",
+      "graded",
+      "schechter_strong",
+      "schechter_middle",
+      "schechter_light"
+    ],
+    "schechter_rates": {
+      "schechter_strong": 1e-05,
+      "schechter_middle": 3e-05,
+      "schechter_light": 0.0001
+    },
+    "minimum": 8,
+    "common_size": 1000,
+    "ks": [
+      0,
+      10,
+      100,
+      1000
+    ],
+    "js": [
+      0,
+      5,
+      20
+    ],
+    "window": 2,
+    "recent_weight": 0.5,
+    "weights": [
+      0.6,
+      0.25,
+      0.15
+    ],
+    "response_mode": "mixed",
+    "candidate_limit": 1000,
+    "preview_users": 3000,
+    "max_modification": 0.6,
+    "max_extra": 1.0,
+    "max_more_than_three": 0.05,
+    "min_gain": 0.005,
+    "frozen_increase": 0.005,
+    "outside_increase": 0.02,
+    "objective_budget": 100000,
+    "risk_membership_budget": 100000,
+    "budgets": [
+      1000,
+      10000,
+      100000,
+      1000000
+    ],
+    "primary_observed_budget": 100000,
+    "secondary_observed_budget": 1000000,
+    "selection_samples": 10000,
+    "confirmation_samples": 100000,
+    "final_samples": 100000,
+    "mc_seed": 20261011,
+    "frozen_budget": 100000,
+    "attack_timeout": 3600,
+    "actual_attacks": true,
+    "cohort_aware": false,
+    "cost_limits": {
+      "literature": {
+        "cost_mode": "absolute",
+        "max_modification": 0.6,
+        "max_extra": 1.0,
+        "max_more_than_three": 0.05
+      }
+    }
+  },
+  "source_hashes": {
+    "tools\\run_registration_joint_graded_full.py": "80e1f896b5b2b98101558e1067e6429de61aa2277ddd9b534611c2eff775768c",
+    "tools\\report_registration_joint_graded_full.py": "23450f437e4b3598df69ce2e7db2804b21fa177d1c3251b8bb429ad497c82ae8",
+    "experiments\\registration_joint_pilot.py": "5c970b58a87b0a4652cb3240ac1ab8663196d9961ac7619d974a1616dccbb684",
+    "experiments\\registration_joint_pipeline.py": "7586fed599dab07c1b37b43963a6d1c7041f79d23eaf7d722ff70a7f4599b622",
+    "experiments\\registration_comparison.py": "8c590fcb8cb6b0a0606dfe7281bd83ebfb02552347fa2944c46b55bcbef3a851",
+    "experiments\\registration_joint_data.py": "74d10242404982e23c572f6a3e22ea564d9c1dafe74bc4206270990c99ac4b62",
+    "policy\\registration_joint.py": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1",
+    "policy\\registration_comparators.py": "620b37d4d409ab9e23c69c730347a1ad4f446b25400d50e22c86c68ceea25b63",
+    "ai\\dual_attack.py": "7fc5031eb16aa7f8b52b8e48190c9e9c1f9b3a310fc8f13600366df60f8120cf",
+    "ai\\pcfg_adapter.py": "9a0d5a04e657e7dc5a167c457be87b708396fa904f1d3f0ba61c0649e6b2ec3c",
+    "ai\\pcfg_monte_carlo.py": "8468ef5e6b26f8b1895204b3eb6d120dc170dade442ae0a27193505449cd73fa"
+  },
+  "prior_development_parameter_file_sha256": "9782cbfb0fb8f2d2bd38c4011188fb8ec77b482a33f23caa34fd2d9155db35de",
+  "prior_outcomes_observed": "pilot and previous studies are development information; fresh target occurrences required",
+  "scope": "25 report trajectories; three methods with three Schechter cost points; no sensitivity grid",
+  "primary": "union total 100k actual attempts",
+  "secondary": "union total 1m actual attempts",
+  "comparison": "shared cost limits; report actual costs and paired per-seed differences; no guaranteed superiority",
+  "cost_curve": "three prespecified thresholds; no interpolation presented as a newly executed cost-matched method",
+  "contribution_boundary": "graded arm changes risk ordering and structure-internal restrictions together; no isolated attribution"
+}

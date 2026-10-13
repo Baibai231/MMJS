@@ -39,22 +39,28 @@ class Computer:
         local = [self.sec(v.share) for v in bits]
         return [self.mpc.sum([local[8*i+k]*(1 << k) for k in range(8)]) for i in range(WIDTH)]
 
-    def characterize(self, chars, include_shape=True):
+    def characterize(self, chars, include_shape=True, features=None):
+        # Basic length/padding checks need no character-class comparisons.
+        # Compute optional features only when a policy actually uses them.
+        needed=set(('low','up','digit','symbol','lowered')) if features is None else set(features)
+        if include_shape: needed.update(('low','up','digit'))
+        if 'symbol' in needed: needed.update(('low','up','digit'))
+        if 'lowered' in needed: needed.add('up')
         nz = [c != 0 for c in chars]
-        low = [(c >= 97)*(c <= 122) for c in chars]
-        up = [(c >= 65)*(c <= 90) for c in chars]
-        digit = [(c >= 48)*(c <= 57) for c in chars]
-        # Fragment symbol semantics excludes ASCII whitespace.
-        symbol = [p-l-u-d-(c == 32) for p,l,u,d,c in zip(nz,low,up,digit,chars)]
-        code = [l+2*u+3*d+4*(p-l-u-d) for p,l,u,d in zip(nz,low,up,digit)]
-        valid = self.all([(c == 0)+((c >= 32)*(c <= 126)) for c in chars] +
+        low = [(c >= 97)*(c <= 122) for c in chars] if 'low' in needed else []
+        up = [(c >= 65)*(c <= 90) for c in chars] if 'up' in needed else []
+        digit = [(c >= 48)*(c <= 57) for c in chars] if 'digit' in needed else []
+        symbol = [p-l-u-d-(c == 32) for p,l,u,d,c in zip(nz,low,up,digit,chars)] if 'symbol' in needed else []
+        valid = self.all([(1-p)+((c >= 32)*(c <= 126)) for c,p in zip(chars,nz)] +
                          [1-(1-nz[i])*nz[i+1] for i in range(WIDTH-1)])
-        lowered = [c+32*u for c,u in zip(chars,up)]
+        lowered = [c+32*u for c,u in zip(chars,up)] if 'lowered' in needed else []
         matches = []
-        for shape in SHAPES if include_shape else []:
-            pattern = [dict(L=1,U=2,D=3,S=4)[kind] for kind,n in re.findall(r'([LUDS])(\d+)',shape) for _ in range(int(n))]
-            pattern += [0]*(WIDTH-len(pattern))
-            matches.append(self.same_password(code,pattern))
+        if include_shape:
+            code = [l+2*u+3*d+4*(p-l-u-d) for p,l,u,d in zip(nz,low,up,digit)]
+            for shape in SHAPES:
+                pattern = [dict(L=1,U=2,D=3,S=4)[kind] for kind,n in re.findall(r'([LUDS])(\d+)',shape) for _ in range(int(n))]
+                pattern += [0]*(WIDTH-len(pattern))
+                matches.append(self.same_password(code,pattern))
         shape = self.sec(len(SHAPES))-self.mpc.sum([v*(len(SHAPES)-i) for i,v in enumerate(matches)])
         return {'valid':valid, 'length':self.mpc.sum(nz), 'nz':nz, 'low':low, 'up':up,
                 'digit':digit, 'symbol':symbol, 'lowered':lowered, 'shape':shape}
@@ -72,7 +78,7 @@ class Computer:
         if number in (1,2,3): return meta['length'] >= {1:10,2:12,3:15}[number]
         if number == 4: return self.any(meta['low']+meta['up'])
         if number in (5,6,7): return self.any(meta[{5:'low',6:'up',7:'digit'}[number]])
-        if number == 8: return self.any(meta['digit']+meta['symbol'])
+        if number == 8: return self.any(p-l-u-(c==32) for p,l,u,c in zip(meta['nz'],meta['low'],meta['up'],chars))
         if number == 9: return m.sum([self.any(meta[k]) for k in ('low','up','digit','symbol')])>=2
         if number == 10:
             # Select three additional distinct representatives obliviously.
@@ -88,11 +94,15 @@ class Computer:
         if number == 12: return self.any(meta['nz'][i]*(chars[i]!=chars[0]) for i in range(1,WIDTH))
         if number == 13: return self.all(1-self.contains(meta['lowered'], w) for w in ('qwerty','asdf','zxcv','qazwsx','1qaz','2wsx'))
         if number == 14:
-            hit = []
+            # Character classes and adjacent differences are shared by overlapping
+            # windows. This avoids redoing eight range comparisons per window.
+            letter=[l+u for l,u in zip(meta['low'],meta['up'])]
+            forward=[meta['lowered'][i+1]-meta['lowered'][i]==1 for i in range(WIDTH-1)]
+            backward=[meta['lowered'][i+1]-meta['lowered'][i]==-1 for i in range(WIDTH-1)]
+            hit=[]
             for i in range(WIDTH-3):
-                c = meta['lowered'][i:i+4]
-                same_kind = self.all((x>=97)*(x<=122) for x in c)+self.all((x>=48)*(x<=57) for x in c)
-                hit.append(same_kind*(self.all(c[j+1]-c[j]==1 for j in range(3))+self.all(c[j+1]-c[j]==-1 for j in range(3))))
+                same_kind=self.all(letter[i:i+4])+self.all(meta['digit'][i:i+4])
+                hit.append(same_kind*(self.all(forward[i:i+3])+self.all(backward[i:i+3])))
             return self.all(1-v for v in hit)
         if number == 15: return self.all(1-self.public_word(meta['lowered'],w) for w in self.reference['dictionary'])
         if number == 16: return self.all(1-self.contains(meta['lowered'],w) for w in self.reference['predictable_terms'])
@@ -101,7 +111,12 @@ class Computer:
         raise ValueError('unknown fragment')
 
     def accept(self, chars, policy, bank=()):
-        meta = self.characterize(chars,include_shape=bool(policy['shapes']))
+        dependencies={4:('low','up'),5:('low',),6:('up',),7:('digit',),
+                      8:('low','up'),9:('low','up','digit','symbol'),
+                      13:('lowered',),14:('lowered','low','digit'),15:('lowered',),16:('lowered',)}
+        features={f for n in policy['fragments'] for f in dependencies.get(n,())}
+        if policy['terms']: features.add('lowered')
+        meta = self.characterize(chars,include_shape=bool(policy['shapes']),features=features)
         rules = [meta['valid'],meta['length']>=policy['minimum'],meta['length']<=policy['maximum']]
         rules += [self.fragment(n,chars,meta,bank) for n in policy['fragments']]
         rules += [1-self.contains(meta['lowered'],w) for w in policy['terms']]
@@ -109,36 +124,63 @@ class Computer:
         rules += [1-active*self.equal(chars,row) for row,active in bank] if policy['positions'] else []
         return self.all(rules)
 
-    async def snapshot(self, rows, rank_limit=3):
+    async def snapshot(self, rows, rank_limit=3, include_metas=False):
         m=self.mpc
         n=len(rows)
         metas=[self.characterize(row) for row in rows]
-        equality=[[self.equal(a,b) for b in rows] for a in rows]
+        packed=[self.pack_password(row) for row in rows]
+        # Exact equality is symmetric. Diagonal entries are public ones.
+        # Reuse each secret result and gather bounded batches to reduce graph size.
+        equality=[[None]*n for _ in range(n)]
+        for i in range(n):
+            equality[i][i]=self.sec(1)
+            for j in range(i):
+                equality[i][j]=equality[j][i]
+            for j in range(i+1,n):
+                equality[i][j]=self.equal(packed[i],packed[j])
+            if i%4==3:
+                await m.gather([equality[a][b] for a in range(i-3,i+1) for b in range(a+1,n)])
+        await m.gather([equality[a][b] for a in range(n-(n%4),n) for b in range(a+1,n)])
         freq=[m.sum(line) for line in equality]
         unique=[self.sec(1) if i==0 else (m.sum(equality[i][:i])==0) for i in range(n)]
         counts=[]; spectra=[]; banks=[]
         for s in range(len(SHAPES)+1):
             selected=[meta['shape']==s for meta in metas]
             counts.append(m.sum(selected))
-            # Secret index is never opened. A deterministic public account order
-            # breaks ties consistently inside the oblivious comparator network.
-            entries=[[freq[i]*unique[i]*selected[i]*(n+1)+(n-i),freq[i]*unique[i]*selected[i],*rows[i]] for i in range(n)]
-            ordered=m.sorted(entries,key=lambda entry:entry[0],reverse=True)
+            masses=[freq[i]*unique[i]*selected[i] for i in range(n)]
+            scores=[mass*(n+1)+(n-i) for i,mass in enumerate(masses)]
             group=[]
+            # Only rank_limit results are needed; no full sorting network.
             for r in range(rank_limit):
-                item=ordered[r] if r<n else [self.sec(0)]*(WIDTH+2)
-                spectra.append(item[1]); group.append((item[2:],item[1]>0))
+                if r>=n:
+                    spectra.append(self.sec(0));group.append(([self.sec(0)]*WIDTH,self.sec(0)));continue
+                winner=m.max([[score,self.sec(i)] for i,score in enumerate(scores)],key=lambda entry:entry[0])
+                unit=m.unit_vector(winner[1],n)
+                mass=m.in_prod(masses,unit)
+                chars=[m.in_prod([row[k] for row in rows],unit) for k in range(WIDTH)]
+                spectra.append(mass);group.append((chars,mass>0))
+                scores=[score*(1-flag) for score,flag in zip(scores,unit)]
+                await m.gather(mass)
             banks.append(group)
-        return counts+spectra,banks
+        result=(counts+spectra,banks)
+        return (*result,metas) if include_metas else result
 
+    @staticmethod
+    def pack_password(row):
+        # Four printable ASCII characters fit injectively in 28 bits.
+        return [sum(row[i+k]*(128**k) for k in range(min(4,len(row)-i)))
+                for i in range(0,len(row),4)]
 
     def same_password(self, a, b):
-        # Four padded ASCII characters fit in 28 bits, within SecInt(32).
-        # Radix 128 is injective on 0..126; no probabilistic fingerprint.
+        return self.equal(self.pack_password(a),self.pack_password(b))
+
+    def equal_bytes(self, a, b):
+        # Authentication inputs can contain malicious non-ASCII bytes. Base 256,
+        # three bytes per 24-bit block, is injective over the entire 0..255 range.
         def packed(row):
-            return [sum(row[i+k]*(128**k) for k in range(min(4, len(row)-i)))
-                    for i in range(0, len(row), 4)]
-        return self.equal(packed(a), packed(b))
+            return [sum(row[i+k]*(256**k) for k in range(min(3,len(row)-i)))
+                    for i in range(0,len(row),3)]
+        return self.equal(packed(a),packed(b))
 
     async def compact_add(self, groups, chars, amount):
         """Update a secret histogram without opening its matching position."""

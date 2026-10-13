@@ -1,0 +1,1413 @@
+{
+  "snapshot_date": "2026-10-13",
+  "report_origin": "https://www.overleaf.com/project/6ac9c5e4a50a568cf0b505a3",
+  "report_commit": "6df58cd36b78f7fff3f9de6068e236039f5a3112",
+  "scope": "Current report source/assets, shareable experiment outputs, diagram sources; historical/intermediate outputs labelled by source directories; no private protocol directories or local runtime",
+  "files": [
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/1-1.png",
+      "path": "report/overleaf/1-1.png",
+      "bytes": 1359558,
+      "sha256": "193cc21f1146771b5df3a038432a8ea05d0e79281dc9be41d6d855df9e65447d"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/1-2.png",
+      "path": "report/overleaf/1-2.png",
+      "bytes": 270219,
+      "sha256": "b3949079263a5ff76ffd8341c30bf3000e3a21490679857d3dd7b6dabce0cccc"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/1-2.svg",
+      "path": "report/overleaf/1-2.svg",
+      "bytes": 9431,
+      "sha256": "f9ff560ac03aa6bf7466993bde9bf94ed7493c262f0d60a5ba95ec2cc9572a73"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-1.png",
+      "path": "report/overleaf/3-1.png",
+      "bytes": 110064,
+      "sha256": "c7bc30d552943fb3ff6bcaeb2469e2d64004e15d5d266224dfaa2e4d801ac564"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-10.png",
+      "path": "report/overleaf/3-10.png",
+      "bytes": 67204,
+      "sha256": "2ab88c0be4662bacd906b4cc8e24a449a471688c0e54fdb4e0af0f94ab5cadb0"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-11.png",
+      "path": "report/overleaf/3-11.png",
+      "bytes": 69001,
+      "sha256": "30c3e1fea7680f5df9cae955010500f62819d8cb78f3cbfa76e21c4ec0b09b80"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-2.png",
+      "path": "report/overleaf/3-2.png",
+      "bytes": 117067,
+      "sha256": "f84d424255b98aa71ca8797cf320d6d22038674064a9d85127759f20c6524d01"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-3.png",
+      "path": "report/overleaf/3-3.png",
+      "bytes": 131020,
+      "sha256": "2730e1d626528429a3a2e24445b4ea2dc63ab7097afc0c0aba7a56b266251234"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-4.png",
+      "path": "report/overleaf/3-4.png",
+      "bytes": 118255,
+      "sha256": "cebe059bf9fa7ef5d7b978a4da3a22f779a232ab6744449f1e9e15e1e058149d"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-5.png",
+      "path": "report/overleaf/3-5.png",
+      "bytes": 134307,
+      "sha256": "1c98dba49aa4077ca554fa017f38f89489425cef24af35e7c24515ca1340fc02"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-6.png",
+      "path": "report/overleaf/3-6.png",
+      "bytes": 125854,
+      "sha256": "6d477458482f10e241cc254cb22c8aa886f19cf0c44e1b00944c1d91cb50fda9"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-7.png",
+      "path": "report/overleaf/3-7.png",
+      "bytes": 115448,
+      "sha256": "e1a39df55459e79447d3d73c7fc7c013adc9358e126bd8f791a2ff5344fae44c"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-8.png",
+      "path": "report/overleaf/3-8.png",
+      "bytes": 127251,
+      "sha256": "423ae81bf74f87d3a9310b13c9b9e989d246c3ab71a6c71d6e2ec9b71e4d7197"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/3-9.png",
+      "path": "report/overleaf/3-9.png",
+      "bytes": 117089,
+      "sha256": "008f247ecdfd6ec383cffc872e4b638d76aa6794e6e04cb289510e6e46cbc60f"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/a_clean_infographic_diagram_on_a_white_background.png",
+      "path": "report/overleaf/a_clean_infographic_diagram_on_a_white_background.png",
+      "bytes": 1472845,
+      "sha256": "91a70bde9118a893549b266210813cf7c2f45b62c494ed6cef67bd3c9d34c796"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/assets/cacr-logo.png",
+      "path": "report/overleaf/assets/cacr-logo.png",
+      "bytes": 559026,
+      "sha256": "d1ae3d6b328a892e776935f3fb8c9ae3953d72f65b7017a0338b1325f45485c0"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/crypto_report.cls",
+      "path": "report/overleaf/crypto_report.cls",
+      "bytes": 4842,
+      "sha256": "e196b947514a8d9d166e61d167dcdc07f88f912ad8d2e56227332f77494bee4c"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/existing-dynamic-flow-2-1-1.pdf",
+      "path": "report/overleaf/existing-dynamic-flow-2-1-1.pdf",
+      "bytes": 189809,
+      "sha256": "4ec88245e35930a5eb16462b2bc0eb0c794b0252ebc2381604791e841c20a41a"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/existing-dynamic-flow-2-1-1.svg",
+      "path": "report/overleaf/existing-dynamic-flow-2-1-1.svg",
+      "bytes": 46372,
+      "sha256": "f39f75ca5fb80f19e5cd1139c62abb59daed05009756cafdd00cf12dae08ceb7"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/existing-dynamic-overview-2-1-1.pdf",
+      "path": "report/overleaf/existing-dynamic-overview-2-1-1.pdf",
+      "bytes": 112609,
+      "sha256": "0f6321d8476757e3ade48c429d942664aa4a9fab91e70926cda69c4d79aa6d0b"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/existing-dynamic-overview-2-1-1.svg",
+      "path": "report/overleaf/existing-dynamic-overview-2-1-1.svg",
+      "bytes": 29648,
+      "sha256": "0ac68d92897b9eababab88a7cd52450bc125b50cefc484089ad60503a1ef707f"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/for1-2.png",
+      "path": "report/overleaf/for1-2.png",
+      "bytes": 1580450,
+      "sha256": "29fb9d1c700dc701eded9c01208eec798d383d079293d61c6a7dfe7d82874a7a"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/latexmkrc",
+      "path": "report/overleaf/latexmkrc",
+      "bytes": 88,
+      "sha256": "4bbd69d61a71b0a73194ad03328341712e9ffe96ffc1c1b7989f23c8720df21d"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/main.tex",
+      "path": "report/overleaf/main.tex",
+      "bytes": 125410,
+      "sha256": "73373cacf880dbabe92a04ed80bac6fbbe7d402e2341fb0f79600b3fb293fb81"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/overview-1-3.pdf",
+      "path": "report/overleaf/overview-1-3.pdf",
+      "bytes": 109454,
+      "sha256": "7096be6460a372623b85ebba51afecb2b078a8c2ae58245f539945f431d974ce"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/overview-1-3.svg",
+      "path": "report/overleaf/overview-1-3.svg",
+      "bytes": 29684,
+      "sha256": "690fdd206199ad7e69a994094fda049458907d0b1ae7fbbde162f0c04f14a79d"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/privacy-protection-overview-2-1-3.pdf",
+      "path": "report/overleaf/privacy-protection-overview-2-1-3.pdf",
+      "bytes": 111452,
+      "sha256": "00cb47734db9e0c71221880da08e4e7602d87bad7c1c41e54fa176d33dfca2e3"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/protected-statistics-decision-utility.pdf",
+      "path": "report/overleaf/protected-statistics-decision-utility.pdf",
+      "bytes": 23387,
+      "sha256": "68d85fe32b2b8c09de8ac6a3ff59f38f9b612e630b9dbd9990c17408387925cf"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/registration-dynamic-overview-2-1-2.pdf",
+      "path": "report/overleaf/registration-dynamic-overview-2-1-2.pdf",
+      "bytes": 110336,
+      "sha256": "71a99222cc96d567d7c8c458cb50f2c537f2d50194ad39036238c0fa049d9350"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/registration_five_policy_comparison.pdf",
+      "path": "report/overleaf/registration_five_policy_comparison.pdf",
+      "bytes": 33750,
+      "sha256": "f8c1a9cacbc544198d6c721f7819f241c3aae89ffdb6aead54f7446028554c23"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-admin-overview-2-2.png",
+      "path": "report/overleaf/tool-admin-overview-2-2.png",
+      "bytes": 276569,
+      "sha256": "0c4e1131ad58e84c6c1e7a0b12b8c9a35a0a450f3fbaa333914e0323196d8861"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-admin-profile-2-2.png",
+      "path": "report/overleaf/tool-admin-profile-2-2.png",
+      "bytes": 268980,
+      "sha256": "1cd8b4cc19cf20a48e3c9ad1c942b764b433893b02477174a98431895ff6e44b"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-admin-task-2-2.png",
+      "path": "report/overleaf/tool-admin-task-2-2.png",
+      "bytes": 136858,
+      "sha256": "02a7799ae4a261053d5834c30a05476ae6219a12b95cee562470406c4d989ee0"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-intervention-rules-2-2.png",
+      "path": "report/overleaf/tool-intervention-rules-2-2.png",
+      "bytes": 278827,
+      "sha256": "a2e81da99c71fd1590bcb8846e10883055c3f252e2a8d4a869ad6fbec57d8356"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-principle-2-2.pdf",
+      "path": "report/overleaf/tool-principle-2-2.pdf",
+      "bytes": 118246,
+      "sha256": "b785b94319589cc0fe88deb1220903083fa97fc3a4f9ac98fb2ce817a84e5fad"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-principle-2-2.svg",
+      "path": "report/overleaf/tool-principle-2-2.svg",
+      "bytes": 18854,
+      "sha256": "63cd7c9c03542e2ffde7fb3501a3eb81c4946cb6b0d13543bded64a254a41d83"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-principle-icons-2-2.png",
+      "path": "report/overleaf/tool-principle-icons-2-2.png",
+      "bytes": 1347307,
+      "sha256": "1753a083dc929eedf1222d794a88c3269d6c19f5bf6db345f976da4a045ceebe"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-registration-rules-2-2.png",
+      "path": "report/overleaf/tool-registration-rules-2-2.png",
+      "bytes": 260506,
+      "sha256": "217193f453417720766bab49fec0ee02420e1e5edefd6aa93ea4682d044742e5"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-site-challenge-2-2.png",
+      "path": "report/overleaf/tool-site-challenge-2-2.png",
+      "bytes": 223147,
+      "sha256": "adaa924fb645794bf9af56ae2be80eb82c90b971b98df14eb554afbc43cfc7c9"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-user-feedback-2-2.png",
+      "path": "report/overleaf/tool-user-feedback-2-2.png",
+      "bytes": 162953,
+      "sha256": "7093c0165832cf2284b81d6eb1b4e602478a617c08dcd59f3eeee27bca9adb24"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/tool-user-task-2-2.png",
+      "path": "report/overleaf/tool-user-task-2-2.png",
+      "bytes": 133380,
+      "sha256": "9b7120a1df8055ec359a64a67fb68b86d5ba3073fd3569c16e52102e4102140d"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_1_attack_A1.pdf",
+      "path": "report/overleaf/validation_3_1_attack_A1.pdf",
+      "bytes": 35890,
+      "sha256": "b4b62911b202448f1e3fc057cabd7d558936610f8c4b2e86023446d28cb99973"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_1_attack_F.pdf",
+      "path": "report/overleaf/validation_3_1_attack_F.pdf",
+      "bytes": 35842,
+      "sha256": "e650a906542135064e1f8b90f0d626e44fa7bf3391c08abd09a5005a4758d8cc"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_1_cost.pdf",
+      "path": "report/overleaf/validation_3_1_cost.pdf",
+      "bytes": 34426,
+      "sha256": "0e9b44013bd9c61a2eaf789283975d89c01b6fd2399c9709e7b5c9f356392954"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_1_htpg.pdf",
+      "path": "report/overleaf/validation_3_1_htpg.pdf",
+      "bytes": 26308,
+      "sha256": "44d0a6971fdae5a2012f3c9fd60a134a08498199b792eabbd672c80c63ecf3a3"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_1_internal.pdf",
+      "path": "report/overleaf/validation_3_1_internal.pdf",
+      "bytes": 29499,
+      "sha256": "bade815638df9730a20f2297e68b9f99673ed0b98980f78abff0ff089c07b66e"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_1_rounds.pdf",
+      "path": "report/overleaf/validation_3_1_rounds.pdf",
+      "bytes": 22674,
+      "sha256": "e6366f1b1293df7d062dd968a8965d4931f6f9e465247b2d81429e33ec376a9a"
+    },
+    {
+      "source": "report_update/existing_two_experiments_20261012/overleaf/validation_3_3_profile.pdf",
+      "path": "report/overleaf/validation_3_3_profile.pdf",
+      "bytes": 31560,
+      "sha256": "a8a41456136eb817c3eec1b874e7cb46b62734623ea84905f906f1eb39d14dc5"
+    },
+    {
+      "source": "output/TriGuard_性能测试/figure_manifest.json",
+      "path": "experiments/TriGuard_性能测试/figure_manifest.json",
+      "bytes": 1571,
+      "sha256": "8b335581ed8661bc7ca0d377e357447c60d4b77f9493ea127951255b687f65e8"
+    },
+    {
+      "source": "output/TriGuard_性能测试/交互时间原始测量.csv",
+      "path": "experiments/TriGuard_性能测试/交互时间原始测量.csv",
+      "bytes": 1102,
+      "sha256": "119dddc57f915ce123ebe9bf414cb793224500227201d9668c92433f03df688a"
+    },
+    {
+      "source": "output/TriGuard_性能测试/前端构建产物大小.json",
+      "path": "experiments/TriGuard_性能测试/前端构建产物大小.json",
+      "bytes": 527,
+      "sha256": "7d130df0a86ebad895965cd43fb9f8c6a0dbf02d1381ad52ee0177c87edbed17"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销.csv",
+      "path": "experiments/TriGuard_性能测试/存储开销.csv",
+      "bytes": 625,
+      "sha256": "9b61e93ed1919350d017651e144f520094d85ef902be252d8584d2af6695c391"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销.pdf",
+      "path": "experiments/TriGuard_性能测试/存储开销.pdf",
+      "bytes": 17262,
+      "sha256": "57072e6e7460cac671643114eac9353d0b9ef340fbe643b01e22c930c2ad06eb"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销.png",
+      "path": "experiments/TriGuard_性能测试/存储开销.png",
+      "bytes": 81395,
+      "sha256": "469c3038179c4efee2bac3630ecdd69d8daafa684ef7c031d463f14969eef506"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销.svg",
+      "path": "experiments/TriGuard_性能测试/存储开销.svg",
+      "bytes": 12207,
+      "sha256": "0fcea14112ef2fcd3ece405a275a67622f193c8371a5ebe77c83eced776e0ca1"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销_最终展示.csv",
+      "path": "experiments/TriGuard_性能测试/存储开销_最终展示.csv",
+      "bytes": 144,
+      "sha256": "924087a0570655ed2681887b4b24481f7f832c60a3df58a1e8a3385227accdc9"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销_最终展示.pdf",
+      "path": "experiments/TriGuard_性能测试/存储开销_最终展示.pdf",
+      "bytes": 15678,
+      "sha256": "15ce997e2e607602cb4d7525691e27bb5c0fae2d8e3b7e3cbe1c8bda7524e56d"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销_最终展示.png",
+      "path": "experiments/TriGuard_性能测试/存储开销_最终展示.png",
+      "bytes": 60473,
+      "sha256": "77e414df93669f0a9b0f3c95f42a9e52e86800f93a4c32c0ba542ce0614a4368"
+    },
+    {
+      "source": "output/TriGuard_性能测试/存储开销_最终展示.svg",
+      "path": "experiments/TriGuard_性能测试/存储开销_最终展示.svg",
+      "bytes": 7919,
+      "sha256": "2fbc7db1f8409440222b305ff6da75cac5a2749f4db13689601404b099ad571c"
+    },
+    {
+      "source": "output/TriGuard_性能测试/工程性能论述_可直接入论文.md",
+      "path": "experiments/TriGuard_性能测试/工程性能论述_可直接入论文.md",
+      "bytes": 4120,
+      "sha256": "7b088345fed5cbc9b50d01a7f884e74164a8fd63a360432d9873c38fb7b795e6"
+    },
+    {
+      "source": "output/TriGuard_性能测试/快速存储实测.json",
+      "path": "experiments/TriGuard_性能测试/快速存储实测.json",
+      "bytes": 3072,
+      "sha256": "9cf9da25c69e8829bf978ce28444da1c6db6b0e91bbcb10774e79779ed8ed97b"
+    },
+    {
+      "source": "output/TriGuard_性能测试/性能优化与测试报告.md",
+      "path": "experiments/TriGuard_性能测试/性能优化与测试报告.md",
+      "bytes": 3080,
+      "sha256": "b4c61ab0100d210ff58e4fd50bf4c1a4b728808b27cd6e4ee691a8da12ec0a70"
+    },
+    {
+      "source": "output/TriGuard_性能测试/按部署主体分解的存储实测.json",
+      "path": "experiments/TriGuard_性能测试/按部署主体分解的存储实测.json",
+      "bytes": 1295,
+      "sha256": "fcab5de91511231155f74953420e4c002f2eaf592346899c9710d6f5c5e5633a"
+    },
+    {
+      "source": "output/TriGuard_性能测试/时间开销.pdf",
+      "path": "experiments/TriGuard_性能测试/时间开销.pdf",
+      "bytes": 21994,
+      "sha256": "397f39eb25a4dea61df4c2a9ba8989a5f5ea203b5ac39810b25bcb5ec7f62de2"
+    },
+    {
+      "source": "output/TriGuard_性能测试/时间开销.png",
+      "path": "experiments/TriGuard_性能测试/时间开销.png",
+      "bytes": 117527,
+      "sha256": "e0e118f4d32225b59ad5b2faf7b250ce4d8f450a5384bdafecfa876e4f6ae375"
+    },
+    {
+      "source": "output/TriGuard_性能测试/时间开销.svg",
+      "path": "experiments/TriGuard_性能测试/时间开销.svg",
+      "bytes": 16321,
+      "sha256": "cb45fc7611565e40c2c8e8d313817ad28171fc989f01970208ff7d997eef7b47"
+    },
+    {
+      "source": "output/TriGuard_性能测试/结果汇总.json",
+      "path": "experiments/TriGuard_性能测试/结果汇总.json",
+      "bytes": 1930,
+      "sha256": "8dcd190d14301fe5a8e411036294078e34d2a437d57e3017d1fa9d5180fe1f23"
+    },
+    {
+      "source": "output/TriGuard_性能测试/统计发布时间原始测量.csv",
+      "path": "experiments/TriGuard_性能测试/统计发布时间原始测量.csv",
+      "bytes": 240,
+      "sha256": "440a4db89a494f290108ab65605a19bb8ca82d0ca1ded33e0bf8f6f565f41e7a"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/audit.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/audit.json",
+      "bytes": 707,
+      "sha256": "144db4965e4efb0c03c3ce0522724b6b99f3b29b9da1fe9e79d931bd20e464d6"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/manifest.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/manifest.json",
+      "bytes": 3962,
+      "sha256": "6edd96a22b3c1995f13bde9f5ef85277efb9face4b634abf31e6a94f0fdadbd4"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/Overleaf同步记录.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/Overleaf同步记录.json",
+      "bytes": 206,
+      "sha256": "3ddb41c688af550e17d5a41807c4c825344678a52f231443f62476821a451904"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/status.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/status.json",
+      "bytes": 71,
+      "sha256": "1f4701538054898916e01e878cec61d415a544f69a26334c80adc9beea590bf8"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/分名额覆盖收益.csv",
+      "path": "experiments/TriGuard_受保护统计决策效用/分名额覆盖收益.csv",
+      "bytes": 412,
+      "sha256": "bcbe63752475fb05c3004c617e0a0d53c44460b053ff19482b73d1e109bbd9a7"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/匿名测试快照.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/匿名测试快照.json",
+      "bytes": 57012,
+      "sha256": "490dd01bba398bf211d61186a6a51a38629bbefb955a7b461a2adcc2f6b50ed0"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/受保护统计决策效用.pdf",
+      "path": "experiments/TriGuard_受保护统计决策效用/受保护统计决策效用.pdf",
+      "bytes": 23387,
+      "sha256": "7e8d29f76d54037aca3c6dc7eea5c11abbf2a913e9afe480dc214c68b84207f6"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/受保护统计决策效用.png",
+      "path": "experiments/TriGuard_受保护统计决策效用/受保护统计决策效用.png",
+      "bytes": 63273,
+      "sha256": "7c370ff455a77ca7a721bc020a679720ed8640d995b681ccc81ddcbe9988294d"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/受保护统计决策效用.svg",
+      "path": "experiments/TriGuard_受保护统计决策效用/受保护统计决策效用.svg",
+      "bytes": 16850,
+      "sha256": "75c91301286a575caa025d6f0bc67e7bde58bf34e308a333a050dafae8286dbf"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/受保护统计的决策效用_报告正文.md",
+      "path": "experiments/TriGuard_受保护统计决策效用/受保护统计的决策效用_报告正文.md",
+      "bytes": 2590,
+      "sha256": "2b17be6f02c37872c776d781c2c540548fd9b6e15c5dd556af72dd0e7244b4d6"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/核验实验结果.py",
+      "path": "experiments/TriGuard_受保护统计决策效用/核验实验结果.py",
+      "bytes": 3094,
+      "sha256": "e87bd23229faaa8a46823c2401c343e8bdf648975818c87ab7bf90e44fa61a9f"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/汇总指标.csv",
+      "path": "experiments/TriGuard_受保护统计决策效用/汇总指标.csv",
+      "bytes": 1126,
+      "sha256": "7e87583bb134db25c9cb9e82497907e41e56da9cff92102307a4e33d24ed113d"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/独立核验.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/独立核验.json",
+      "bytes": 785,
+      "sha256": "5c9954f8a222126bebc12524137e6ac849b2085938c3e8d8016a2119865ab4af"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/生成图表与正文.py",
+      "path": "experiments/TriGuard_受保护统计决策效用/生成图表与正文.py",
+      "bytes": 5802,
+      "sha256": "7b0d6178b6b06d17e471c769f8ed98b83ea0b17294be73783304f6c7cee27b41"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/结果汇总.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/结果汇总.json",
+      "bytes": 8414,
+      "sha256": "4176de4bd19b7d00a8b4deab48880986dee146b5ecac25d941e2751ba2c55af6"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/绘图数据.csv",
+      "path": "experiments/TriGuard_受保护统计决策效用/绘图数据.csv",
+      "bytes": 362,
+      "sha256": "fc5e349b2f811142b2eb137fb6bcd6d5428e8feeb9cce7a7acf485c326a46b64"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/论文结果对应记录.json",
+      "path": "experiments/TriGuard_受保护统计决策效用/论文结果对应记录.json",
+      "bytes": 1003,
+      "sha256": "c35101c41c97f6148853c42dcc97ab31c7fdeae5f657ca68424bb5d423706376"
+    },
+    {
+      "source": "output/TriGuard_受保护统计决策效用/逐次决策结果.csv",
+      "path": "experiments/TriGuard_受保护统计决策效用/逐次决策结果.csv",
+      "bytes": 78564,
+      "sha256": "e5ed1f48a8a16c11680a7fea806344627841a3c8dbdf19c1be058420569a994f"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/audit.json",
+      "path": "experiments/privacy_joint_minimal_20261011/audit.json",
+      "bytes": 1069,
+      "sha256": "8194285dde9cd2ffbc811290d3808b451be461647958c5b2b83a992eb822a706"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/manifest.json",
+      "path": "experiments/privacy_joint_minimal_20261011/manifest.json",
+      "bytes": 4420,
+      "sha256": "d8e97ad37b9b00b2db83a7c984d1688fad8109419f153639c85f2bce7a85bbed"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/profile_references.csv",
+      "path": "experiments/privacy_joint_minimal_20261011/profile_references.csv",
+      "bytes": 1703,
+      "sha256": "3c973fb35ee1dede7ea0281b566294bfd0f942d71b2145be9d2088dd8cdeb66a"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/profile_results.csv",
+      "path": "experiments/privacy_joint_minimal_20261011/profile_results.csv",
+      "bytes": 153261,
+      "sha256": "da874e3f8ffaa8d1a135a2cd6529534fe0a86e81cd58983f8cacc4c1dd8332e8"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/registration_results.csv",
+      "path": "experiments/privacy_joint_minimal_20261011/registration_results.csv",
+      "bytes": 12737,
+      "sha256": "726a56ce03ce075d7eb0f3a942193b0386972538b0992b53fc1d0dcd1f626e5f"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/status.json",
+      "path": "experiments/privacy_joint_minimal_20261011/status.json",
+      "bytes": 164,
+      "sha256": "9ae47a26c20d35b23723e4ccab9e7380febbc4821c62d56a47fa9f45f358a901"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/summary.json",
+      "path": "experiments/privacy_joint_minimal_20261011/summary.json",
+      "bytes": 7090,
+      "sha256": "07f2a1241f03fc5d29a5d7d9eee21697041870ca0fa69b2218d421ab3315b675"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_joint_minimal_20261011/theory_checks.json",
+      "path": "experiments/privacy_joint_minimal_20261011/theory_checks.json",
+      "bytes": 173,
+      "sha256": "f13dc860c64bc9383f99b265570652faef3d8b69415a847e10ec11492629622e"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/case_results.json",
+      "path": "experiments/privacy_protocol_20261011/case_results.json",
+      "bytes": 7269,
+      "sha256": "afe3f92928836ad7586dd7128d3a5423bb799a41671f51ca38f821f20bebd9dc"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/document_audit.json",
+      "path": "experiments/privacy_protocol_20261011/document_audit.json",
+      "bytes": 1070,
+      "sha256": "a9e2f44d5b7237d56033f87ab108a08f01f44c5b8c6e60e8d27a7af1c2f27cc7"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/evidence_audit.json",
+      "path": "experiments/privacy_protocol_20261011/evidence_audit.json",
+      "bytes": 1559,
+      "sha256": "3b6d9532d07fcf76f80b0c2a8c28e3a7a57cffc2578c2b6f50892da017d1de21"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/manifest.json",
+      "path": "experiments/privacy_protocol_20261011/manifest.json",
+      "bytes": 2652,
+      "sha256": "253f8e8a58ed364706088c3243d6ebc558653aeb06761d4980082e4fec2edbad"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/phase_timings.json",
+      "path": "experiments/privacy_protocol_20261011/phase_timings.json",
+      "bytes": 4058,
+      "sha256": "bf36f96ec46ecc1646d6ff391b97799e8893099be58326520be8dd8f9675b01b"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/public_profile.json",
+      "path": "experiments/privacy_protocol_20261011/public_profile.json",
+      "bytes": 646,
+      "sha256": "f39fd929a23f6533042fc17265d5ed634f446deeb78df0b2bbf879a826eb6814"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/status.json",
+      "path": "experiments/privacy_protocol_20261011/status.json",
+      "bytes": 82,
+      "sha256": "fd542941c628c30343a0d8c382680dd0b72c08a89fdcbd189c7a4c9cd18fab1d"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/summary.json",
+      "path": "experiments/privacy_protocol_20261011/summary.json",
+      "bytes": 11573,
+      "sha256": "05c52d8ecc8e7f84cd554413fc762bc111aba2a57e0bfcb7d676d649b797f6d7"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/table_protocol_cases.csv",
+      "path": "experiments/privacy_protocol_20261011/table_protocol_cases.csv",
+      "bytes": 1861,
+      "sha256": "82c6edb07f1b4706ff3972c420135ada8f2ff91ca6480ac5227e81b556551e70"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/table_protocol_cases.md",
+      "path": "experiments/privacy_protocol_20261011/table_protocol_cases.md",
+      "bytes": 1905,
+      "sha256": "e765231ea3714134e8b51194845703a23baee63779f081b443c5b1eddad38be6"
+    },
+    {
+      "source": "ZipfGuard/reports/privacy_protocol_20261011/table_protocol_timings.csv",
+      "path": "experiments/privacy_protocol_20261011/table_protocol_timings.csv",
+      "bytes": 696,
+      "sha256": "1a275f07a88f9a7d0827b9603f18895ecdd9a05a3be2a29bc8858c6c417f0f7b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/audit.json",
+      "path": "experiments/registration_comparison_final_20261011/audit.json",
+      "bytes": 606,
+      "sha256": "5f1ef3e1f72c6f3fdc44823826c0b3ea8b764d9e44736152b6bdab3f64b16285"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/coverage_correction_stop.json",
+      "path": "experiments/registration_comparison_final_20261011/coverage_correction_stop.json",
+      "bytes": 179,
+      "sha256": "47c724e244ec8bc546c96c76001535e87a193dff0315705c16ea477e1ff1d8f0"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/data_manifest.json",
+      "path": "experiments/registration_comparison_final_20261011/data_manifest.json",
+      "bytes": 2080,
+      "sha256": "1e991f6843a05f5dba558d2bcf04438f9bdfd1646f72c0842b794ab93b0704a3"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/claims.csv",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/claims.csv",
+      "bytes": 14768,
+      "sha256": "c9f1ed9c9bae22e4e4590dfa352e6b10236f869ddc1de14b446d59f1f70117ec"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/consistency_manifest.json",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/consistency_manifest.json",
+      "bytes": 3305,
+      "sha256": "4f4219e7a4ce931150045e7804155d940a6f5c1ae76090dc201351ca6e08dab4"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/evidence.json",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/evidence.json",
+      "bytes": 29650,
+      "sha256": "9083404781695c4f60368c962194b584ccb8fa85a8657c198747c42ba3efdef4"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/literature_attack_curves.pdf",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/literature_attack_curves.pdf",
+      "bytes": 51044,
+      "sha256": "0daecb00a7be698295259651f8f2feeede5e87715916b3d918b6d547289a26eb"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/literature_attack_curves.png",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/literature_attack_curves.png",
+      "bytes": 254726,
+      "sha256": "943c56c80db070ff92e3b0c56a45925b5301378d302639b4b3407d15def2dbd5"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/literature_attack_curves.svg",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/literature_attack_curves.svg",
+      "bytes": 141621,
+      "sha256": "58750777ad5f74e4f94537a9067887382123b6d6848b32b4332d3ee22e26ac30"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/literature_cost_risk.pdf",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/literature_cost_risk.pdf",
+      "bytes": 44406,
+      "sha256": "0a519cfa26a44fa4b8985431e7a6e1da2115adcb2b3de63f62eb94664c3df83c"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/literature_cost_risk.png",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/literature_cost_risk.png",
+      "bytes": 145747,
+      "sha256": "c89af125859ba553179940d76d2b6816bc6e438cb727afcaf93e9813b3193d97"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/literature_cost_risk.svg",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/literature_cost_risk.svg",
+      "bytes": 89880,
+      "sha256": "a9b333035ed014f73183976deb80ec49351e3001b616c4babaeaa5b65c604bab"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/paired_improvement.pdf",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/paired_improvement.pdf",
+      "bytes": 43809,
+      "sha256": "877cb81b00098ead9e68f8058a911e015df82f2ca18cd8c359dad2d92099d606"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/paired_improvement.png",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/paired_improvement.png",
+      "bytes": 107374,
+      "sha256": "74b23635f3c4f8d5da9e99e7dad7f744863c1bfc4d3ec07ca827ebc0d21b94ec"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/paired_improvement.svg",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/paired_improvement.svg",
+      "bytes": 91379,
+      "sha256": "84b5bbada087a7b20de1d7eb2bbaa3bfbb3a6902049604202f5b8a076a9fda85"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/threshold_trajectory.pdf",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/threshold_trajectory.pdf",
+      "bytes": 38154,
+      "sha256": "db269d9d0af16538add744e51a31aca71a350570262f0eecb4568f89060f18d9"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/threshold_trajectory.png",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/threshold_trajectory.png",
+      "bytes": 94733,
+      "sha256": "4fbb5a6bde204e702904dc8eb256846807c462289f3e9b65ab2017c999ba52ba"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/threshold_trajectory.svg",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/threshold_trajectory.svg",
+      "bytes": 100136,
+      "sha256": "193528ce779b302350d1f8b3c2201047d3d62670fce103aaa9c707d5dee370c8"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/website_attack_curves.pdf",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/website_attack_curves.pdf",
+      "bytes": 47032,
+      "sha256": "25aad3b95be2fb3fe63053c48b47346fcf6623c95151eb0c516c9466ec76c02e"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/website_attack_curves.png",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/website_attack_curves.png",
+      "bytes": 232302,
+      "sha256": "4d82513064a8e6a25d1451c3743bc7c6996446650a8c22c498115b0e6d198c52"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/website_attack_curves.svg",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/website_attack_curves.svg",
+      "bytes": 132562,
+      "sha256": "272ac23edc9a0de46f7876fb55eb224a22fec57510bc12647f8f57313b34ff97"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/website_cost_risk.pdf",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/website_cost_risk.pdf",
+      "bytes": 41620,
+      "sha256": "72400d55717b20540af7c30e9d7ef838884006c403f7d5fc64114eca39105452"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/website_cost_risk.png",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/website_cost_risk.png",
+      "bytes": 126833,
+      "sha256": "37f9ae0ffd2596209ac6f3f4953e66e526740c3d8d8880db1dcacf9313aa5fab"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/figures/website_cost_risk.svg",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/figures/website_cost_risk.svg",
+      "bytes": 84621,
+      "sha256": "84da8cfa9e908b0cceaaf61925eb0d0ec16ccee05a4c7ec49d44d7e444877bda"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/mean_results.csv",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/mean_results.csv",
+      "bytes": 2482,
+      "sha256": "a1a689d6e9d9d3f6d8cf01cf9ae3c41533fdccce648a0cc64d44d587151c2cbd"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/paired_comparisons.json",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/paired_comparisons.json",
+      "bytes": 3630,
+      "sha256": "6a83d7c7c93d72fc79678c1b6b1b13389c73988343ebdf1913d9418821e17d29"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/per_seed_results.csv",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/per_seed_results.csv",
+      "bytes": 4155,
+      "sha256": "ea7381a4f9f4313ee8d8729ebb784231ef614017c390a2e4eb10b995ba1c218d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/source_manifest.json",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/source_manifest.json",
+      "bytes": 7473,
+      "sha256": "88c0a3acf5d7beaf37b514d0a22be5fdcc61a331ab7cf900a655cc3248ba853f"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/注册策略对照实验报告.md",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/注册策略对照实验报告.md",
+      "bytes": 21343,
+      "sha256": "3413e444087f77d654bcc486001088d711cee06a9a6f450970d1a5799d320d21"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverables/注册策略对照实验报告_阅读版.md",
+      "path": "experiments/registration_comparison_final_20261011/deliverables/注册策略对照实验报告_阅读版.md",
+      "bytes": 19015,
+      "sha256": "63977f5b5f699dcf4ad02e0696858ca9430421e7f3a8f35b96576cef8f66e40f"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/deliverable_status.json",
+      "path": "experiments/registration_comparison_final_20261011/deliverable_status.json",
+      "bytes": 956,
+      "sha256": "a456a6fdd8438abdf21dad6108ccac7f087ee6e5d3bdd6a526b4231ad4bb7bbf"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/extension_manifest.json",
+      "path": "experiments/registration_comparison_final_20261011/extension_manifest.json",
+      "bytes": 409,
+      "sha256": "ab0ae9bacf3a5a5b7b91267d85c55d619a146e0c4db7b3f7033f421898b64748"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/frozen_parameters/literature.json",
+      "path": "experiments/registration_comparison_final_20261011/frozen_parameters/literature.json",
+      "bytes": 4305,
+      "sha256": "9782cbfb0fb8f2d2bd38c4011188fb8ec77b482a33f23caa34fd2d9155db35de"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/frozen_parameters/website.json",
+      "path": "experiments/registration_comparison_final_20261011/frozen_parameters/website.json",
+      "bytes": 2087,
+      "sha256": "64a0b883bb0fd88b39093d4a7cac42601025134ce9ea221076c39259222b529b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/manifest.json",
+      "path": "experiments/registration_comparison_final_20261011/manifest.json",
+      "bytes": 4593,
+      "sha256": "b391147e98b2c09a334ece3fc3bb36fc23e46dfffd738327cb8c95c968be6d4f"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/protocol.md",
+      "path": "experiments/registration_comparison_final_20261011/protocol.md",
+      "bytes": 7426,
+      "sha256": "c1342ef4645175d81e44a2d7c006d8f9283df93729acef93d41b3255cab20fb0"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/protocol_seal.json",
+      "path": "experiments/registration_comparison_final_20261011/protocol_seal.json",
+      "bytes": 165,
+      "sha256": "e61cc1460b799233a864d2ee8033dea56b9870d994fd3f886373656271db1add"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/report_scope.json",
+      "path": "experiments/registration_comparison_final_20261011/report_scope.json",
+      "bytes": 585,
+      "sha256": "15c5c0d9a843b580e2113eb2e87f7c20e423edf0375f779b98e3a225d2a1d527"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_comparison_final_20261011/status.json",
+      "path": "experiments/registration_comparison_final_20261011/status.json",
+      "bytes": 474,
+      "sha256": "2260b856c71ac1558b971bb91d86866fde02dd8c0b0a5d77f8593ab2bf32aea0"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/additions_manifest.json",
+      "path": "experiments/registration_joint_graded_full_20261011/additions_manifest.json",
+      "bytes": 2410,
+      "sha256": "41bcd7cfbdc80e41027e2ccd7b36d07fdf7eb7142d232d58c1ae8ef8a10c1638"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/additions_status.json",
+      "path": "experiments/registration_joint_graded_full_20261011/additions_status.json",
+      "bytes": 934,
+      "sha256": "d432f06b7ff2af413d14bb93d97a1e9be83233fec891cb5b1c87cb433ce8e603"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_audit.json",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_audit.json",
+      "bytes": 1696,
+      "sha256": "6959d216b7766580224d6704826bf807cf74783de51f81398ec40cd13b2d288d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/additional_batch_records.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/additional_batch_records.csv",
+      "bytes": 1233,
+      "sha256": "e26a61ed136b992a72680ac47c810df8438b3816ec2fbe5ae08c79c30f5e3d39"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/mean_results.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/mean_results.csv",
+      "bytes": 4441,
+      "sha256": "4cd950a607cc4e2930cd3241e07e0d3388939624a16179b432575dbe8e63d8ae"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/per_seed_results.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/per_seed_results.csv",
+      "bytes": 8650,
+      "sha256": "bbe6a9fbbe1cdf09d3db792ef77ced5e17bcb687c93b2bc4477e27ebc55119cf"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/文献与网站对照结果.md",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/文献与网站对照结果.md",
+      "bytes": 4669,
+      "sha256": "59420b915fa4a0681d7149c66d773897f3f0d4bb303cf3ef1521221f69f1ffdc"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/文献对照.pdf",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/文献对照.pdf",
+      "bytes": 44063,
+      "sha256": "a59300df8e6ba04cbdc3ed64a9d63227a278579216863e6ed4be1f75c4198260"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/文献对照.png",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/文献对照.png",
+      "bytes": 174217,
+      "sha256": "5282f8cb223c1e946d5d334a0c43ad2a5aaf5120508ab5fdf568b6fba100cadb"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/网站对照.pdf",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/网站对照.pdf",
+      "bytes": 28379,
+      "sha256": "64445932108a12692c70d77c03cdecdc01108ecec00c9355a4731bc16b92da3d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/combined_deliverables/网站对照.png",
+      "path": "experiments/registration_joint_graded_full_20261011/combined_deliverables/网站对照.png",
+      "bytes": 80304,
+      "sha256": "e444f5038f96cf31aa5fe995e7fd9ca49cbb92427856919a48845feef73369d8"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/data_manifest.json",
+      "path": "experiments/registration_joint_graded_full_20261011/data_manifest.json",
+      "bytes": 1512,
+      "sha256": "a0034987adf9903e3efb5a0cb96d360fbf5c84f2be088c56a97230f653875437"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/manifest.json",
+      "path": "experiments/registration_joint_graded_full_20261011/manifest.json",
+      "bytes": 3815,
+      "sha256": "f7531125a96c39de356daf7a72a10c2f88d4aedd5ec2052b21923ab18921531f"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/partition_audit.json",
+      "path": "experiments/registration_joint_graded_full_20261011/partition_audit.json",
+      "bytes": 288,
+      "sha256": "19a57f425a12a8bf7364da4dda1f921d0749302a630b3eafdabdfaa3963f292f"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/results.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/results.csv",
+      "bytes": 5500,
+      "sha256": "5f90dc9535fd06640736dbfb18ebb6d57075c92717244680a0f7fbffa6d8563a"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_audit.json",
+      "path": "experiments/registration_joint_graded_full_20261011/single_audit.json",
+      "bytes": 4124,
+      "sha256": "95d7d27b62726bffb24e51e4bff956d9733a4e519eab8555ce01ddc4692ab4ab"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/batch_records.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/batch_records.csv",
+      "bytes": 6447,
+      "sha256": "6fbef2c3bd96a02194025b1364b613c98f7dced535a0801d9e57134287fb4f61"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/figure_manifest.json",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/figure_manifest.json",
+      "bytes": 5796,
+      "sha256": "886c55d2e883fc27ac4caefa44e4c3f6bfa08b7b96bfc0116642fb2389d176d6"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案作图数据.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案作图数据.csv",
+      "bytes": 2178,
+      "sha256": "eda265ea5a28d6b80ad2e14fc3f7648ac586910548ecf4ca05215beffa3edf99"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案图表说明.md",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案图表说明.md",
+      "bytes": 2004,
+      "sha256": "108d1e3cef40f6eaae0455a90c7563b45ce051fda6d9ba4a6e38e60b1b62826d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案对照论述.md",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案对照论述.md",
+      "bytes": 2153,
+      "sha256": "69f49a272c5390f7e09b47f4027fa088d68102ba814ca57d375a73d0bae62a8d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案攻击与用户成本.pdf",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案攻击与用户成本.pdf",
+      "bytes": 56714,
+      "sha256": "d6201685e2cd392e7db36426ccda69b52d5e2e5d5fb434abea1bb35f06ce83ee"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案攻击与用户成本.png",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案攻击与用户成本.png",
+      "bytes": 485773,
+      "sha256": "abe1e9ec7459426e566152df2686064050e0866239783d6e69cebca7c1938cd5"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案攻击与用户成本.svg",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/five_policy_comparison/五方案攻击与用户成本.svg",
+      "bytes": 34000,
+      "sha256": "2cb009b00b01435b3a191f7eed868d76cc6b83862655a2d40c078b80cbd2817d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/paired_comparisons.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/paired_comparisons.csv",
+      "bytes": 1486,
+      "sha256": "4360dc7eb0c17f51e5d6a9cd852b7a5f4cf9d688302c5161663d3f946ec2642e"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/per_seed_results.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/per_seed_results.csv",
+      "bytes": 4995,
+      "sha256": "dd9abe7ab97d2690b9b5312a23118ce2481bc8b46c7039594682c794485319be"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/summary_results.csv",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/summary_results.csv",
+      "bytes": 4512,
+      "sha256": "331ef6bab2f8b7ba45c9b001d5a56d1db1d1d02e539b94b412f5e32ba747d2c4"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/文献对照.pdf",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/文献对照.pdf",
+      "bytes": 53329,
+      "sha256": "cef307c77abb315f87c700faa528416a0afadd1c303c69ed160c0662593b3eb8"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/文献对照.png",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/文献对照.png",
+      "bytes": 229490,
+      "sha256": "8fef1a983bac99eac7e0a9f758ee11c1aae144abf1bd8d285f200d32cf03f89b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/第一轮实验结果.md",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/第一轮实验结果.md",
+      "bytes": 5177,
+      "sha256": "4c6903debd12f0164159963291e5c5951f4fdfb7e810e8df04ff5ae7d8abb9a3"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/网站对照.pdf",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/网站对照.pdf",
+      "bytes": 41870,
+      "sha256": "740babbabe5614cdcc3d3d6688c6fd70531bf3bffd295a505bedb40a8e680697"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_deliverables/网站对照.png",
+      "path": "experiments/registration_joint_graded_full_20261011/single_deliverables/网站对照.png",
+      "bytes": 149722,
+      "sha256": "6017dce0cefddfa12ae9d33222f224974dd3150bd8a7d9611d016134bb7c2f64"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_scope.json",
+      "path": "experiments/registration_joint_graded_full_20261011/single_scope.json",
+      "bytes": 1039,
+      "sha256": "0b59f1dce3c83ee2ce33ea9c0275ca9f2dc0a4f727fb291f879b6a88ac8b66d9"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/single_status.json",
+      "path": "experiments/registration_joint_graded_full_20261011/single_status.json",
+      "bytes": 581,
+      "sha256": "be67d0afe23edb203e7c01fa6d6cba31530ef878852de9796d7275de748ab372"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/status.json",
+      "path": "experiments/registration_joint_graded_full_20261011/status.json",
+      "bytes": 1032,
+      "sha256": "cc2eeb88ff295cdf54ab35897ea19562a61d5dda95b0cab5da0fe2afe1e6d9a7"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_joint_graded_full_20261011/实验范围.md",
+      "path": "experiments/registration_joint_graded_full_20261011/实验范围.md",
+      "bytes": 5582,
+      "sha256": "9555cbda99bc1c79a124c2abfd67047010a41d00021f3871d447f3053b5526e9"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/audit.json",
+      "path": "experiments/registration_segreti_dynamic_20261012/audit.json",
+      "bytes": 878,
+      "sha256": "fe441e48d848a61159f28e9f1bc4d8427c368b28c930d5372d5ea2dd6f2779a0"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/deliverables/comparison_evidence.json",
+      "path": "experiments/registration_segreti_dynamic_20261012/deliverables/comparison_evidence.json",
+      "bytes": 4857,
+      "sha256": "c9cbee0d049099b5831901df0d56c88449066e4dee9a4da6a85641d12a78d9fa"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/deliverables/million_attempt_summary.csv",
+      "path": "experiments/registration_segreti_dynamic_20261012/deliverables/million_attempt_summary.csv",
+      "bytes": 548,
+      "sha256": "3690f5113d8fcf25571383c3fbd0e6e3b7a0ff93931b5f2d34804c4ed4c40090"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/deliverables/registration_segreti_dynamic_comparison.pdf",
+      "path": "experiments/registration_segreti_dynamic_20261012/deliverables/registration_segreti_dynamic_comparison.pdf",
+      "bytes": 54982,
+      "sha256": "ec70eaef41d96cdbd1143166b174693403ccb6ab8c716c6180fdcb4d06ca112c"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/deliverables/registration_segreti_dynamic_comparison.png",
+      "path": "experiments/registration_segreti_dynamic_20261012/deliverables/registration_segreti_dynamic_comparison.png",
+      "bytes": 263267,
+      "sha256": "4b7e5f46349a999d6db91541672e0c79564402145c62f82c8f71667a20b3ef74"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/deliverables/registration_segreti_dynamic_comparison.svg",
+      "path": "experiments/registration_segreti_dynamic_20261012/deliverables/registration_segreti_dynamic_comparison.svg",
+      "bytes": 51329,
+      "sha256": "582880f20e697620097e6da2aefb9f4be6fe009899fea78a585f28de9ed7ae93"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/deliverables/完整实验结果.md",
+      "path": "experiments/registration_segreti_dynamic_20261012/deliverables/完整实验结果.md",
+      "bytes": 2285,
+      "sha256": "9949499d7b59862866396e9f8d36a62be1dd6954b7de190be4862ce0f5a1c3c3"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/manifest.json",
+      "path": "experiments/registration_segreti_dynamic_20261012/manifest.json",
+      "bytes": 4944,
+      "sha256": "3a9d1df8023a612c9627c437370cfba81318a348574d533708123ceff1d416de"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_segreti_dynamic_20261012/status.json",
+      "path": "experiments/registration_segreti_dynamic_20261012/status.json",
+      "bytes": 69,
+      "sha256": "5967fd9377c33fe5001c276c9255863423dec4e23e26d252f1b48a255958d45b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/audit.json",
+      "path": "experiments/registration_variable_scope_20261012/audit.json",
+      "bytes": 2811,
+      "sha256": "215253d3780a6b09d6894852e4e93295ffe65eb36638826b3a1dc829af2d03f6"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/deliverables/comparison_evidence.json",
+      "path": "experiments/registration_variable_scope_20261012/deliverables/comparison_evidence.json",
+      "bytes": 10201,
+      "sha256": "3076b45af7cad6ec5b3f75af469e3295ee6b19a43e64f770f278939bd2e222c3"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/deliverables/million_attempt_summary.csv",
+      "path": "experiments/registration_variable_scope_20261012/deliverables/million_attempt_summary.csv",
+      "bytes": 1163,
+      "sha256": "1dca5cb25e715dd38bd10e88f00c8bf2595160bf55c97d6d11b3d38a0ff8f019"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/deliverables/registration_variable_five_policy_comparison.pdf",
+      "path": "experiments/registration_variable_scope_20261012/deliverables/registration_variable_five_policy_comparison.pdf",
+      "bytes": 64565,
+      "sha256": "78927c010120ee1b10f0e7069ddcd3e7dcbbf6d25f4303c56a5d68d9b94c249b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/deliverables/registration_variable_five_policy_comparison.png",
+      "path": "experiments/registration_variable_scope_20261012/deliverables/registration_variable_five_policy_comparison.png",
+      "bytes": 395425,
+      "sha256": "b27b5dca0dee7a8b0c2aeb7c57d4b7b27fe95904d660a2809821b5770ba04fd5"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/deliverables/registration_variable_five_policy_comparison.svg",
+      "path": "experiments/registration_variable_scope_20261012/deliverables/registration_variable_five_policy_comparison.svg",
+      "bytes": 67137,
+      "sha256": "9abe3b653e858940b9cf7124b5caa75ee1c165ec020f6f5a2354cd7be7e95977"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/deliverables/完整运行对照.md",
+      "path": "experiments/registration_variable_scope_20261012/deliverables/完整运行对照.md",
+      "bytes": 4093,
+      "sha256": "4b1d0d0fd9f98f309cbd8fcf6c6299f562cb3c78dfef3206798c6be31e70b5ed"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/manifest.json",
+      "path": "experiments/registration_variable_scope_20261012/manifest.json",
+      "bytes": 5352,
+      "sha256": "ec2576c2babda406915211e30cdd04a7eb671b263eccc51797f73ee142fac6e4"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/revision_protocol.json",
+      "path": "experiments/registration_variable_scope_20261012/revision_protocol.json",
+      "bytes": 1437,
+      "sha256": "43e38eafbbe28ed1fd7613d0462fd9304a3aeef41f234772e3954915ca0cafbb"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_variable_scope_20261012/status.json",
+      "path": "experiments/registration_variable_scope_20261012/status.json",
+      "bytes": 286,
+      "sha256": "aad300b8e071bb752061db71abffd9eb9307541b173d93b9d69403692ea862de"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/comparison_evidence.json",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/comparison_evidence.json",
+      "bytes": 6439,
+      "sha256": "b9f59a5ccf897281b1b27ed7c935d00b906e0a10c1acc55b1d84e951749b3f9e"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/comparison_summary.csv",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/comparison_summary.csv",
+      "bytes": 1380,
+      "sha256": "948b16e55abb1a7f9707be8ae6b6be8e5938405cef3e957806cf83d599732e6b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/selection_diagnosis.json",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/selection_diagnosis.json",
+      "bytes": 7243,
+      "sha256": "6c0fb57bbbb459ea60fd28eb56c26ec4d15647cf1c6104afbd1869756deed3f5"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/双向调整与历史方案对照.pdf",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/双向调整与历史方案对照.pdf",
+      "bytes": 62307,
+      "sha256": "c12bb4e4cf9e9be7680c1e1f6b4030dd6d37ea244195ac95af24592ac59fcae2"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/双向调整与历史方案对照.png",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/双向调整与历史方案对照.png",
+      "bytes": 237338,
+      "sha256": "c996629e3a02c20afe85c88c2222307c2930f376e89b92cb3704daf24c0e6e72"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/双向调整与历史方案对照.svg",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/双向调整与历史方案对照.svg",
+      "bytes": 48213,
+      "sha256": "558cf7d4589ff8e26c94f52d992bfc8e3d2bf8881a28988d4d3aefd3ff5cbece"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/deliverables/完整结果与比较.md",
+      "path": "experiments/registration_exchange_100k_20261013/deliverables/完整结果与比较.md",
+      "bytes": 3173,
+      "sha256": "fdf2829009941c7ec007a223b55f4c50ac1e70af44ca0b877413919a0e9c1a35"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/delivery_manifest.json",
+      "path": "experiments/registration_exchange_100k_20261013/delivery_manifest.json",
+      "bytes": 1281,
+      "sha256": "c4354c5553624f9357d77ba6e4adfdac50ca482e210853700bcdee0ec7270430"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_100k_20261013/README.md",
+      "path": "experiments/registration_exchange_100k_20261013/README.md",
+      "bytes": 968,
+      "sha256": "47496fd8a43c320ee90e9e61dacc26795533aff2536d3c64c7a3f03d8e662c7e"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/comparison_evidence.json",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/comparison_evidence.json",
+      "bytes": 7232,
+      "sha256": "2c16d177bfa39060682e27d411ccf7a3c4c700bc574d79b545f96454f88921b1"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/comparison_summary.csv",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/comparison_summary.csv",
+      "bytes": 1551,
+      "sha256": "4004546886a3e648b8963e2265672f1fd0eeefcbaee605a41b487b365930e500"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/selection_diagnosis.json",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/selection_diagnosis.json",
+      "bytes": 2248,
+      "sha256": "9e6d8363fe209405ebeefe3c2f91031a4abe314a6e2967433de81b0484831fbc"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/verified_improvement_summary.json",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/verified_improvement_summary.json",
+      "bytes": 472,
+      "sha256": "b1085d96dc47f0efe1690677238fb07cfab6177e9a970381c71793ab8ec5e082"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/双向调整与历史方案对照.pdf",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/双向调整与历史方案对照.pdf",
+      "bytes": 66058,
+      "sha256": "73b1cde58775d38aabb0fdd2370a6c3364f8bee731b98c1e7aec8943703b8313"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/双向调整与历史方案对照.png",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/双向调整与历史方案对照.png",
+      "bytes": 252657,
+      "sha256": "17c34076f899366cd7464c83a3afa94fb944fc79ad2d8704dac2ed76fe1ae83d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/双向调整与历史方案对照.svg",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/双向调整与历史方案对照.svg",
+      "bytes": 50968,
+      "sha256": "c4a6bcc9aa5f2928d95aa59b138205129ca92b9168354688d80bf1465ab08a61"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/deliverables/完整结果与比较.md",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/deliverables/完整结果与比较.md",
+      "bytes": 4191,
+      "sha256": "85397358f9ebab566ebc31f66f8898e91ffedba5c7e4611391dbe625528385fc"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/delivery_manifest.json",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/delivery_manifest.json",
+      "bytes": 1322,
+      "sha256": "a3d7304ad537aaa0618303b304c183ff0e69fe92505643b6c3876b214553466b"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/method_explanation_evidence.json",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/method_explanation_evidence.json",
+      "bytes": 5687,
+      "sha256": "5f9553573d39ab6cf806d332e10ef678f67787e14ece89d4c9eb37f7a733956e"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_exchange_pareto_100k_20261013/README.md",
+      "path": "experiments/registration_exchange_pareto_100k_20261013/README.md",
+      "bytes": 1225,
+      "sha256": "f0a16551fb40bf94abbbb8865d2264f4b3a6ad4ae08ec4d580756433bf60c54d"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_innovation_review_20261013/development_release_diagnosis.json",
+      "path": "experiments/registration_innovation_review_20261013/development_release_diagnosis.json",
+      "bytes": 199770,
+      "sha256": "487804c5a6a7f78f2d23e6d0366fb6498298e211948aa64e781c1a2bde713dae"
+    },
+    {
+      "source": "ZipfGuard/reports/registration_innovation_review_20261013/review_sources.json",
+      "path": "experiments/registration_innovation_review_20261013/review_sources.json",
+      "bytes": 4237,
+      "sha256": "a96c1a998365881e2a4cf7ee93a3dd76004d3674e47f9d092958dabfc1c2a36a"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/build_scheme_diagrams.py",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/build_scheme_diagrams.py",
+      "bytes": 6666,
+      "sha256": "0df18e2e5ed63874be55015fac0332a7c3e976684065965310b67adefb6be7cb"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/figure_text.json",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/figure_text.json",
+      "bytes": 2500,
+      "sha256": "b40b0193934eee9d9d06d47d1912c4791b6759abcc468cc4b9632f2d89f14273"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/evidence.json",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/evidence.json",
+      "bytes": 350,
+      "sha256": "d972945ad0a53fd165e1b27d5b9cfd838bb3d530d06476ddd79542aafe35cc90"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/registration-dynamic-overview-2-1-2.svg",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/registration-dynamic-overview-2-1-2.svg",
+      "bytes": 29612,
+      "sha256": "6f1aec46cd90aa6b293379f855c021942099dd657d0bf4ccd0c9e784efd0bdf6"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/registration-dynamic-overview-2-1-2.png",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/registration-dynamic-overview-2-1-2.png",
+      "bytes": 613249,
+      "sha256": "e9b8bbdf54bc7995404b2f25864e43b57849558407389e11d8dcfb16767816f5"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/privacy-protection-overview-2-1-3.svg",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/privacy-protection-overview-2-1-3.svg",
+      "bytes": 29586,
+      "sha256": "691c229ab0a9b547bf75495739079344a5ca3e6541acba5dc1acf47adb4b3455"
+    },
+    {
+      "source": "report_update/scheme_diagrams_2_1_2_2_1_3_20261013/privacy-protection-overview-2-1-3.png",
+      "path": "figure_sources/scheme_diagrams_2_1_2_2_1_3_20261013/privacy-protection-overview-2-1-3.png",
+      "bytes": 648772,
+      "sha256": "65ae6d094f21dc0af125576fb2e10b9393fdc499582c45ac8d2034caad6a12e3"
+    },
+    {
+      "source": "report_update/existing_flow_2_1_1/build_module_overview.py",
+      "path": "figure_sources/existing_flow_2_1_1/build_module_overview.py",
+      "bytes": 4565,
+      "sha256": "6aa3d988b9d07a19fba30607d3f83e957dad5ebdf2b6eedb0a63e01271884c3d"
+    },
+    {
+      "source": "report_update/existing_flow_2_1_1/figure_text.json",
+      "path": "figure_sources/existing_flow_2_1_1/figure_text.json",
+      "bytes": 2825,
+      "sha256": "83ad8cfd695b3bd20defc8679a0e73c5aae64a1555fe599c8a16744ef918801f"
+    },
+    {
+      "source": "report_update/existing_flow_2_1_1/evidence.json",
+      "path": "figure_sources/existing_flow_2_1_1/evidence.json",
+      "bytes": 620,
+      "sha256": "0be71596a1b5966501ccee9dfab59c1929c3db1e9511c406de5844fddd2420d2"
+    },
+    {
+      "source": "report_update/existing_flow_2_1_1/existing-dynamic-overview-2-1-1.svg",
+      "path": "figure_sources/existing_flow_2_1_1/existing-dynamic-overview-2-1-1.svg",
+      "bytes": 29648,
+      "sha256": "0ac68d92897b9eababab88a7cd52450bc125b50cefc484089ad60503a1ef707f"
+    },
+    {
+      "source": "report_update/existing_flow_2_1_1/existing-dynamic-overview-2-1-1.png",
+      "path": "figure_sources/existing_flow_2_1_1/existing-dynamic-overview-2-1-1.png",
+      "bytes": 657821,
+      "sha256": "87086b76704418fbcd686bdc5a304330feaf64efda1fc073674f25d51788055a"
+    },
+    {
+      "source": "compiled from archived report/overleaf/main.tex",
+      "path": "report/TriGuard_作品报告.pdf",
+      "bytes": 6843096,
+      "sha256": "4b6bb2d8960ca70f24f612355624aaf8885106f152293cd7737839d02df62360"
+    }
+  ],
+  "excluded": []
+}

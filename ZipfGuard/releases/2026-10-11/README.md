@@ -1,4 +1,4 @@
-# ZipfGuard 双端工具构建包
+# TriGuard 双端工具构建包
 
 这些压缩包由仓库提交 `0648085bbdb3e7c9c13e72b6ff4026ed6f529ca1` 的源码构建，并通过 `ops/build_delivery.py` 的私钥与依赖排除检查。
 

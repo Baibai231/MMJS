@@ -1,0 +1,173 @@
+{
+  "version": "registration-counterfactual-comparison-v1",
+  "config": {
+    "source": "rockyou-withcount.txt",
+    "fresh_split_seed": 202610110941,
+    "users": 100000,
+    "batches": 10,
+    "seeds": [
+      11,
+      23,
+      42,
+      67,
+      101
+    ],
+    "weights": [
+      0.6,
+      0.25,
+      0.15
+    ],
+    "candidate_limit": 1000,
+    "candidate_sizes": [
+      100,
+      1000,
+      3000,
+      10000
+    ],
+    "popularity_rates": [
+      1e-06,
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001
+    ],
+    "preview_users": 6000,
+    "cf_min_gain": 0.0005,
+    "outside_increase": 0.02,
+    "small_budget_increase": 0.002,
+    "budgets": [
+      100,
+      10000,
+      100000,
+      1000000
+    ],
+    "final_samples": 100000,
+    "mc_seed": 20261011,
+    "attack_timeout": 3600,
+    "cost_limits": {
+      "literature": {
+        "cost_mode": "absolute",
+        "max_modification": 0.6,
+        "max_extra": 1.0,
+        "max_more_than_three": 0.05
+      },
+      "website": {
+        "cost_mode": "incremental_base",
+        "max_modification": 0.2,
+        "max_extra": 0.5,
+        "max_more_than_three": 0.05
+      }
+    },
+    "arms": {
+      "literature": [
+        "refresh",
+        "schechter",
+        "malone",
+        "risk_budgeted",
+        "current_joint"
+      ],
+      "website": [
+        "website_core",
+        "base",
+        "risk_budgeted"
+      ]
+    },
+    "development_amendment": "Pre-test calibration showed benefit-list selection weak and ideal popularity stronger; add attack-selective threshold controller. User narrowed scope to report-relevant comparisons. Reuse completed baseline calibration and fresh disjoint roles; no old final results used for new hypothesis confirmation.",
+    "current_config": {
+      "source": "rockyou-withcount.txt",
+      "split_seed": 20261011,
+      "role_sizes": {
+        "train": 60000,
+        "tuning": 20000,
+        "preview_select": 10000,
+        "preview_confirm": 10000,
+        "validation": 200000,
+        "test": 200000
+      },
+      "users": 100000,
+      "batches": 10,
+      "seeds": [
+        11,
+        23,
+        42,
+        67,
+        101
+      ],
+      "scenarios": [
+        "raw"
+      ],
+      "minimum": 8,
+      "common_size": 1000,
+      "ks": [
+        0,
+        10,
+        100,
+        1000
+      ],
+      "js": [
+        0,
+        5,
+        20
+      ],
+      "window": 2,
+      "recent_weight": 0.5,
+      "weights": [
+        0.6,
+        0.25,
+        0.15
+      ],
+      "response_mode": "mixed",
+      "candidate_limit": 1000,
+      "preview_users": 3000,
+      "max_modification": 0.6,
+      "max_extra": 1.0,
+      "max_more_than_three": 0.05,
+      "min_gain": 0.005,
+      "frozen_increase": 0.005,
+      "outside_increase": 0.02,
+      "objective_budget": 1000000,
+      "budgets": [
+        100,
+        10000,
+        100000,
+        1000000
+      ],
+      "selection_samples": 10000,
+      "confirmation_samples": 100000,
+      "final_samples": 100000,
+      "mc_seed": 20261011,
+      "frozen_budget": 100000,
+      "strength_thresholds": [
+        100,
+        10000,
+        100000
+      ],
+      "attack_timeout": 3600,
+      "actual_attacks": true,
+      "cohort_aware": true,
+      "incremental_extension": {
+        "cost_mode": "incremental_base",
+        "max_modification": 0.2,
+        "max_extra": 0.5,
+        "max_more_than_three": 0.05
+      },
+      "sensitivities": {},
+      "arms": [
+        "base",
+        "fixed",
+        "joint"
+      ]
+    }
+  },
+  "source_hashes": {
+    "policy\\registration_comparators.py": "620b37d4d409ab9e23c69c730347a1ad4f446b25400d50e22c86c68ceea25b63",
+    "experiments\\registration_comparison.py": "8c590fcb8cb6b0a0606dfe7281bd83ebfb02552347fa2944c46b55bcbef3a851",
+    "tools\\run_registration_comparison.py": "042fc69b556a33e83caf8fce5c8da31bda33189d8cbe4fdc9d7bbd3f672c8b77",
+    "policy\\registration_joint.py": "c0e32d747920d2a83fe9a842c8e751b1a779b61e8724673da5a425b1eb264dc1",
+    "experiments\\registration_joint_pipeline.py": "7586fed599dab07c1b37b43963a6d1c7041f79d23eaf7d722ff70a7f4599b622",
+    "experiments\\registration_joint_data.py": "74d10242404982e23c572f6a3e22ea564d9c1dafe74bc4206270990c99ac4b62",
+    "ai\\pcfg_adapter.py": "9a0d5a04e657e7dc5a167c457be87b708396fa904f1d3f0ba61c0649e6b2ec3c",
+    "ai\\dual_attack.py": "7fc5031eb16aa7f8b52b8e48190c9e9c1f9b3a310fc8f13600366df60f8120cf"
+  }
+}

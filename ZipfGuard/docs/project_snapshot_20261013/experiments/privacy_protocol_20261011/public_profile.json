@@ -1,0 +1,47 @@
+{
+  "snapshot": "profile:8",
+  "epsilon": 1.0,
+  "public_account_count": 8,
+  "structures": [
+    "L5D4S1",
+    "U1L5D3S1",
+    "L10D2",
+    "U1L8D2S1",
+    "OTHER"
+  ],
+  "counts": [
+    8.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "spectra": [
+    [
+      0.6666666666666666,
+      0.6666666666666666,
+      0.6666666666666666
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "mechanism": "sum of 3 independently contributed discrete-Laplace vectors"
+}

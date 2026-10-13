@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "checks": [
+    "Configuration, implementation, source partition and frozen attacker hashes match",
+    "1080 unique profile outcomes: denominators, summary means and B/C shared-profile comparison match",
+    "Noiseless conditional representation is exact; residual coverage never below independent reference",
+    "63 registration outcomes: completed/initial denominators and unchanged cost constraints match",
+    "Figure means and empirical 10-90 percentiles match recorded outcomes",
+    "Markdown delimiters, artifact links and absence of result placeholders verified"
+  ],
+  "profile_rows": 1080,
+  "registration_rows": 63,
+  "report_sha256": "5c4948139b0b758ac2bb83de16cae6c699d8509635677c43a2ca44917746b3ce",
+  "audit_script_sha256": "686cd35b72b4701c0de9c1d2daa6417e62ff2f681afa1d8fa852e2fc9eda3791",
+  "report_claim_boundary": "This audit covers the original algorithm utility and ideal-function simulation; added real protocol evidence is audited separately in reports/privacy_protocol_20261011/evidence_audit.json"
+}

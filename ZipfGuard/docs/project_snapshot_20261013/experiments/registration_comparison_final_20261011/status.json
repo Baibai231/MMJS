@@ -1,0 +1,19 @@
+{
+  "stage": "complete",
+  "completed": [
+    "test/website/11",
+    "test/website/23",
+    "test/website/42",
+    "test/website/67",
+    "test/website/101",
+    "test/literature/23",
+    "test/literature/11",
+    "test/literature/42",
+    "test/literature/67",
+    "test/literature/101"
+  ],
+  "queued": [],
+  "scope": "35 report trajectories; frozen policy/data unchanged",
+  "updated_at": "2026-10-11 10:46:28",
+  "completed_at": "2026-10-11 10:47:42"
+}

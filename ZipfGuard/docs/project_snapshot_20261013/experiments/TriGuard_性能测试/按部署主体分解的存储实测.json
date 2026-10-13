@@ -1,0 +1,50 @@
+{
+  "scope": "read-only inspection of existing initialized synthetic account fixtures; excludes dependencies, certificates, audit history, backup and browser runtime",
+  "rows": [
+    {
+      "accounts": 100,
+      "bytes": {
+        "business.sqlite": 16384,
+        "party-0.sqlite": 118784,
+        "party-1.sqlite": 118784,
+        "party-2.sqlite": 118784
+      },
+      "MiB": {
+        "business.sqlite": 0.015625,
+        "party-0.sqlite": 0.11328125,
+        "party-1.sqlite": 0.11328125,
+        "party-2.sqlite": 0.11328125
+      }
+    },
+    {
+      "accounts": 1000,
+      "bytes": {
+        "business.sqlite": 16384,
+        "party-0.sqlite": 1032192,
+        "party-1.sqlite": 1032192,
+        "party-2.sqlite": 1032192
+      },
+      "MiB": {
+        "business.sqlite": 0.015625,
+        "party-0.sqlite": 0.984375,
+        "party-1.sqlite": 0.984375,
+        "party-2.sqlite": 0.984375
+      }
+    },
+    {
+      "accounts": 5000,
+      "bytes": {
+        "business.sqlite": 32768,
+        "party-0.sqlite": 5107712,
+        "party-1.sqlite": 5107712,
+        "party-2.sqlite": 5107712
+      },
+      "MiB": {
+        "business.sqlite": 0.03125,
+        "party-0.sqlite": 4.87109375,
+        "party-1.sqlite": 4.87109375,
+        "party-2.sqlite": 4.87109375
+      }
+    }
+  ]
+}

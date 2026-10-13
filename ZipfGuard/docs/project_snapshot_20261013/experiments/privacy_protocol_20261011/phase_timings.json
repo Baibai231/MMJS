@@ -1,0 +1,192 @@
+[
+  {
+    "op": "register",
+    "phase": "bootstrap_0",
+    "seconds": 0.47301459999289364
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_1",
+    "seconds": 0.19900799996685237
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_2",
+    "seconds": 0.1985570000251755
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_3",
+    "seconds": 0.1975712000275962
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_4",
+    "seconds": 0.21903429995290935
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_5",
+    "seconds": 0.19648819998838007
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_6",
+    "seconds": 0.21016319998307154
+  },
+  {
+    "op": "register",
+    "phase": "bootstrap_7",
+    "seconds": 0.23107490001711994
+  },
+  {
+    "op": "profile",
+    "phase": "before",
+    "seconds": 2.8956363999750465
+  },
+  {
+    "op": "profile",
+    "phase": "before",
+    "seconds": 6.389996269717813e-05
+  },
+  {
+    "op": "refresh_policy",
+    "phase": "refresh_hidden_rule",
+    "seconds": 0.10531930002616718
+  },
+  {
+    "op": "register",
+    "phase": "hidden_exact_rejection",
+    "seconds": 3.060661200026516
+  },
+  {
+    "op": "register",
+    "phase": "structure_rejection",
+    "seconds": 0.23143389995675534
+  },
+  {
+    "op": "register",
+    "phase": "valid_registration",
+    "seconds": 0.283130900003016
+  },
+  {
+    "op": "register",
+    "phase": "alternate_auth_input",
+    "seconds": 6.769999163225293e-05
+  },
+  {
+    "op": "register",
+    "phase": "inconsistent_client_shares",
+    "seconds": 0.02929719997337088
+  },
+  {
+    "op": "register",
+    "phase": "consistent_nonbinary_shares",
+    "seconds": 0.010636100021656603
+  },
+  {
+    "op": "register",
+    "phase": "noncontiguous_padding",
+    "seconds": 0.24195729999337345
+  },
+  {
+    "op": "login",
+    "phase": "wrong_login",
+    "seconds": 0.024681499984581023
+  },
+  {
+    "op": "login",
+    "phase": "legacy_login_ignores_new_policy",
+    "seconds": 0.022308699961286038
+  },
+  {
+    "op": "change",
+    "phase": "wrong_old_password",
+    "seconds": 0.2636699000140652
+  },
+  {
+    "op": "prepare_abort",
+    "phase": "abort_without_commit",
+    "seconds": 0.2563666999922134
+  },
+  {
+    "op": "change",
+    "phase": "successful_password_change",
+    "seconds": 0.2550004000077024
+  },
+  {
+    "op": "checkpoint_reload",
+    "phase": "after",
+    "seconds": 7.253618499962613
+  },
+  {
+    "op": "login",
+    "phase": "old_password_revoked",
+    "seconds": 0.03912299999501556
+  },
+  {
+    "op": "login",
+    "phase": "new_password_works",
+    "seconds": 0.0225751000107266
+  },
+  {
+    "op": "login",
+    "phase": "login_quota_third",
+    "seconds": 0.025224000040907413
+  },
+  {
+    "op": "login",
+    "phase": "login_quota_fourth",
+    "seconds": 0.02591940003912896
+  },
+  {
+    "op": "eligibility",
+    "phase": "private_remediation_eligibility",
+    "seconds": 0.19859429995995015
+  },
+  {
+    "op": "eligibility",
+    "phase": "forged_eligibility_without_auth",
+    "seconds": 0.20971929997904226
+  },
+  {
+    "op": "eligibility",
+    "phase": "unrelated_account_eligibility",
+    "seconds": 0.19078389997594059
+  },
+  {
+    "op": "assign_task",
+    "phase": "unauthenticated_task_denied",
+    "seconds": 0.206247300026007
+  },
+  {
+    "op": "assign_task",
+    "phase": "authenticated_task_assignment",
+    "seconds": 0.22032250004122034
+  },
+  {
+    "op": "assign_task",
+    "phase": "task_assignment_idempotent",
+    "seconds": 0.1999974000500515
+  },
+  {
+    "op": "assign_task",
+    "phase": "task_count_budget_exhausted",
+    "seconds": 0.2285315000335686
+  },
+  {
+    "op": "change",
+    "phase": "task_completed_by_private_change",
+    "seconds": 0.2904329000157304
+  },
+  {
+    "op": "checkpoint_reload",
+    "phase": "final",
+    "seconds": 6.807369699992705
+  },
+  {
+    "op": "profile",
+    "phase": "after",
+    "seconds": 4.650000482797623e-05
+  }
+]

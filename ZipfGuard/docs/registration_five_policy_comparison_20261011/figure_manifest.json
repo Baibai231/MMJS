@@ -134,17 +134,19 @@
   "outputs": {
     "aggregate_audit.json": "5ebdbcf66d5d3c7e07d962270ea8d4737ca37213996935a1e1537c7101cff97a",
     "README.md": "7827c42afbfa7bbb8a295939f04438fa4f695e5c4d5877378d8520b69a44d2fc",
-    "rebuild_figure.py": "bc2166f8dfbf036cb49976222cb8d255c6b4cc2e6bac1b82538f357f0fa4a82b",
+    "rebuild_figure.py": "89301d2f60fc6619d35d337ccc571d5e302cde534ef661f18399bb1c3c56ad4f",
     "requirements-figure.txt": "791463bc0975bb271648b0ebc4848e88a2f70ea4e24c94d31322bf3b77103e95",
     "五方案作图数据.csv": "eda265ea5a28d6b80ad2e14fc3f7648ac586910548ecf4ca05215beffa3edf99",
     "五方案图表说明.md": "6dd30105b0339d007654eb9eb802bc0d01e6408a5c3c03f67b155adbf8893947",
     "五方案对照论述.md": "69f49a272c5390f7e09b47f4027fa088d68102ba814ca57d375a73d0bae62a8d",
-    "五方案攻击与用户成本.pdf": "d6201685e2cd392e7db36426ccda69b52d5e2e5d5fb434abea1bb35f06ce83ee",
-    "五方案攻击与用户成本.png": "abe1e9ec7459426e566152df2686064050e0866239783d6e69cebca7c1938cd5",
-    "五方案攻击与用户成本.svg": "30323033dc42025cf2321f680827c1d3c5d987c3b10d196c8ef6de696757a50e",
+    "五方案攻击与用户成本.pdf": "e06214d25f8155bc8bb74192e5006a32172a931d284e514f038ca34e7ae6e2fd",
+    "五方案攻击与用户成本.png": "4aeb236f4c7b5ef12d006ac23a6ace394643c84181513f8933c82b896100c9b1",
+    "五方案攻击与用户成本.svg": "bf0970f8868522583d160ee29cd0c27801698f302da0674c4f59ac79dd6483ea",
     "data/final_results.json": "8494d17199803f162f34fb3ba7c296e22e240d6bf50a960b7d971a849dd62f25"
   },
   "original_local_code_sha256": "479d2f6ff899d8af33efd1d8fff8b99972309515642b1ec595a8b2fdf1c0b9a4",
   "code_sha256": "bc2166f8dfbf036cb49976222cb8d255c6b4cc2e6bac1b82538f357f0fa4a82b",
-  "publication_scope": "Aggregate results and report assets only; original private states remain local"
+  "publication_scope": "Aggregate results and report assets only; original private states remain local",
+  "palette_update": "2026-10-11: user reference colors; data unchanged",
+  "line_style_update": "2026-10-12: all curves and budget guide use solid lines; colors and data unchanged"
 }

@@ -1,0 +1,33 @@
+{
+  "created_at": "2026-10-11 15:24:09",
+  "source_sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+  "fresh_split_seed": 202610111520,
+  "excluded_previous_occurrences": 1500000,
+  "all_new_target_occurrences_disjoint": true,
+  "target_seeds_disjoint": true,
+  "development_roles_reused": true,
+  "pilot_occurrences_excluded": true,
+  "role_sizes": {
+    "test_11": 100000,
+    "test_23": 100000,
+    "test_42": 100000,
+    "test_67": 100000,
+    "test_101": 100000,
+    "train": 60000,
+    "tuning": 20000,
+    "preview_select": 10000,
+    "preview_confirm": 10000
+  },
+  "position_hashes": {
+    "test_11": "dd0d382036d534a2931b404fe14b4d1f816e9f69e8bfefda0625ca4e66cde129",
+    "test_23": "613498b120e794913106d6d778b507d431ff4bc701b2ff4196f94af8833a305d",
+    "test_42": "a6db66fe03c34976c43c07fe4460b8cb569dbf1929a42212e5ba6c2fc002413a",
+    "test_67": "43a0bfec920a9e6b92859d73f49adda8a8c99c84ca94a44f15cc3a003af875e5",
+    "test_101": "0975d4b4c9fd7c03c0c3325c0906b174d695598dde9fceddaf75d9a394e7f448",
+    "train": "09cdd66cc4358251dd2f26691066707050be2583300fd78346b5cac0e5a6167c",
+    "tuning": "18796c0b6f08bb564f4b0f363a4f3dc42d2a0b7e35b691b860ecf88d3ff72cb2",
+    "preview_select": "e4f1237474a2e34d3f0cdb23c0f138dc5496c3f2ae2d05d19b61480648e298aa",
+    "preview_confirm": "06dad6e460375bbbc47efb6d8967c4d3ca75c5b946d5c5c54a9d18b65d46e651"
+  },
+  "interpretation": "Frequency-declared occurrence users, not verified independent persons"
+}

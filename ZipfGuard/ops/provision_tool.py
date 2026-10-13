@@ -63,7 +63,7 @@ def provision(directory):
         shutil.copyfile(folder/'tls.key',configuration/f'party_{i}.key')
         shutil.copyfile(tls/'ca.crt',configuration/'mpyc_ca.crt')
     nodes=[f'https://localhost:{8541+i}' for i in range(3)]
-    common={'site':'demo','name':'ZipfGuard 研究站点','nodes':nodes,'node_keys':node_keys,'epsilon_cap':10,'task_cap':100,
+    common={'site':'demo','name':'TriGuard 研究站点','nodes':nodes,'node_keys':node_keys,'epsilon_cap':10,'task_cap':100,
             'user_api':'https://localhost:8531','admin_api':admin_origin,'reference_site':'https://localhost:8560',
             'ca':str(tls/'ca.crt'),'local_demo':True}
     metadata=str(directory/'business.sqlite')
@@ -86,7 +86,7 @@ def provision(directory):
     trust.pop('ca')
     write(ROOT/'apps/user-assistant/public/trusted-stations.json',[trust])
     write(ROOT/'apps/user-assistant/public/manifest.json',{
-        'manifest_version':3,'name':'ZipfGuard 用户口令助手','version':'1.0.0','key':extension_key_b64,
+        'manifest_version':3,'name':'TriGuard 用户口令助手','version':'1.0.0','key':extension_key_b64,
         'description':'在独立扩展中私密注册、登录与修改口令。网站不接收口令明文。',
         'action':{'default_popup':'popup.html'},'permissions':['storage'],
         'host_permissions':[url+'/*' for url in nodes+['https://localhost:8531']],

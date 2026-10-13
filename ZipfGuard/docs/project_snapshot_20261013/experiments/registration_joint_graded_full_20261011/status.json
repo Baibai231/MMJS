@@ -1,0 +1,47 @@
+{
+  "stage": "superseded_by_single_round",
+  "started_at": "2026-10-11 15:23:31",
+  "updated_at": "2026-10-11 16:06:22",
+  "completed": [
+    "11/schechter_strong",
+    "11/schechter_middle",
+    "11/schechter_light",
+    "23/schechter_strong",
+    "23/schechter_light",
+    "23/schechter_middle",
+    "42/schechter_strong",
+    "42/schechter_middle",
+    "42/schechter_light",
+    "67/schechter_strong",
+    "67/schechter_light",
+    "67/schechter_middle",
+    "101/schechter_strong",
+    "101/schechter_middle",
+    "101/schechter_light",
+    "11/joint",
+    "23/joint"
+  ],
+  "total_trajectories": 25,
+  "workers": 2,
+  "users_per_trajectory": 100000,
+  "batches": 10,
+  "queued": [
+    "11/graded",
+    "23/graded",
+    "42/joint",
+    "42/graded",
+    "67/joint",
+    "67/graded",
+    "101/joint",
+    "101/graded"
+  ],
+  "failures": [],
+  "superseded_at": "2026-10-11 16:13:04",
+  "current_status": "single_status.json",
+  "excluded_seeds": [
+    23,
+    42,
+    67,
+    101
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "frozen_at": "2026-10-11 10:16:01",
+  "test_data_used": false,
+  "selection_source": "five new calibration cohorts, fixed train-only predictor",
+  "ranking": [
+    {
+      "label": "refresh_100",
+      "arm": "refresh",
+      "parameters": {
+        "k": 100
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.253252,
+      "mean_extra": 1.3030000000000002,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "refresh_1000",
+      "arm": "refresh",
+      "parameters": {
+        "k": 1000
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.236342,
+      "mean_extra": 1.333008,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "refresh_3000",
+      "arm": "refresh",
+      "parameters": {
+        "k": 3000
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.236342,
+      "mean_extra": 1.333008,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "refresh_10000",
+      "arm": "refresh",
+      "parameters": {
+        "k": 10000
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.236342,
+      "mean_extra": 1.333008,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "risk_budgeted",
+      "arm": "risk_budgeted",
+      "parameters": {
+        "rate": null
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.19792,
+      "mean_extra": 1.398744,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    }
+  ],
+  "fixed": {
+    "k": 0
+  },
+  "fixed_selection_failure": "no grid value eligible; explicitly reported, no claim of matched costs",
+  "refresh": {
+    "k": 1000
+  },
+  "schechter": {
+    "rate": 0.001
+  },
+  "schechter_selection_failure": "no grid value eligible; explicitly reported, no claim of matched costs"
+}

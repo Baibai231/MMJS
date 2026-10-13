@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ZipfGuard 用户口令助手",
+  "name": "TriGuard 用户口令助手",
   "version": "1.0.0",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxAeMROpc/6S/Zvmtp/94E3elPIDBlWAZG8UOf+MAL7TNQcJFF7xsxbIhqdFKXpbddDxNSRfrW0rsoSF15wH4euilw+6hdD0sm6Za/yfSZGwM2CIcKmiu8QFzWUuLjE0dsSg73H49bxA66gkSbxsdSSpEyFdSnIF/CyTpXfpnQI2+p5xFEVzQ4eskpaF1RsNAUqzBn3wcyQJ+ORH4OMsOVWcz2xiJowqybjRd+RLmfTEEaHWvjRERLko+DRVshnrBqG30dFO+X0/q0VEMjH/6ZUiZuOkih3Q13hmibCofsa8uykKLYAjcP5OHpQ8SQL1ebcZYx2bf9pcB95fXaqy9nwIDAQAB",
   "description": "在独立扩展中私密注册、登录与修改口令。网站不接收口令明文。",

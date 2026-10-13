@@ -1,0 +1,19 @@
+{
+  "passed": true,
+  "raw_decisions": 720,
+  "paired_conditions": 240,
+  "protected_snapshot_pairs": 60,
+  "checks": [
+    "Unique experiment conditions and correct denominators",
+    "Identical blocked structures in every paired comparison",
+    "Direct-union decomposition and exact-reference upper bound",
+    "CSV/JSON summary reconciliation",
+    "Fixed-dimension numeric-only administrator inputs",
+    "Recorded implementation hashes match"
+  ],
+  "artifacts": {
+    "逐次决策结果.csv": "e5ed1f48a8a16c11680a7fea806344627841a3c8dbdf19c1be058420569a994f",
+    "结果汇总.json": "4176de4bd19b7d00a8b4deab48880986dee146b5ecac25d941e2751ba2c55af6",
+    "匿名测试快照.json": "490dd01bba398bf211d61186a6a51a38629bbefb955a7b461a2adcc2f6b50ed0"
+  }
+}

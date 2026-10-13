@@ -1,0 +1,21 @@
+{
+  "recorded_at": "2026-10-11 10:34:07",
+  "arms": {
+    "literature": [
+      "refresh",
+      "schechter",
+      "malone",
+      "risk_budgeted"
+    ],
+    "website": [
+      "website_core",
+      "base",
+      "risk_budgeted"
+    ]
+  },
+  "expected_trajectories": 35,
+  "reason": "User requested report-relevant experiments only; optional legacy comparator dominates runtime; retain two literature mechanisms, strong refresh control and website comparison",
+  "policy_changed": false,
+  "data_changed": false,
+  "legacy_completed_results_at_scope_decision": 0
+}

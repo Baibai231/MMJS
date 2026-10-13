@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "checks": [
+    "balanced fences and math",
+    "portable math delimiters",
+    "existing artifact links",
+    "no pending-result placeholders",
+    "protocol code and public evidence hashes unchanged"
+  ],
+  "document_sha256": {
+    "docs\\第三板块_隐私保护口令统计与联合策略报告.md": "5c4948139b0b758ac2bb83de16cae6c699d8509635677c43a2ca44917746b3ce",
+    "docs\\第三板块_工具全流程隐私可行性论证.md": "8680c7f64e19fb1682b70950cb34b9b77e41155be5716880ca7438fbbb05d95b",
+    "docs\\全新前端_用户端与网站端实施计划.md": "20dc78f9b1ffe7af3ac164c815f33d7aa2c14d4489ee06fe4b0fcae08ceae6d3",
+    "docs\\第三贡献_结构条件匿名画像与隐式联合阻断_重构方案.md": "b71d212154f753e376e1874b6d097f4e6a01d520dc8c41280c624476015ad4db",
+    "privacy\\README.md": "defe2ddc66e3188d584148c16ad4243d3e310d4be875da1229a939f768b58abf",
+    "reports\\privacy_protocol_20261011\\table_protocol_cases.md": "e765231ea3714134e8b51194845703a23baee63779f081b443c5b1eddad38be6"
+  }
+}

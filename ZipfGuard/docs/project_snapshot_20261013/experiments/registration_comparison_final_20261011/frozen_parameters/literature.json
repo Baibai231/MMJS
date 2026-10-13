@@ -1,0 +1,219 @@
+{
+  "frozen_at": "2026-10-11 10:16:01",
+  "test_data_used": false,
+  "selection_source": "five new calibration cohorts, fixed train-only predictor",
+  "ranking": [
+    {
+      "label": "refresh_100",
+      "arm": "refresh",
+      "parameters": {
+        "k": 100
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.280534,
+      "mean_extra": 0.552994,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "refresh_1000",
+      "arm": "refresh",
+      "parameters": {
+        "k": 1000
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.26335800000000004,
+      "mean_extra": 0.576538,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "refresh_3000",
+      "arm": "refresh",
+      "parameters": {
+        "k": 3000
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.26335800000000004,
+      "mean_extra": 0.576538,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "refresh_10000",
+      "arm": "refresh",
+      "parameters": {
+        "k": 10000
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.26335800000000004,
+      "mean_extra": 0.576538,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "schechter_1e-06",
+      "arm": "schechter",
+      "parameters": {
+        "rate": 1e-06
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.18607,
+      "mean_extra": 0.7157199999999999,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "schechter_1e-05",
+      "arm": "schechter",
+      "parameters": {
+        "rate": 1e-05
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.18607,
+      "mean_extra": 0.7157199999999999,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "schechter_3e-05",
+      "arm": "schechter",
+      "parameters": {
+        "rate": 3e-05
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.22832,
+      "mean_extra": 0.6343159999999999,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "schechter_0.0001",
+      "arm": "schechter",
+      "parameters": {
+        "rate": 0.0001
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.268426,
+      "mean_extra": 0.571202,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "schechter_0.0003",
+      "arm": "schechter",
+      "parameters": {
+        "rate": 0.0003
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.28676399999999996,
+      "mean_extra": 0.54495,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "schechter_0.001",
+      "arm": "schechter",
+      "parameters": {
+        "rate": 0.001
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.29111200000000004,
+      "mean_extra": 0.5389519999999999,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "malone",
+      "arm": "malone",
+      "parameters": {},
+      "eligible_all_seeds": true,
+      "mean_risk": 0.23725800000000002,
+      "mean_extra": 0.618624,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    },
+    {
+      "label": "risk_budgeted",
+      "arm": "risk_budgeted",
+      "parameters": {
+        "rate": null
+      },
+      "eligible_all_seeds": true,
+      "mean_risk": 0.18302000000000002,
+      "mean_extra": 0.676438,
+      "failures": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ]
+    }
+  ],
+  "fixed": {
+    "k": 0
+  },
+  "fixed_selection_failure": "no grid value eligible; explicitly reported, no claim of matched costs",
+  "refresh": {
+    "k": 1000
+  },
+  "schechter": {
+    "rate": 1e-05
+  }
+}
