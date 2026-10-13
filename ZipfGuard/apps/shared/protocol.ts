@@ -10,8 +10,9 @@ export function canonical(value:unknown):string{
  return JSON.stringify(ordered(value)).replace(/[\u007f-\uffff]/g,c=>'\\u'+c.charCodeAt(0).toString(16).padStart(4,'0'))
 }
 export async function request<T=any>(url:string,body?:unknown,session?:string):Promise<T>{
- const response=await fetch(url,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(session?{Authorization:'Bearer '+session}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})})
- const data=await response.json();if(!response.ok)throw Error(typeof data.detail==='string'?data.detail:JSON.stringify(data.detail||data));return data
+ let response:Response;try{response=await fetch(url,{method:body===undefined?'GET':'POST',headers:{...(body===undefined?{}:{'Content-Type':'application/json'}),...(session?{Authorization:'Bearer '+session}:{})},...(body===undefined?{}:{body:JSON.stringify(body)})})}catch{throw Error('服务暂时无法连接，请稍后重试')}
+ let data:any;try{data=await response.json()}catch{throw Error('服务响应异常，请稍后重试')}
+ if(!response.ok)throw Error(response.status===422?'请检查填写内容':typeof data.detail==='string'?data.detail:response.status===401?'登录已过期，请重新登录':response.status===403?'没有执行此操作的权限':'操作未完成，请稍后重试');return data
 }
 function shares(password:string,prime:bigint):string[][]{
  if(password.length>64||password.length<8||!/^[\x20-\x7e]+$/.test(password))throw Error('请使用 8–64 个可打印 ASCII 字符；不会截断口令。')
@@ -52,3 +53,6 @@ export async function finishOperation(pending:PendingOperation,session:string|un
 }
 export function download(name:string,value:unknown){const blob=new Blob([typeof value==='string'?value:JSON.stringify(value,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 export const outcomeText:Record<string,string>={accepted:'操作完成',policy_rejected:'当前要求未通过，请换一个更难猜的口令',authentication_failed:'认证未通过',account_exists:'账户已存在',stale_policy:'策略已更新，请刷新后再试',stale_or_missing_account:'账户状态已更新或账户不存在',account_disabled:'账户已停用',recovery_failed:'恢复凭证无效',privacy_budget_exhausted:'隐私预算已用完',published:'受保护画像已发布',cached:'使用已发布画像，没有重复消耗预算',policy_applied:'策略已应用',plan_assigned:'整改任务已分配',plan_stopped:'计划已停止',account_updated:'账户状态已更新',invalid_operation:'请求参数或秘密输入无效'}
+
+const labels:Record<string,string>={business_result:'业务处理结果',preview:'候选方案预览',role_update:'权限更新',automatic_policy_review:'自动策略复核',hold:'保持当前策略',queued:'排队中',running:'处理中',completed:'已完成',pending:'待处理',failed:'失败',cancelled:'已取消',unknown:'结果待确认',stopped:'已停止',active:'进行中',assigned:'已分配',register:'注册',migrate:'账户接入',login:'登录',change:'修改口令',recover:'恢复账户',delete:'注销账户',check:'口令检查',profile:'发布分布快照',apply_policy:'更新策略',rollback_policy:'回退策略',assign_plan:'分配任务',stop_plan:'停止计划',set_account:'更新账户',policy:'策略更新',task:'任务更新',operation:'账户操作',settings:'设置更新',job:'运行作业',automatic_review:'自动复核'};
+export function displayText(value:string):string{return labels[value]||outcomeText[value]||'已记录'}

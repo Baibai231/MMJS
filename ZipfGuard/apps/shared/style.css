@@ -5,3 +5,10 @@
 
 /* Tint the background only: rejection text remains fully opaque. */
 .user-assistant .status.error{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.24);color:#a12626}
+
+/* Keep long identifiers, tables, and compact assistant windows within the viewport. */
+.main,.card,.grid>*,.form-grid>*{min-width:0}.card{overflow-wrap:anywhere}
+.card table{display:block;overflow-x:auto}td,th{vertical-align:top}td{overflow-wrap:anywhere}
+.bar{overflow:hidden}.barrow{grid-template-columns:minmax(70px,110px) minmax(0,1fr) minmax(55px,max-content)}
+button:disabled{cursor:not-allowed}.section-head{flex-wrap:wrap}.topline>div{min-width:0}
+@media(max-width:700px){.sidebar .logo{font-size:11px;letter-spacing:-.5px}.topline{flex-wrap:wrap}.tag{white-space:normal}.hero h1{overflow-wrap:anywhere}}
