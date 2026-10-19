@@ -1,0 +1,6 @@
+{
+  "requested_scope": "finish existing-account fixed-F end-to-end evaluation using already trained PassLLM",
+  "additional_passllm_training": "paused",
+  "registration": "deferred",
+  "A_evaluation": "not computed; cannot substitute F"
+}

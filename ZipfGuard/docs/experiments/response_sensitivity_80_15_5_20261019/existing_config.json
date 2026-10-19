@@ -1,0 +1,91 @@
+{
+  "schema_version": "selective-intervention-v9-dual-individual-threshold",
+  "seed": 42,
+  "data": {
+    "path": "/Users/cjx_main/Desktop/new/MMJS/rockyou-withcount.txt",
+    "format": "password_with_count",
+    "encoding": "latin-1",
+    "users": 100000,
+    "development": 100000
+  },
+  "budgets": [
+    1,
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+    1000000
+  ],
+  "risk_budget": 1000000,
+  "monte_carlo": {
+    "samples": 100000,
+    "seed": 42
+  },
+  "pcfg": {
+    "timeout_seconds": 3600
+  },
+  "attack_models": {
+    "mode": "pcfg-omen-prefix",
+    "threshold": 1000000,
+    "order": 3,
+    "timeout_seconds": 3600,
+    "wsl_distribution": "Ubuntu-20.04"
+  },
+  "controller": {
+    "round_fraction": 0.02,
+    "total_fraction": 0.2,
+    "execution_policy": "dual-F-individual-threshold-v1",
+    "batch_fractions": [
+      0.001,
+      0.002,
+      0.005,
+      0.01,
+      0.02
+    ],
+    "max_rounds": 40,
+    "max_groups": 12,
+    "popular_k": 20,
+    "lengths": [
+      10,
+      12,
+      15
+    ],
+    "candidate_pool": "site-fragments-1-18-v1",
+    "predictable_terms": [
+      "devops",
+      "gitlab"
+    ],
+    "prediction_repeats": 3,
+    "min_gain": 1e-12,
+    "min_batch_fraction": 0.001,
+    "min_positive_trial_fraction": 0.6,
+    "max_a1_regression": 0.0005,
+    "combination_width": 6,
+    "validation_shortlist": 5,
+    "validation_repeats": 5,
+    "lookahead_width": 2,
+    "lookahead_rollouts": 2,
+    "bridge_max_first_loss": 0.0003,
+    "distribution_top_fraction": 0.01,
+    "candidate_shortlist": 80,
+    "target_relative_reduction": 0.1,
+    "stagnation_patience": 3,
+    "max_hhi_increase": 0.0001
+  },
+  "response": {
+    "mode": "all-notified-change-v1",
+    "nonresponse": 0.0,
+    "weights": [
+      0.8,
+      0.15,
+      0.05
+    ],
+    "max_attempts": 5
+  },
+  "evaluation": {
+    "adaptive": false,
+    "mutation_reference_limit": 10000,
+    "yahoo_control": true
+  }
+}

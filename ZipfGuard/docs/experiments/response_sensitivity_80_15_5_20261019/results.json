@@ -1,0 +1,88 @@
+{
+  "scope": "existing accounts only; 80/15/5; seed42",
+  "rows": [
+    {
+      "method": "8 字符基础规则 政策不变",
+      "key": "c19841d573d0",
+      "F": {
+        "pcfg": 0.13236,
+        "markov": 0.0189,
+        "passllm": 0.05024,
+        "union": 0.14093
+      },
+      "A": {
+        "pcfg": 0.16763,
+        "markov": 0.02759,
+        "passllm": 0.06094,
+        "union": 0.17575
+      },
+      "A_passllm_raw_draws": 1000000,
+      "A_passllm_retained_strings": 998348
+    },
+    {
+      "method": "8 字符基础规则＋随机分批调整",
+      "key": "e112ad3f043f",
+      "F": {
+        "pcfg": 0.11918,
+        "markov": 0.01704,
+        "passllm": 0.0451,
+        "union": 0.12696
+      },
+      "A": {
+        "pcfg": 0.15093,
+        "markov": 0.0253,
+        "passllm": 0.07653,
+        "union": 0.16165
+      },
+      "A_passllm_raw_draws": 1000000,
+      "A_passllm_retained_strings": 999470
+    },
+    {
+      "method": "8 字符基础规则＋初始排序后分批执行",
+      "key": "550793ec6bfd",
+      "F": {
+        "pcfg": 0.06781,
+        "markov": 0.00527,
+        "passllm": 0.01439,
+        "union": 0.07472
+      },
+      "A": {
+        "pcfg": 0.09006,
+        "markov": 0.00512,
+        "passllm": 0.02015,
+        "union": 0.09738
+      },
+      "A_passllm_raw_draws": 1000000,
+      "A_passllm_retained_strings": 998598
+    },
+    {
+      "method": "8 字符基础规则 起点动态调整",
+      "key": "ab41940db15e",
+      "F": {
+        "pcfg": 0.07082,
+        "markov": 0.00534,
+        "passllm": 0.01543,
+        "union": 0.07778
+      },
+      "A": {
+        "pcfg": 0.09327,
+        "markov": 0.0063,
+        "passllm": 0.03004,
+        "union": 0.10286
+      },
+      "A_passllm_raw_draws": 1000000,
+      "A_passllm_retained_strings": 999518
+    }
+  ],
+  "F_generation": {
+    "stage": "completed",
+    "updated_at": "2026-10-18T11:18:29+0800",
+    "raw_draws": 1000000,
+    "emitted": 999549,
+    "elapsed_seconds": 4033.784485374985,
+    "model_hashes_verified": true,
+    "complete_actual_strings": false,
+    "warning": "raw draws and retained strings are reported separately; no unsupported completeness claim"
+  },
+  "registration_status": "not_run"
+}

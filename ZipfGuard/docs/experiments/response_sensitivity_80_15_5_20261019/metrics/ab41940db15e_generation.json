@@ -1,0 +1,25 @@
+{
+  "checkpoint_hashes": {
+    "adapter_model.safetensors": "b95e827d03365743543f492abc0d2f716bd526a87512f3e957acb478d7b96677",
+    "README.md": "f1b3d787aff6e0f661dfed31c3deab9a8bdd5be040cf3175cda7285b5341f6f7",
+    "adapter_config.json": "87b5abb53ebacb1440da61922f1d402d3d2b36d732d8773f6682f2fcb218bfe4"
+  },
+  "training_records": 59841,
+  "training_steps": 11223,
+  "training_seconds": 4857.27,
+  "generation_seconds": 5229.404,
+  "raw_draws": 1000000,
+  "upstream_raw_count": 999518,
+  "source_stop": "raw_limit",
+  "method": "PassLLM development-trained LoRA; author trawling prompt and random sampler",
+  "prompt_id": 1,
+  "sampling_order": "raw draw order, not probability rank",
+  "pretrained_password_weights": false,
+  "base_model_sha256": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+  "training_counts_sha256": "02103ffa01b202bc79d8a16527e9c3950a7eb1ba135939fe40bf851a0e842b88",
+  "independent_reference_training": true,
+  "device": "mps",
+  "precision": "float32",
+  "score_accumulator": "float32",
+  "complete": false
+}

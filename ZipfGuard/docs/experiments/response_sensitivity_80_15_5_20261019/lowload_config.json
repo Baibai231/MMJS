@@ -1,0 +1,16 @@
+{
+  "concurrency": 1,
+  "cpu_threads": 4,
+  "microbatch": 16,
+  "effective_batch": 64,
+  "accumulation": "token-weighted to match full-batch mean loss",
+  "generation_batch": 64,
+  "idle_seconds_per_batch": 0.1,
+  "mps_memory_fraction": 0.5,
+  "restart_training": true,
+  "epochs": 3,
+  "raw_guess_budget": 1000000,
+  "note": "Numerical and dropout paths differ; same effective batch and training hyperparameters; not bitwise identical.",
+  "process_priority": "normal",
+  "reason": "user requested larger batch; raised protected cap moderately; single GPU task"
+}
