@@ -1,0 +1,2 @@
+{"benchmark_only": true, "batch_size": 2048, "draws": 2048, "seconds": 2.631501137278974, "draws_per_second": 778.263011551526, "million_seconds": 1284.912664686999}
+{"benchmark_only": true, "batch_size": 4096, "draws": 4096, "seconds": 4.903692785650492, "draws_per_second": 835.2888688267716, "million_seconds": 1197.190621496702}

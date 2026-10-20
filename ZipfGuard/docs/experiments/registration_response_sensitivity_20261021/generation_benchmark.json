@@ -1,0 +1,9 @@
+{
+  "benchmark_only": true,
+  "model": "unadapted base, not experimental attack results",
+  "simultaneous_training": true,
+  "draws": 2048,
+  "seconds": 6.340563291683793,
+  "draws_per_second": 322.9996935266197,
+  "million_seconds": 3095.978169767477
+}

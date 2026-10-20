@@ -1,0 +1,49 @@
+{
+  "label": "malone",
+  "phase": "A",
+  "accounts": 100000,
+  "budget_per_model": 1000000,
+  "max_total_budget": 3000000,
+  "rates": {
+    "pcfg": 0.23404,
+    "markov": 0.09305,
+    "passllm": 0.14643,
+    "union": 0.30549
+  },
+  "hits": {
+    "pcfg": 23404,
+    "markov": 9305,
+    "passllm": 14643,
+    "union": 30549
+  },
+  "PassLLM_generation": {
+    "checkpoint": "/root/autodl-tmp/triguard_registration_20261020/runs/registration_paired/baseline_60_25_15/adaptive_passllm/malone/checkpoint",
+    "checkpoint_hashes": {
+      "README.md": "931f5b2de1029dc5ef9dd4e8d56a27ffc4ba7dfe015089eb384421c9dd831386",
+      "adapter_model.safetensors": "30aabdb66337516a2c22416164640b7c43d3f73bbe985d407f37b139a39b5855",
+      "adapter_config.json": "561404df63b5cee65f0e0b8b9ee68f664130b5e526e09135d211360d6e7eb2ee"
+    },
+    "training_records": 59834,
+    "training_steps": 11220,
+    "training_seconds": 885.022,
+    "generation_seconds": 254.821,
+    "raw_draws": 1000000,
+    "upstream_raw_count": 999370,
+    "source_stop": "raw_limit",
+    "method": "PassLLM development-trained LoRA; author trawling prompt and random sampler",
+    "prompt_id": 1,
+    "sampling_order": "raw draw order, not probability rank",
+    "pretrained_password_weights": false,
+    "base_model_sha256": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+    "training_counts_sha256": "f1a5b74524275aeac571e02ff77b744d825ccd5fe2bed2ee221f07ed890f8490",
+    "independent_reference_training": true,
+    "device": "cuda",
+    "precision": "float32",
+    "generation_precision": "bfloat16",
+    "generation_batch_size": 4096,
+    "restricted_projection": true,
+    "score_accumulator": "float32",
+    "complete": false
+  },
+  "budget_note": "Raw draw budget, retained output may be smaller; no claim of million valid strings."
+}

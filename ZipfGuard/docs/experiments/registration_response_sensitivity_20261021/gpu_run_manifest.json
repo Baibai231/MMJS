@@ -1,0 +1,40 @@
+{
+  "scope": "registration: two behavior proportions, five policies, F and A, three observed attack models",
+  "users": 100000,
+  "seed": 11,
+  "weights": [
+    [
+      0.6,
+      0.25,
+      0.15
+    ],
+    [
+      0.8,
+      0.15,
+      0.05
+    ]
+  ],
+  "raw_budget_per_model": 1000000,
+  "controller": "unchanged PCFG/OMEN; PassLLM endpoint evaluation",
+  "training": "float32 CUDA, SDPA, 3 epochs, effective batch 64, microbatch16; original development partition",
+  "sources": {
+    "benchmark_bf16.py": "437c7d8c447afd1ca58b1874f1d395edd228cc96cfdc3d8f8b1f93070a3f3ed4",
+    "benchmark_batches.py": "f7e2162d3a514edc80d5fab99bc134fdeb0e68aa06823a86c8a5a306331d1e56",
+    "benchmark_optimized.py": "cd1af91240fa47b56dd56d16f2b4383abb98a83023165ed066f57fbea4312ca6",
+    "run_registration_paired.py": "3b81a94ee359055ac12a716f1a9ef92894b48ac5958c96cce03bdbb100250a64",
+    "benchmark_generation.py": "612584c4589d9bb8f9afda46019ad8e11a6375122dfec47c4d1614ce7e055037",
+    "run_registration_model.py": "4d03bc87fd198e8c807ee0ee13fe8107f207b51cc7f2f8e1ffd6be0cd041bb6f",
+    "run_registration_policy.py": "2ef539ca8325842c752108db1b713776240cb5a925921d5dc6e109086f6b7a10"
+  },
+  "generation_precision": "bfloat16 autocast",
+  "generation_batch_size": 4096,
+  "generation_projection": "restricted author character vocabulary; first-call log-probability equivalence check within the same precision",
+  "training_precision": "float32",
+  "gpu_pipeline_pid": 4768,
+  "cpu_pipeline_pid": 3365,
+  "estimated_remaining_hours": [
+    6,
+    9
+  ],
+  "estimate_basis": "unadapted base generation benchmark with simultaneous training; approximately835 draws/s; training approximately0.08-0.09s per microbatch; not a trained-model benchmark"
+}

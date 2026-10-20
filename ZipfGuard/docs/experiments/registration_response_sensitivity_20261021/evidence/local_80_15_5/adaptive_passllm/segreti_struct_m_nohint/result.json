@@ -1,0 +1,29 @@
+{
+  "checkpoint": "/root/autodl-tmp/triguard_registration_20261020/runs/registration_paired/local_80_15_5/adaptive_passllm/segreti_struct_m_nohint/checkpoint",
+  "checkpoint_hashes": {
+    "README.md": "931f5b2de1029dc5ef9dd4e8d56a27ffc4ba7dfe015089eb384421c9dd831386",
+    "adapter_model.safetensors": "db78f607fe100551497c632080c16654f29dfcbadf1406d47ae6af49d0da60df",
+    "adapter_config.json": "c6a9c231833354e6debe79dc2bca87d36b8f731d55dcf2f48c35e009901eb85a"
+  },
+  "training_records": 59792,
+  "training_steps": 11211,
+  "training_seconds": 838.342,
+  "generation_seconds": 289.479,
+  "raw_draws": 1000000,
+  "upstream_raw_count": 999449,
+  "source_stop": "raw_limit",
+  "method": "PassLLM development-trained LoRA; author trawling prompt and random sampler",
+  "prompt_id": 1,
+  "sampling_order": "raw draw order, not probability rank",
+  "pretrained_password_weights": false,
+  "base_model_sha256": "fdf756fa7fcbe7404d5c60e26bff1a0c8b8aa1f72ced49e7dd0210fe288fb7fe",
+  "training_counts_sha256": "79b8df6c21578da50e3d74d2853c5277d76cdaa6656d160c0dcb56ca29a48718",
+  "independent_reference_training": true,
+  "device": "cuda",
+  "precision": "float32",
+  "generation_precision": "bfloat16",
+  "generation_batch_size": 4096,
+  "restricted_projection": true,
+  "score_accumulator": "float32",
+  "complete": false
+}

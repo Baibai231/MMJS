@@ -1,0 +1,27 @@
+{
+  "source_sha256": "e9d22d5316e7668aba2e9fa1c22dfc6e5afd217a60defc8f3c7f68a4f48f84b9",
+  "valid_ASCII_occurrences": 32585010,
+  "role_sizes": {
+    "train": 60000,
+    "tuning": 10000,
+    "preview_select": 10000,
+    "preview_confirm": 10000,
+    "test_11": 100000
+  },
+  "role_hashes": {
+    "train": "9059858f20a86d60b740fc1427dc30acac0da7d71bce55d34e6f8cd937eb36f9",
+    "tuning": "a4ce39736267d1f4240f4c671eb47f67015807cdf6430aaf617e45e2dd094e0b",
+    "preview_select": "289a94bfaa6061308e00fc952be6df934562380e413a5eb0e42c61b7c6e82bc0",
+    "preview_confirm": "892ec8884cb416e9ff1ec45b5e16b36daa8a80e071357bbb4c2950ff4088ff78",
+    "test_11": "b8e05adc9ff5a03381431b3a81dd6361ee0a8ad65c904dd13227344f04848932"
+  },
+  "role_position_hashes": {
+    "train": "04a412ce49bfd896160ae8ddb562d3e737516537706b0dc436e7ef6451e4072d",
+    "tuning": "31d98168ffe850e31480f07729ea9c2c16ec7cf19215e0790f3f9339a77806e1",
+    "preview_select": "449ff4a7758ef8a120737ec89ce194fe9c533aaf639085b1740d9d01faeb62e4",
+    "preview_confirm": "867c06036df4433d62bc25bb1450980ad7cb6cb7c3521c3c17ca5d6c8d8785b7",
+    "test_11": "cf20064e17628d843a4f51777e6095e1bee82700062bf464fadefe7d3e8ce05c"
+  },
+  "occurrence_ids_disjoint": true,
+  "interpretation": "source-declared occurrence users, not verified individuals"
+}
